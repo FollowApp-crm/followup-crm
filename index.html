@@ -1260,132 +1260,147 @@ body.light .ovr-list li{ border-color:#e2e7f3; background:#fff }
 
   $('#wipeAll').addEventListener('click', ()=>{ if(confirm('This will delete ALL customers and tasks stored in your browser. Continue?')){ localStorage.removeItem(storeKey); location.reload(); } });
 
-  /* ===== Notifications: ultra-robust with visible fallback ===== */
-  const NOTIFY_KEY = 'followup_crm_notified_today';
+ /* ===== Notifications: OS-only (no in-page toasts) ===== */
+const NOTIFY_KEY = 'followup_crm_notified_today';
 
-  function toast(msg){
-    let box = document.getElementById('toastBox');
-    if(!box){
-      box = document.createElement('div');
-      box.id = 'toastBox';
-      box.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:99999;display:flex;flex-direction:column;gap:8px';
-      document.body.appendChild(box);
-    }
-    const t = document.createElement('div');
-    t.style.cssText = 'padding:10px 12px;border:1px solid #2b3346;border-radius:10px;background:#111620;color:#e6e9f2;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.25)';
-    t.textContent = msg;
-    box.appendChild(t);
-    setTimeout(()=>{ t.remove(); if(!box.children.length) box.remove(); }, 2500);
+// (kept for optional debugging; stays OFF)
+const DEBUG_TOASTS = false;
+function toast(msg){
+  if(!DEBUG_TOASTS) return;
+  let box = document.getElementById('toastBox');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'toastBox';
+    box.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:99999;display:flex;flex-direction:column;gap:8px';
+    document.body.appendChild(box);
   }
+  const t = document.createElement('div');
+  t.style.cssText = 'padding:10px 12px;border:1px solid #2b3346;border-radius:10px;background:#111620;color:#e6e9f2;font:12px/1.2 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.25)';
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(()=>{ t.remove(); if(!box.children.length) box.remove(); }, 2200);
+}
 
-  function notifSupported(){ return typeof window.Notification === 'function'; }
-  function isSecure(){
-    return window.isSecureContext || location.protocol==='https:' ||
-           ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
-  }
-  function setNotifStatus(txt){ const el = document.getElementById('notifStatus'); if(el) el.textContent = txt; }
-  function fmtToday(){ return fmt(today()); }
+function notifSupported(){ return typeof window.Notification === 'function'; }
+function isSecure(){
+  return window.isSecureContext || location.protocol==='https:' ||
+         ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+}
+function setNotifStatus(txt){ const el = document.getElementById('notifStatus'); if(el) el.textContent = txt; }
+function fmtToday(){ return fmt(today()); }
 
-  function notifyTask(t){
-    // Always show the inline toast so you SEE the click working.
-    toast('🔔 ' + (t.title || 'Notification'));
-    // If permission granted, also try the real desktop notification.
-    if (notifSupported() && Notification.permission === 'granted'){
-      try{
-        new Notification(`${t.title}${t.clientName ? ' — '+t.clientName : ''}`, {
-          body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
-          tag: t.id, renotify: false, silent: false
-        });
-      }catch(e){ /* swallow; inline toast already showed */ }
-    }
-  }
-
-  function getNotifiedSet(){
-    const f = fmtToday();
-    try { const o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); return o[f] ? new Set(o[f]) : new Set(); } catch(e){ return new Set(); }
-  }
-  function saveNotifiedSet(set){
-    const f = fmtToday();
-    let o = {};
-    try { o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch(e){}
-    o[f] = Array.from(set);
-    localStorage.setItem(NOTIFY_KEY, JSON.stringify(o));
-  }
-
-  function notifyEligibleTodayImportant(now=new Date()){
-    const f = fmtToday();
-    const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
-    return list.filter(t => {
-      const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
-      return now >= at;
+function notifyTask(t){
+  // OS notification only. If permission isn’t granted, do nothing.
+  if (!notifSupported() || Notification.permission!=='granted') return;
+  try{
+    const n = new Notification(`${t.title}${t.clientName ? ' — '+t.clientName : ''}`, {
+      body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
+      tag: t.id,
+      renotify: false,
+      silent: false
     });
+    n.onclick = () => { try{ window.focus(); }catch(_){ } };
+  }catch(e){
+    // If the browser throws (very rare), optionally log for debug:
+    if (DEBUG_TOASTS) toast('Notification error: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function getNotifiedSet(){
+  const f = fmtToday();
+  try { const o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); return o[f] ? new Set(o[f]) : new Set(); } catch(e){ return new Set(); }
+}
+function saveNotifiedSet(set){
+  const f = fmtToday();
+  let o = {};
+  try { o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch(e){}
+  o[f] = Array.from(set);
+  localStorage.setItem(NOTIFY_KEY, JSON.stringify(o));
+}
+
+function notifyEligibleTodayImportant(now=new Date()){
+  const f = fmtToday();
+  const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
+  return list.filter(t => {
+    const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
+    return now >= at;
+  });
+}
+
+function initNotificationsUI(){
+  const btn = document.getElementById('enableNotifs');
+  const test = document.getElementById('testNotif');
+  if(!btn || !test) return;
+
+  function refreshUI(){
+    if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
+    if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
+    btn.disabled = false; test.disabled = false;
+    const perm = Notification.permission;
+    if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
+    else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
+    else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
+  }
+  refreshUI();
+
+  // live updates where supported
+  if (navigator.permissions && navigator.permissions.query){
+    try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
   }
 
-  function initNotificationsUI(){
-    const btn = document.getElementById('enableNotifs');
-    const test = document.getElementById('testNotif');
-    if(!btn || !test) return;
-
-    function refreshUI(){
-      if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
-      if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
-      btn.disabled = false; test.disabled = false;
-      const perm = Notification.permission;
-      if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
-      else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
-      else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
-    }
-    refreshUI();
-
-    if (navigator.permissions && navigator.permissions.query){
-      try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
-    }
-
-    btn.addEventListener('click', async ()=>{
-      if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
-      try{
-        const res = await Notification.requestPermission(); // user gesture
-        setTimeout(refreshUI, 50);
-        if(res==='granted'){
-          notifyTask({ id:'enabled-toast', title:'✅ Notifications enabled', clientName:'', date:fmtToday(), notifyTime:'' });
-        }else if(res==='denied'){
-          alert('Notifications are blocked for this site. Allow them in browser site settings.');
-        }else{
-          toast('Permission: ' + res);
-        }
-      }catch(e){
-        toast('Could not request permission');
+  btn.addEventListener('click', async ()=>{
+    if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
+    try{
+      const res = await Notification.requestPermission(); // user gesture
+      setTimeout(refreshUI, 50);
+      if(res==='granted'){
+        notifyTask({ id:'enabled', title:'✅ Notifications enabled', clientName:'', date:fmtToday(), notifyTime:'' });
+      }else if(res==='denied'){
+        alert('Notifications are blocked for this site. Allow them in your browser’s site settings.');
+      }else if(DEBUG_TOASTS){
+        toast('Permission: ' + res);
       }
-    });
+    }catch(e){
+      if(DEBUG_TOASTS) toast('Could not request permission');
+    }
+  });
 
-    test.addEventListener('click', async ()=>{
-      // Always show something on click, even if permission not granted:
+  test.addEventListener('click', async ()=>{
+    if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
+    if(Notification.permission==='default'){
+      try{ await Notification.requestPermission(); }catch(_){}
+      refreshUI();
+    }
+    if(Notification.permission==='granted'){
       notifyTask({ id:'test', title:'🔔 Test notification', clientName:'', date:fmtToday(), notifyTime:'' });
-      // If permission is default, ask once (gesture already satisfied).
-      if(isSecure() && Notification.permission==='default'){
-        try{ await Notification.requestPermission(); refreshUI(); }catch(_){}
+    }else if(Notification.permission==='denied'){
+      alert('Notifications are blocked for this site. Click the lock icon → Site settings → Allow.');
+    } // if 'default', user dismissed; do nothing
+  });
+
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
+}
+
+function startNotificationTicker(){
+  // Only run if permission is granted (prevents any UI noise)
+  if (!notifSupported() || Notification.permission!=='granted') return;
+  let notified = getNotifiedSet();
+  function tick(){
+    const due = notifyEligibleTodayImportant();
+    due.forEach(t => {
+      if (!notified.has(t.id)){
+        notifyTask(t);
+        notified.add(t.id);
       }
     });
-
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
+    saveNotifiedSet(notified);
   }
+  tick();
+  setInterval(tick, 60*1000);
+  window.addEventListener('focus', tick);
+}
+/* ===== end Notifications ===== */
 
-  function startNotificationTicker(){
-    let notified = getNotifiedSet();
-    function tick(){
-      const due = notifyEligibleTodayImportant();
-      due.forEach(t => {
-        if (!notified.has(t.id)){
-          notifyTask(t);
-          notified.add(t.id);
-        }
-      });
-      saveNotifiedSet(notified);
-    }
-    tick();
-    setInterval(tick, 60*1000);
-    window.addEventListener('focus', tick);
-  }
 
   /* ===== Calendar ===== */
   let calCursor = new Date(); calCursor.setDate(1);
@@ -1488,3 +1503,4 @@ body.light .ovr-list li{ border-color:#e2e7f3; background:#fff }
 </script>
 </body>
 </html>
+
