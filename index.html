@@ -8,6 +8,49 @@
   /* ===============================
    DARK THEME REFRESH (GoPidge-ish)
    =============================== */
+/* ==== Solid red for destructive actions (no gradients) ==== */
+:root{
+  /* tweak these if you want it a hair lighter/darker */
+  --danger:        #d94a4a;  /* main red */
+  --danger-hover:  #c34242;
+  --danger-active: #a93a3a;
+  --danger-border: #9e3636;
+  --danger-ring:   rgba(217,74,74,.25);
+  --danger-ink:    #ffffff;
+}
+
+/* Big “Wipe All” button + any .btn-danger */
+.btn-danger{
+  background: var(--danger) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-ink) !important;
+  box-shadow: none !important;
+  transition: background .15s ease, transform .02s ease;
+}
+.btn-danger:hover{ background: var(--danger-hover) !important; }
+.btn-danger:active{ background: var(--danger-active) !important; transform: translateY(1px); }
+.btn-danger:focus{ outline: none; box-shadow: 0 0 0 3px var(--danger-ring) !important; }
+
+/* Small trash icon buttons in the table */
+.actions .btn-icon.btn-danger{
+  background: var(--danger) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-ink) !important;
+}
+.actions .btn-icon.btn-danger:hover{ background: var(--danger-hover) !important; }
+.actions .btn-icon.btn-danger:active{ background: var(--danger-active) !important; }
+
+/* Light theme parity */
+body.light .btn-danger,
+body.light .actions .btn-icon.btn-danger{
+  background: #d94a4a !important;
+  border-color: #c64545 !important;
+  color:#fff !important;
+}
+body.light .btn-danger:hover,
+body.light .actions .btn-icon.btn-danger:hover{ background:#c34242 !important; }
+body.light .btn-danger:active,
+body.light .actions .btn-icon.btn-danger:active{ background:#b33c3c !important; }
 
 /* 1) New dark tokens */
 :root{
@@ -1576,6 +1619,7 @@ function startNotificationTicker(force=false){
 </script>
 </body>
 </html>
+
 
 
 
