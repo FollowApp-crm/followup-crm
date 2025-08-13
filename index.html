@@ -5,6 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Follow-Up CRM — Standalone</title>
 <style>
+  /* ===============================
+   DARK THEME REFRESH (GoPidge-ish)
+   =============================== */
+
+/* 1) New dark tokens */
+:root{
+  /* core */
+  --bg:#0b0d19;          /* page background */
+  --panel:#12152a;       /* cards/panels */
+  --card:#151938;        /* small info boxes */
+  --chip:#1a1e3b;        /* chips/pills surfaces */
+  --text:#e9ecf8;        /* main text */
+  --muted:#9aa3c7;       /* secondary text */
+  --accent:#8e7cff;      /* lilac accent */
+  --accent-2:#33d49e;    /* supportive green */
+  --danger:#ff6b6b;
+  --warn:#f6c667;
+}
+
+/* 2) Page & general surfaces */
+body{
+  background:
+    radial-gradient(900px 600px at 80% -10%, rgba(142,124,255,.16), transparent),
+    var(--bg);
+  color:var(--text);
+}
+.card{ background:var(--panel); border-color:#262b46; }
+.kpi .box{ background:var(--card); border-color:#283055; }
+.badge{ background:var(--chip); border-color:#2b315a; color:#c7cdf1; }
+.tiny, .sub{ color:var(--muted); }
+.tbl th,.tbl td{ border-bottom-color:#2a3157; }
+.tbl tr:hover{ background:#141937; }
+
+/* 3) Controls */
+input,select,textarea,button{
+  background:#0f1330; border-color:#2a3157; color:var(--text);
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#4b54a4;
+  box-shadow:0 0 0 3px rgba(142,124,255,.22);
+}
+button{ background:#161a36; border-color:#2a3157; color:var(--text); }
+button.primary{
+  background:linear-gradient(180deg, var(--accent), #735dff);
+  border-color:#6e5dff; color:#fff;
+}
+.btn-danger{ border-color:#7c2f3a; background:linear-gradient(180deg,#bb3a49,#982f3c); }
+
+/* 4) Pills/chips */
+.pill{
+  background:#171c3a; border-color:#2b315a; color:#bfc7ff;
+}
+
+/* 5) Search */
+.search{
+  background:#0f1330 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%239aa3c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>') no-repeat 10px center;
+  border-color:#2a3157;
+}
+
+/* 6) Calendar */
+#calendarGrid .cal-head{ color:#b8bfe9; opacity:.8; }
+.cal-cell{ background:#121633; border-color:#2a3157; }
+.cal-badge{ border-color:#2a3157; color:#cfd5ff; }
+.cal-cell.offday{
+  /* remove red cast; use subtle violet tint */
+  background: linear-gradient(0deg, rgba(142,124,255,.10), rgba(142,124,255,.10)), #101430;
+  border-color:#2a2f54;
+}
+.cal-cell.offday .d{ color:#c9c0ff; }
+
+/* 7) “Important” star color fits palette */
+.imp{ color:#d7cffd; }
+
+/* 8) Links: dark blue in dark mode */
+body:not(.light) a{
+  color:#3a66ff;
+  text-decoration:none;
+}
+body:not(.light) a:hover{
+  color:#5a7aff;
+  text-decoration:underline;
+}
+
+/* 9) Toggles / header */
+header{ border-bottom-color:#23294b; }
+.toggle{ background:#1a1e3f; border-color:#2a3157; }
+
 /* Non-working days: subtle red shift / muted */
 .cal-cell.offday { 
   position: relative;
@@ -1489,5 +1576,6 @@ function startNotificationTicker(force=false){
 </script>
 </body>
 </html>
+
 
 
