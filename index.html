@@ -131,7 +131,7 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
   /* subtle client group divider (only used in "By client") */
   .group-sep{ display:flex; align-items:center; gap:10px; margin:10px 0 8px; }
   .group-sep::before, .group-sep::after{ content:""; flex:1 1 auto; height:1px; background:#2b3346; opacity:.7; }
-  .group-sep .label{ font-size:11px; font-weight:600; letter-spacing:.2px; padding:2px 8px; border-radius:999px; background:var(--chip); border:1px solid #2b3346; color:#muted; }
+  .group-sep .label{ font-size:11px; font-weight:600; letter-spacing:.2px; padding:2px 8px; border-radius:999px; background:var(--chip); border:1px solid #2b3346; color:var(--muted); }
 
   /* confetti canvas */
   #confettiCanvas{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
@@ -175,13 +175,15 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
   .cal-badge{ display:inline-block; margin-top:6px; font-size:11px; padding:2px 6px; border:1px solid #2b3346; border-radius:999px; }
   body.light .cal-cell{ background:#fbfdff; border-color:#e2e9ff; }
   body.light .cal-badge{ border-color:#dfe6ff; }
-  .imp{ color:#ffec99; }
+  .imp{ color:#ffec99; } /* star color for important */
 
+  /* Calendar header layout: title | month nav | (space) | Settings (far right) */
   .cal-hd{ display:flex; align-items:center; gap:10px }
   .cal-hd .space{ flex:1 }
   .cal-month{ display:flex; align-items:center; gap:8px }
   .settings-btn{ height:32px; padding:6px 10px; border-radius:999px }
 
+  /* Calendar Settings panel */
   #calSettings{ margin-top:10px; border:1px solid #2b3346; border-radius:12px; padding:16px; background:#111620 }
   body.light #calSettings{ border-color:#e2e7f3; background:#f9fbff }
   .wdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:16px; margin-top:8px }
@@ -224,7 +226,8 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
           </div>
         </div>
 
-        <form id="clientForm">
+        <!-- novalidate + explicit Save button (no native submit) -->
+        <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
           <div class="row">
             <div>
@@ -262,7 +265,7 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
             </div>
             <div class="right" style="align-self:end">
               <button type="button" class="ghost" id="resetForm">Clear</button>
-              <button class="primary" type="submit">Save Customer</button>
+              <button class="primary" type="button" id="saveCustomer">Save Customer</button>
             </div>
           </div>
         </form>
@@ -398,6 +401,7 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
         <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
       </div>
       <div class="bd">
+        <!-- Settings panel (toggle) -->
         <div id="calSettings" class="sr">
           <div class="tiny" style="font-weight:600; margin-bottom:6px">Working days (applies to auto-scheduled tasks):</div>
           <div class="wdays">
@@ -440,9 +444,10 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
 
 <script>
 (function(){
+  'use strict';
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const storeKey = 'followup_crm_v16';
+  const storeKey = 'followup_crm_v17'; // bump to avoid any stale/corrupt data
   const THEME_KEY = 'followup_crm_theme';
 
   /* ===== Config ===== */
@@ -981,7 +986,7 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
         ctx.restore();
       });
       for(let i=pieces.length-1;i>=0;i--){ const p = pieces[i]; if(p.y > canvas.height+30 || p.alpha <= 0) pieces.splice(i,1); }
-      if(elapsed < durationMs && pieces.length){ requestAnimationFrame(frame); } else { confettiActive = false; ctx.clearRect(0,0,canvas.height,canvas.width); canvas.remove(); }
+      if(elapsed < durationMs && pieces.length){ requestAnimationFrame(frame); } else { confettiActive = false; ctx.clearRect(0,0,canvas.width,canvas.height); canvas.remove(); }
     })(start);
   }
 
@@ -1062,7 +1067,158 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
     return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  /* ===== Custom task ===== */
+  /* ===== Forms & actions ===== */
+  $('#parseLead').addEventListener('click', ()=>{
+    try{
+      const blob = $('#leadBlob').value;
+      if(!blob.trim()) { alert('Paste your lead text first.'); return; }
+      const parsed = parseLeadBlob(blob);
+      if(parsed.name)  $('#name').value  = parsed.name;
+      if(parsed.email) $('#email').value = parsed.email;
+      if(parsed.phone) $('#phone').value = parsed.phone;
+      const cur = $('#notes').value.trim();
+      $('#notes').value = parsed.notes ? (cur ? (cur + '\n' + parsed.notes) : parsed.notes) : cur;
+    }catch(e){
+      console.error(e);
+      alert('Parse failed. Please paste raw text exactly as copied from CRM.');
+    }
+  });
+  $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
+
+  // explicit click handler (no native submit)
+  function collectClientFromForm(){
+    const id = $('#clientId').value || uid();
+    const exists = clientById(id);
+    const status = $('#status').value;
+    const startDate = $('#startDate').value || fmt(today());
+    const client = {
+      id,
+      name: ($('#name').value||'').trim(),
+      email: ($('#email').value||'').trim(),
+      phone: ($('#phone').value||'').trim(),
+      status,
+      startDate,
+      reachedStart: exists? exists.reachedStart : (status==='reached'? startDate:null),
+      notes: ($('#notes').value||'').trim()
+    };
+    return {client, exists};
+  }
+
+  $('#saveCustomer').addEventListener('click', ()=>{
+    try{
+      const {client, exists} = collectClientFromForm();
+      if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
+
+      if(!exists){
+        if(client.status==='unreached') scheduleUnreached(client);
+        else { client.reachedStart = client.startDate; scheduleReached(client); }
+      }else{
+        const prevStatus = exists.status;
+        if(prevStatus!==client.status){
+          if(client.status==='reached'){
+            client.reachedStart = fmt(today());
+            clearFutureTasksForClientFrom(client.id, today());
+            scheduleReached(client);
+          }else{
+            client.startDate = fmt(today());
+            clearFutureTasksForClientFrom(client.id, today());
+            scheduleUnreached(client);
+          }
+        }
+        if(exists.startDate!==client.startDate || exists.reachedStart!==client.reachedStart){
+          clearFutureTasksForClientFrom(client.id, today());
+          if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client);
+        }
+      }
+
+      upsertClient(client);
+      $('#clientForm').reset(); $('#clientId').value='';
+      // scroll to Customers list
+      const tbl = document.getElementById('clientsTbl');
+      if(tbl) scrollCardIntoView(tbl.closest('.card'));
+    }catch(e){
+      console.error(e);
+      alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
+    }
+  });
+
+  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
+
+  // table actions
+  $('#clientsTbl').addEventListener('click', e=>{
+    const btn = e.target.closest('[data-act]'); if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    const act = btn.getAttribute('data-act');
+    const c = clientById(id);
+
+    if(act==='note'){ toggleNotesRow(id); return; }
+    if(act==='manual'){
+      const open = document.querySelector(`.manual-row[data-for="${id}"]`);
+      if(open){ closeManualRows(); return; }
+      openManualRow(id); return;
+    }
+    if(act==='manual-apply'){
+      const date = document.getElementById(`manualDate_${id}`)?.value || '';
+      const shouldClear = document.getElementById(`manualClear_${id}`)?.checked ?? true;
+      const notes = document.getElementById(`manualNotes_${id}`)?.value || '';
+      const rmPrev = document.getElementById(`manualClearPrev_${id}`)?.checked ?? false;
+      scheduleManualFU(c, date, shouldClear, notes, rmPrev);
+      closeManualRows();
+      return;
+    }
+    if(act==='manual-cancel'){ closeManualRows(); return; }
+
+    if(act==='edit'){
+      $('#clientId').value = c.id;
+      $('#name').value = c.name || '';
+      $('#email').value = c.email || '';
+      $('#phone').value = c.phone || '';
+      $('#status').value = c.status;
+      $('#startDate').value = c.startDate || '';
+      $('#notes').value = c.notes || '';
+      window.scrollTo({top:0, behavior:'smooth'});
+      return;
+    }
+    if(act==='reach'){
+      c.status = c.status === 'unreached' ? 'reached' : 'unreached';
+      if(c.status === 'reached'){
+        c.reachedStart = fmt(today());
+        clearFutureTasksForClientFrom(c.id, today());
+        scheduleReached(c);
+      }else{
+        c.startDate = fmt(today());
+        clearFutureTasksForClientFrom(c.id, today());
+        scheduleUnreached(c);
+      }
+      upsertClient(c);
+      return;
+    }
+    if(act==='del'){
+      if(confirm('Delete this customer and all their tasks?')) removeClient(id);
+      return;
+    }
+  });
+
+  function toggleNotesRow(id){
+    const existing = document.querySelector(`.note-row[data-for="${id}"]`);
+    if(existing){ existing.remove(); return; }
+    const tr = document.querySelector(`tr[data-rowid="${id}"]`);
+    if(!tr) return;
+    const c = clientById(id) || {};
+    const row = document.createElement('tr');
+    row.className = 'note-row';
+    row.setAttribute('data-for', id);
+    const td = document.createElement('td'); td.colSpan = 5;
+    td.innerHTML = `
+      <div class="note-box">
+        <div class="tiny" style="margin-bottom:6px;">Notes for <strong>${escapeHtml(c.name||'')}</strong></div>
+        ${escapeHtml(c.notes || 'No notes yet.')}
+      </div>`;
+    row.appendChild(td);
+    tr.after(row);
+  }
+
+  // Custom task
   function combineYmdTimeLocal(ymd, hhmm){
     const [y,m,d] = (ymd||'').split('-').map(Number);
     let H=9, M=0;
@@ -1192,45 +1348,29 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
     }
     refreshUI();
 
-    // Watch permission changes (Chrome/Edge/Firefox support)
     if (navigator.permissions && navigator.permissions.query){
-      try{
-        navigator.permissions.query({name:'notifications'}).then(p=>{
-          p.onchange = refreshUI;
-        }).catch(()=>{ /* ignore */ });
-      }catch(_){}
+      try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
     }
 
     btn.addEventListener('click', async ()=>{
       if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
       try{
         const res = await Notification.requestPermission();
-        // Some browsers update Notification.permission asynchronously; re-check shortly.
         setTimeout(()=> refreshUI(), 50);
         if(res==='granted'){
-          // Show a quick confirmation notification
           notifyTask({ id:'enabled-toast', title:'✅ Notifications enabled', clientName:'', date:fmtToday(), notifyTime:'' });
         }else if(res==='denied'){
           alert('Notifications are blocked for this site. Allow them in your browser site settings.');
         }
-      }catch(e){
-        alert('Could not request notification permission.');
-      }
+      }catch(e){ alert('Could not request notification permission.'); }
     });
 
     test.addEventListener('click', async ()=>{
       if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
       if(Notification.permission==='default'){
-        // Try one more request on user gesture
-        try{
-          const res = await Notification.requestPermission();
-          setTimeout(()=>{},0);
-        }catch(_){}
+        try{ await Notification.requestPermission(); }catch(_){}
       }
-      if(Notification.permission!=='granted'){
-        alert('Enable notifications first (click 🔔 Enable and allow).');
-        return;
-      }
+      if(Notification.permission!=='granted'){ alert('Enable notifications first (click 🔔 Enable and allow).'); return; }
       notifyTask({ id:'test', title:'🔔 Test notification', clientName:'', date:fmtToday(), notifyTime:'' });
     });
 
@@ -1357,4 +1497,3 @@ body.light .cal-cell.offday .d { color: #a23b3b; }
 </script>
 </body>
 </html>
-
