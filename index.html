@@ -536,9 +536,6 @@ body.light .cal-badge{
     <button class="btn-sm" id="calNext" title="Next month">▶</button>
   </div>
 
-  <input type="text" id="calFilter" class="mini-search" placeholder="Filter calendar by client…" />
-  <button type="button" id="calFilterClear" class="btn-sm" title="Clear calendar filter">Clear</button>
-
   <div class="space"></div>
   <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
 </div>
@@ -1378,8 +1375,19 @@ body.light .cal-badge{
 
   /* ===== Agenda filter & sort ===== */
   const filterInput = $('#agendaFilter');
-  filterInput.addEventListener('input', ()=>{ agendaFilter = filterInput.value.trim().toLowerCase(); renderAgenda(); });
-  $('#agendaFilterClear').addEventListener('click', ()=>{ filterInput.value = ''; agendaFilter = ''; renderAgenda(); filterInput.focus(); });
+const filterInput = $('#agendaFilter');
+filterInput.addEventListener('input', ()=>{
+  agendaFilter = filterInput.value.trim().toLowerCase();
+  renderAgenda();
+  buildCalendar();               // ← keep calendar in sync
+});
+$('#agendaFilterClear').addEventListener('click', ()=>{
+  filterInput.value = ''; agendaFilter = '';
+  renderAgenda();
+  buildCalendar();               // ← keep calendar in sync
+  filterInput.focus();
+});
+
   filterInput.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ filterInput.value=''; agendaFilter=''; renderAgenda(); }});
 
   function setAgendaMode(mode){
@@ -1403,14 +1411,6 @@ body.light .cal-badge{
 
   $('#wipeAll').addEventListener('click', ()=>{ if(confirm('This will delete ALL customers and tasks stored in your browser. Continue?')){ localStorage.removeItem(storeKey); location.reload(); } });
 
-  /* ===== Calendar filter (by client) ===== */
-let calendarFilter = ''; // lowercased string
-
-function calendarMatches(t){
-  if(!calendarFilter) return true;
-  // reuse existing helper to get display name
-  return (clientDisplayName(t) || '').toLowerCase().includes(calendarFilter);
-}
 
 /* ===== Notifications: OS-only, robust ===== */
 const NOTIFY_KEY = 'followup_crm_notified_today';
@@ -1540,56 +1540,65 @@ function startNotificationTicker(force=false){
 
 
 
-  /* ===== Calendar ===== */
-  let calCursor = new Date(); calCursor.setDate(1);
-  function buildCalendar(){
-    const grid = $('#calendarGrid'); if(!grid) return;
-    const year = calCursor.getFullYear(), month = calCursor.getMonth();
-    $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
+/* ===== Calendar ===== */
+let calCursor = new Date(); 
+calCursor.setDate(1);
 
-    grid.innerHTML = '';
-    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{
-      const hd = document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd);
+function buildCalendar(){
+  const grid = $('#calendarGrid'); 
+  if(!grid) return;
+
+  const year  = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
+
+  grid.innerHTML = '';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{
+    const hd = document.createElement('div'); 
+    hd.className='cal-head'; 
+    hd.textContent=h; 
+    grid.appendChild(hd);
+  });
+
+  const first = new Date(year, month, 1);
+  const startIdx = (first.getDay()+6)%7; // Monday start
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const dt  = new Date(year, month, d);
+    const ymd = fmt(dt);
+
+    // Only count tasks that match the Actions/Tasks filter
+    const items = state.tasks.filter(t =>
+      t.date === ymd && t.status !== 'done' && matchesFilter(t)
+    );
+
+    const cell = document.createElement('div');
+    cell.className='cal-cell';
+    if(!isWorkingDay(dt)) cell.classList.add('offday');
+
+    cell.innerHTML = `<div class="d">${d}</div>` + 
+      (items.length ? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
+
+    cell.addEventListener('click', ()=>{
+      $('#agendaDate').value = ymd;
+      const ev = new Event('change');
+      $('#agendaDate').dispatchEvent(ev);
+      scrollCardIntoView(document.getElementById('actionsCard'));
     });
 
-    const first = new Date(year, month, 1);
-    const startIdx = (first.getDay()+6)%7; // Monday start
-    const daysInMonth = new Date(year, month+1, 0).getDate();
-
-    for(let i=0;i<startIdx;i++){ const ph = document.createElement('div'); grid.appendChild(ph); }
-
-    for(let d=1; d<=daysInMonth; d++){
-      const dt = new Date(year, month, d);
-      const ymd = fmt(dt);
-const items = state.tasks.filter(t =>
-  t.date === ymd && t.status !== 'done' && calendarMatches(t)
-);
-      const cell = document.createElement('div');
-      cell.className='cal-cell';
-      if(!isWorkingDay(dt)) cell.classList.add('offday');
-      cell.innerHTML = `<div class="d">${d}</div>` + (items.length? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
-      cell.addEventListener('click', ()=>{
-        $('#agendaDate').value = ymd;
-        const ev = new Event('change');
-        $('#agendaDate').dispatchEvent(ev);
-        const actionsCard = document.getElementById('actionsCard');
-        if(actionsCard) scrollCardIntoView(actionsCard);
-      });
-      grid.appendChild(cell);
-    }
+    grid.appendChild(cell);
   }
-  $('#calPrev')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); buildCalendar(); });
-  $('#calNext')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); buildCalendar(); });
-/* Calendar filter UI */
-$('#calFilter')?.addEventListener('input', ()=>{
-  calendarFilter = ($('#calFilter').value || '').trim().toLowerCase();
+}
+$('#calPrev')?.addEventListener('click', ()=>{
+  calCursor.setMonth(calCursor.getMonth()-1); 
   buildCalendar();
 });
-$('#calFilterClear')?.addEventListener('click', ()=>{
-  calendarFilter = '';
-  if ($('#calFilter')) $('#calFilter').value = '';
+$('#calNext')?.addEventListener('click', ()=>{
+  calCursor.setMonth(calCursor.getMonth()+1); 
   buildCalendar();
-  $('#calFilter')?.focus();
 });
 
   
@@ -1655,6 +1664,7 @@ $('#calFilterClear')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
