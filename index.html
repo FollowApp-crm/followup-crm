@@ -43,7 +43,7 @@ a:hover{ text-decoration:underline }
   padding-top:16px; padding-bottom:16px;
 }
 .grid{display:grid; gap:16px; grid-template-columns:1fr; align-items:start}
-.grid > *, .row > * { min-width:0; } /* prevent overflow pushes */
+.grid > *, .row > * { min-width:0; }
 
 /* =================== HEADER =================== */
 header{
@@ -54,7 +54,7 @@ header{
   padding-top:env(safe-area-inset-top);
 }
 body.light header{
-  background:var(--panel); /* solid in light to avoid gradient bleed */
+  background:var(--panel);
   box-shadow:0 1px 0 var(--line);
 }
 h1{font-size:22px; margin:8px 0 2px; font-weight:800; line-height:1.1}
@@ -84,7 +84,7 @@ button{cursor:pointer; background:linear-gradient(180deg,#2c2f44,#1b2130); borde
 button.primary{ background:linear-gradient(180deg,var(--accent),#6a4ff0); border-color:#6a4ff0; color:#fff }
 button.ghost{ background:transparent }
 
-/* Icon buttons (look light in Light theme) */
+/* Icon buttons */
 .btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:10px; background:var(--chip); border:1px solid var(--line)}
 body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
 
@@ -460,7 +460,11 @@ body.light .ovr-list li{ background:#fff }
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
   function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
-  function fmt(d){ if(!(d instanceof Date)) d=new Date(d); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+  function fmt(d){
+    if(!(d instanceof Date)) d=new Date(d);
+    const z=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+  }
   function parseLocalYMD(ymd){ if(!ymd) return today(); const [y,m,d]=ymd.split('-').map(Number); const dt=new Date(y,(m||1)-1,d||1); dt.setHours(0,0,0,0); return dt; }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
@@ -524,164 +528,101 @@ body.light .ovr-list li{ background:#fff }
     });
     save();
   }
-/* ========= SMS helper ========= */
-const SMS_TEMPLATE = (name='') =>
-  `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
 
-function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
+  /* ========= SMS helper ========= */
+  const SMS_TEMPLATE = (name='') =>
+    `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
 
-// Web fallback (Shift+click)
-function openRcWebComposeTab(number, body){
-  const num = cleanDigits(number);
-  const url = `https://app.ringcentral.com/r/sms?type=new`
-            + `&number=${encodeURIComponent(num)}`
-            + `&text=${encodeURIComponent(body)}`; // %20 spaces, no '+'
-  const w = window.open(url, "_blank");
-  if(!w) alert("Popup was blocked. Please allow popups for this site.");
-}
+  function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-/**
- * Default path: popup that fires desktop deep links via a hidden iframe,
- * so the popup page is never unloaded and can close itself reliably.
- * Also backed up by a parent-side closer.
- */
-function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2200 } = {}){
-  const num = cleanDigits(number);
-  const txt = encodeURIComponent(body);
+  // Web fallback (Shift+click)
+  function openRcWebComposeTab(number, body){
+    const num = cleanDigits(number);
+    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}&text=${encodeURIComponent(body)}`;
+    const w = window.open(url, "_blank");
+    if(!w) alert("Popup was blocked. Please allow popups for this site.");
+  }
 
-  // Open a small helper popup
-  const popup = window.open('', 'rcsms',
-    'width=420,height=240,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
-  if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return null; }
+  function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2200 } = {}){
+    const num = cleanDigits(number);
+    const txt = encodeURIComponent(body);
 
-  // Build the popup HTML
-  const html = `<!doctype html>
-  <html><head><meta charset="utf-8"></head>
-  <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;
-               display:flex;align-items:center;justify-content:center">
-    <div>Opening RingCentral desktop…</div>
-    <iframe id="rcshim" style="display:none;width:0;height:0;border:0"></iframe>
-    <script>
-      const num='${num}', txt='${txt}';
-      const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
+    const popup = window.open('', 'rcsms',
+      'width=420,height=240,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
+    if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return null; }
 
-      // Try several desktop schemes; the app will register one of these.
-      const schemes = [
-        'rcapp://sms?number='+encodeURIComponent(num)+'&text='+txt,
-        'ringcentral://sms?number='+encodeURIComponent(num)+'&text='+txt,
-        'rcmobile://sms?number='+encodeURIComponent(num)+'&text='+txt
-      ];
-
-      const iframe = document.getElementById('rcshim');
-      let i = 0;
-      function tryNext(){
-        if(i < schemes.length){
-          iframe.src = schemes[i++];                 // fire deep link from iframe
-          setTimeout(tryNext, 550);
-        }else{
-          ${/* Optional: open web compose in a new tab, but keep this popup alive to close */''}
-          ${fallbackWeb ? 'window.open(web, "_blank");' : ''}
+    const html = `<!doctype html>
+    <html><head><meta charset="utf-8"></head>
+    <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;display:flex;align-items:center;justify-content:center">
+      <div>Opening RingCentral desktop…</div>
+      <iframe id="rcshim" style="display:none;width:0;height:0;border:0"></iframe>
+      <script>
+        const num='${num}', txt='${txt}';
+        const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
+        const schemes = [
+          'rcapp://sms?number='+encodeURIComponent(num)+'&text='+txt,
+          'ringcentral://sms?number='+encodeURIComponent(num)+'&text='+txt,
+          'rcmobile://sms?number='+encodeURIComponent(num)+'&text='+txt
+        ];
+        const iframe = document.getElementById('rcshim');
+        let i = 0;
+        function tryNext(){
+          if(i < schemes.length){
+            iframe.src = schemes[i++];
+            setTimeout(tryNext, 550);
+          }else{
+            window.open(web, "_blank");
+          }
         }
-      }
-      tryNext();
+        tryNext();
+        setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${Math.max(1000, 2200)});
+      </` + `script>
+    </body></html>`;
 
-      // Always close this helper popup after a short delay.
-      setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${Math.max(1000,  closeAfterMs)});
-    <\/script>
-  </body></html>`;
-
-  try{ popup.document.write(html); popup.document.close(); }catch(_){}
-
-  // Parent-side backup closer (in case the popup couldn't close itself)
-  [closeAfterMs+800, closeAfterMs+1800, closeAfterMs+3000].forEach(ms=>{
-    setTimeout(()=>{ try{ if(popup && !popup.closed) popup.close(); }catch(_){} }, ms);
-  });
-
-  return popup;
-}
-
-// Click handler for SMS task phone link
-document.addEventListener('click', async (e) => {
-  const el = e.target.closest('a.sms-link');
-  if (!el) return;
-  e.preventDefault();
-
-  const num  = el.getAttribute('data-num')  || el.textContent || '';
-  const name = el.getAttribute('data-name') || '';
-  const text = SMS_TEMPLATE(name);
-
-  // Put message on clipboard as a safety net
-  try{
-    if(navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(text);
-    }else{
-      const ta=document.createElement('textarea'); ta.value=text;
-      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    }
-  }catch(_){}
-
-  if (e.shiftKey) {
-    // Shift+click => open RingCentral web composer
-    openRcWebComposeTab(num, text);
-  } else {
-    // Default => desktop app via popup+iframe; popup closes automatically
-    openRcDesktopPopup(num, text, { fallbackWeb:true, closeAfterMs:2000 });
+    try{ popup.document.write(html); popup.document.close(); }catch(_){}
+    [3000, 4000, 5200].forEach(ms=>{
+      setTimeout(()=>{ try{ if(popup && !popup.closed) popup.close(); }catch(_){} }, ms);
+    });
+    return popup;
   }
-});
 
-// Click handler for SMS task phone link
-document.addEventListener('click', async (e) => {
-  const el = e.target.closest('a.sms-link');
-  if (!el) return;
-  e.preventDefault();
-
-  const num  = el.getAttribute('data-num')  || el.textContent || '';
-  const name = el.getAttribute('data-name') || '';
-  const text = SMS_TEMPLATE(name);
-
-  // Put message on clipboard as a safety net for manual paste
-  try{
-    if(navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(text);
-    }else{
-      const ta=document.createElement('textarea'); ta.value=text;
-      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    }
-  }catch(_){}
-
-  if (e.shiftKey) {
-    // Shift+click => open web composer instead
-    openRcWebComposeTab(num, text);
-  } else {
-    // Default => desktop RingCentral via deep link; popup closes automatically
-    openRcDesktopPopup(num, text, { fallbackWeb: true, closeAfterMs: 2600 });
-  }
-});
-
-
-  document.addEventListener('click', async (e)=>{
+  // Single consolidated handler
+  document.addEventListener('click', async (e) => {
     const el = e.target.closest('a.sms-link'); if(!el) return;
     e.preventDefault();
+
     const num  = el.getAttribute('data-num')  || el.textContent || '';
     const name = el.getAttribute('data-name') || '';
     const text = SMS_TEMPLATE(name);
-    try{
-      if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); }
-      else { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-    }catch(_){}
-  if (e.altKey) { // Mobile deep-link
-    window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}`;
-    return;
-  }
-  // Shift = open a brand-new window; default = reuse the "rcsms" window and keep it open
-  openRcComposeSMS(num, text, e.shiftKey);
 
+    // Copy message as a safety net
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+      }else{
+        const ta=document.createElement('textarea'); ta.value=text;
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+    }catch(_){}
+
+    if (e.altKey){
+      window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}&text=${encodeURIComponent(text)}`;
+      return;
+    }
+    if (e.shiftKey){
+      openRcWebComposeTab(num, text);
+    } else {
+      openRcDesktopPopup(num, text, { fallbackWeb:true, closeAfterMs:2200 });
+    }
   });
 
   /* ========= Contact link helpers ========= */
   const CALL_LINK_MODE = 'tel';
   const EMAIL_MODE     = 'gmail';
-  function phoneHref(num){ const clean=(num||'').replace(/[^\d+]/g,''); return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`; }
+  function phoneHref(num){
+    const clean=(num||'').replace(/[^\d+]/g,'');
+    return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`;
+  }
   function emailHref(addr, subject='', body=''){
     const enc = s => encodeURIComponent(s || '');
     return EMAIL_MODE === 'gmail'
@@ -689,30 +630,26 @@ document.addEventListener('click', async (e) => {
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  /* ========= Lead Parser (robust) ========= */
+  /* ========= Lead Parser ========= */
   function parseLeadBlob(text){
     const raw = (text||'').replace(/\r/g,'\n');
     const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
 
-    // Email
     const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
 
-    // Remove ISO dates/times so they don't look like phones
     let noDates = whole
       .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
       .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
 
-    // Phone candidates
     const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
       .map(s=>s.trim())
-      .filter(s=>!/:/.test(s)) // exclude times
+      .filter(s=>!/:/.test(s))
       .filter(s=>{
         const digits = s.replace(/\D/g,'');
         return digits.length>=10 && digits.length<=15;
       });
     const phone = phoneCandidates[0] || '';
 
-    // Name — try "new <name> ..." pattern
     let name = '';
     const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
     if(nm) name = nm[1].trim();
@@ -724,11 +661,9 @@ document.addEventListener('click', async (e) => {
         : local.charAt(0).toUpperCase()+local.slice(1);
     }
 
-    // Route: AUS-LHR-AUS or LAX → JFK
     const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
-    // Dates: "Sep 07 - Sep 15" OR "2025-09-02 → 2025-09-10"
     const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
     const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
     let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
@@ -737,7 +672,6 @@ document.addEventListener('click', async (e) => {
       if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
     }
 
-    // Pax: x1 / pax 2 / passengers: 3
     let pax = '';
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
@@ -770,33 +704,48 @@ document.addEventListener('click', async (e) => {
       for (let i=1;i<=a.emails;i++) addTask({...base, type:'email', title:'Email'});
     }
   }
+
+  // Unreached: skip past tasks, keep labels counting from anchor
   function scheduleUnreached(client){
-    const start0 = client.startDate ? parseLocalYMD(client.startDate) : today();
-    let day = nextWorkingDay(start0);
-    for(let dayNum=1; dayNum<=5; dayNum++){
-      const date = fmt(day);
-      const a = ACTIONS_UNREACHED(dayNum);
-      genDayTasks(client, date, a, `Unreached Day ${dayNum}`);
-      if(dayNum<5) day = stepByWorkingDays(day, 1);
+    const anchor = client.startDate ? parseLocalYMD(client.startDate) : today();
+    let day = nextWorkingDay(anchor);
+    const T = today();
+    let dayNum = 1;
+    while (dayNum <= 5){
+      const dateObj = new Date(day);
+      const dateStr = fmt(dateObj);
+      const label = `Unreached Day ${dayNum}`;
+      if (dateObj >= T){
+        const a = ACTIONS_UNREACHED(dayNum);
+        genDayTasks(client, dateStr, a, label);
+      }
+      if (dayNum < 5) day = stepByWorkingDays(day, 1);
+      dayNum++;
     }
   }
+
+  // Reached: Phase 1 are consecutive working days, then gaps; skip past, preserve labels
   function scheduleReached(client){
-    const start0 = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
-    const p1d1 = nextWorkingDay(start0);
+    const anchor = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
+    const T = today();
+
+    const p1d1 = nextWorkingDay(anchor);
     const p1d2 = stepByWorkingDays(p1d1, 1);
     const p1d3 = stepByWorkingDays(p1d2, 1);
-    genDayTasks(client, fmt(p1d1), ACTIONS_REACHED, `Phase 1 (Day 1/3)`);
-    genDayTasks(client, fmt(p1d2), ACTIONS_REACHED, `Phase 1 (Day 2/3)`);
-    genDayTasks(client, fmt(p1d3), ACTIONS_REACHED, `Phase 1 (Day 3/3)`);
+    [p1d1,p1d2,p1d3].forEach((d,i)=>{
+      if (d >= T) genDayTasks(client, fmt(d), ACTIONS_REACHED, `Phase 1 (Day ${i+1}/3)`);
+    });
+
     const gaps = [3,5,7,7,7];
     let last = p1d3;
-    for (let i=0;i<gaps.length;i++){
-      let target = addDays(last, gaps[i]);
+    gaps.forEach((gap, idx)=>{
+      let target = addDays(last, gap);
       target = adjustAutoDateIfNeeded(target);
-      genDayTasks(client, fmt(target), ACTIONS_REACHED, `Phase ${i+2}`);
+      if (target >= T) genDayTasks(client, fmt(target), ACTIONS_REACHED, `Phase ${idx+2}`);
       last = target;
-    }
+    });
   }
+
   function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.date >= f)); }
   function clearManualTasksForClient(id){ state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done')); }
   function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
@@ -829,7 +778,8 @@ document.addEventListener('click', async (e) => {
         const contactHtml = `
           ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a>` : '-'}
           <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a>` : '-'}`;
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a>` : '-'}
+        `;
         tr.innerHTML = `
           <td data-label="Name">
             <strong>${escapeHtml(c.name)}</strong>
@@ -840,13 +790,13 @@ document.addEventListener('click', async (e) => {
           <td data-label="Contact" class="tiny">${contactHtml}</td>
           <td data-label="Status"><span class="badge">${c.status}</span></td>
           <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
-<td data-label="Actions" class="actions">
-  <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
-  <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
-  <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
-  <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
-  <button type="button" class="btn-icon btn-danger" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
-</td>`;
+          <td data-label="Actions" class="actions">
+            <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
+            <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
+            <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
+            <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
+            <button type="button" class="btn-icon btn-danger" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
+          </td>`;
         body.appendChild(tr);
       });
 
@@ -871,8 +821,8 @@ document.addEventListener('click', async (e) => {
     row.appendChild(td); tr.after(row);
   }
 
-$('#clientsTbl').addEventListener('click', e=>{
-  const btn = e.target.closest('button[data-act]'); if(!btn) return;
+  $('#clientsTbl').addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]'); if(!btn) return;
     const id = btn.getAttribute('data-id');
     const act = btn.getAttribute('data-act');
     const c = clientById(id);
@@ -892,25 +842,25 @@ $('#clientsTbl').addEventListener('click', e=>{
       $$('.manual-row').forEach(n=>n.remove()); return;
     }
     if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
-if (act==='edit'){
-  if(!c){ return; }
-  $('#clientId').value = c.id;
-  $('#name').value  = c.name  || '';
-  $('#email').value = c.email || '';
-  $('#phone').value = c.phone || '';
-  $('#status').value = c.status;
-  $('#startDate').value = c.startDate || '';
-  $('#route').value = c.route || '';
-  $('#dates').value = c.dates || '';
-  $('#pax').value   = c.pax   || '';
-  $('#notes').value = c.notes || '';
 
-  // bring the form into view and focus
-  const target = document.getElementById('addCard') || document.body;
-  target.scrollIntoView({ behavior:'smooth', block:'start' });
-  setTimeout(()=>{ try{ document.getElementById('name').focus(); }catch(_){} }, 200);
-  return;
-}
+    if (act==='edit'){
+      if(!c){ return; }
+      $('#clientId').value = c.id;
+      $('#name').value  = c.name  || '';
+      $('#email').value = c.email || '';
+      $('#phone').value = c.phone || '';
+      $('#status').value = c.status;
+      $('#startDate').value = c.startDate || '';
+      $('#route').value = c.route || '';
+      $('#dates').value = c.dates || '';
+      $('#pax').value   = c.pax   || '';
+      $('#notes').value = c.notes || '';
+
+      const target = document.getElementById('addCard') || document.body;
+      target.scrollIntoView({ behavior:'smooth', block:'start' });
+      setTimeout(()=>{ try{ document.getElementById('name').focus(); }catch(_){} }, 200);
+      return;
+    }
 
     if(act==='reach'){
       c.status = c.status === 'unreached' ? 'reached' : 'unreached';
@@ -1034,7 +984,6 @@ if (act==='edit'){
     return div;
   }
 
-  /* Client-grouped render helper */
   function renderGroupedByClient(container, items){
     let current = '\u0000';
     for(const t of items){
@@ -1112,11 +1061,14 @@ if (act==='edit'){
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
   $('#agendaFilter').addEventListener('input', ()=>{ agendaFilter=$('#agendaFilter').value.trim().toLowerCase(); renderAgenda(); });
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; agendaFilter=''; renderAgenda(); });
-  setSortButtons(); // reflect persisted sort
+  setSortButtons();
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
-    if((t.label||'').startsWith('Unreached Day 1')) return {subject:'Welcome — next steps', body:`Hi ${client?.name||''},\n\nGreat to connect. Here’s the info we discussed…\n\nBest,\n`};
+    if((t.label||'').startsWith('Unreached Day 1')) return {
+      subject:'Welcome — next steps',
+      body:`Hi ${client?.name||''},\n\nGreat to connect. Here’s the info we discussed…\n\nBest,\n`
+    };
     return { subject:'Quick follow-up', body:`Hi ${client?.name||''},\n\nJust checking in on …\n\nBest,\n` };
   }
   function collectDueUnreachedEmails(){
@@ -1153,9 +1105,10 @@ if (act==='edit'){
     if (!notifSupported() || Notification.permission!=='granted') return;
     try{
       const tag = t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-      const n = new Notification(`${t.title}${t.clientName ? ' — '+t.clientName : ''}`, {
-        body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
-        tag, renotify:true, silent:false, requireInteraction: !!t.requireInteraction
+      const title = `${t.title}${t.clientName ? ' — '+t.clientName : ''}`;
+      const body  = `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`;
+      const n = new Notification(title, {
+        body, tag, renotify:true, silent:false, requireInteraction: !!t.requireInteraction
       });
       n.onclick = () => { try{ window.focus(); }catch(_){} };
     }catch(e){}
@@ -1292,9 +1245,9 @@ if (act==='edit'){
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
-    reflowFutureAutoTasks();  // <— reassign dates that conflict with new settings
+    reflowFutureAutoTasks();  // reassign dates that conflict with new settings
     save();
-    $('#calSettings').style.display = 'none';
+    $('#calSettings').style.display = 'none'; // close dropdown after save
   }
   $('#calSettingsBtn').addEventListener('click', ()=>{ const el=$('#calSettings'); const open=el.style.display!=='none'; el.style.display = open ? 'none' : 'block'; if(!open) loadSettingsIntoUI(); });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
