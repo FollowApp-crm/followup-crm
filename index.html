@@ -6,13 +6,13 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-/* ===== Tokens (Dark & Light) ===== */
+/* =================== TOKENS =================== */
 :root{
   --bg:#0f1117; --panel:#151a21; --card:#1a2130; --chip:#1b2230; --surface:#10151d;
   --ink:#e8ecf3; --muted:#9aa3c7; --line:#262b36;
   --accent:#7c5cff; --accent-2:#28c076;
   --danger:#d94a4a; --danger-border:#9e3636; --danger-ring:rgba(217,74,74,.25);
-  --page-max:1080px; --radius:16px;
+  --page-max:1080px; --page-pad:16px; --radius:16px;
 }
 body.light{
   --bg:#f7f8fb; --panel:#ffffff; --card:#f2f4ff; --chip:#eef2fb; --surface:#ffffff;
@@ -21,9 +21,9 @@ body.light{
   --danger:#d94a4a; --danger-border:#c64545; --danger-ring:rgba(217,74,74,.25);
 }
 
-/* ===== Base ===== */
+/* =================== BASE =================== */
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%; max-width:100%; overflow-x:hidden}
 body{
   margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
   background:
@@ -34,23 +34,33 @@ body{
 a{ color:#8ea3ff; text-decoration:none }
 a:hover{ text-decoration:underline }
 
+.wrap{
+  width:100%;
+  max-width:var(--page-max);
+  margin-left:auto; margin-right:auto;
+  padding-left:max(var(--page-pad), env(safe-area-inset-left));
+  padding-right:max(var(--page-pad), env(safe-area-inset-right));
+  padding-top:16px; padding-bottom:16px;
+}
+.grid{display:grid; gap:16px; grid-template-columns:1fr; align-items:start}
+.grid > *, .row > * { min-width:0; } /* prevent overflow pushes */
+
+/* =================== HEADER =================== */
 header{
   position:sticky; top:0; z-index:5;
   background:linear-gradient(180deg, rgba(15,17,23,.85), rgba(15,17,23,.65) 70%, rgba(15,17,23,0));
   border-bottom:1px solid var(--line);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  padding-top:env(safe-area-inset-top);
 }
 body.light header{
-  background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.94) 70%, rgba(255,255,255,0));
+  background:var(--panel); /* solid in light to avoid gradient bleed */
+  box-shadow:0 1px 0 var(--line);
 }
-
-.wrap{max-width:min(92vw,var(--page-max)); margin:0 auto; padding:16px}
 h1{font-size:22px; margin:8px 0 2px; font-weight:800; line-height:1.1}
 .sub{color:var(--muted); font-size:13px}
 
-.grid{display:grid; gap:16px; grid-template-columns:1fr; align-items:start}
-
-/* ===== Cards / Controls ===== */
+/* =================== CARDS / CONTROLS =================== */
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);}
 .card .hd{padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
 .card .bd{padding:16px}
@@ -61,12 +71,28 @@ input,select,textarea,button{
 }
 textarea{height:auto; min-height:96px; resize:vertical}
 input:focus,select:focus,textarea:focus{ border-color:#445; box-shadow:0 0 0 3px rgba(124,92,255,.15) }
-body.light input, body.light select, body.light textarea, body.light button{ background:#fff; }
+
+/* Light theme: keep plain buttons white but do NOT override .primary/.ghost/etc */
+body.light input,
+body.light select,
+body.light textarea,
+body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.btn-icon):not(.toggle) {
+  background:#fff; color:var(--ink);
+}
 
 button{cursor:pointer; background:linear-gradient(180deg,#2c2f44,#1b2130); border:1px solid #2b3346; color:var(--ink)}
 button.primary{ background:linear-gradient(180deg,var(--accent),#6a4ff0); border-color:#6a4ff0; color:#fff }
 button.ghost{ background:transparent }
+.btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.space{flex:1}
+.toggle{height:36px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
+body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
+.badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
+.pill{padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff}
+
+/* Btn danger */
 .btn-danger{
   background: var(--danger) !important; border-color: var(--danger-border) !important;
   color:#fff !important; box-shadow:none !important;
@@ -75,39 +101,56 @@ button.ghost{ background:transparent }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
 
-.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-.space{flex:1}
-.toggle{height:36px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
-body.light .toggle{ background:#fff; border-color:var(--line) }
+/* Segmented control (sort) */
+.seg{
+  display:inline-flex;
+  gap:0;
+  background: var(--chip);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:2px;
+  overflow:hidden;
+}
+.seg > button{
+  background: transparent !important;   /* flat look */
+  border:0;
+  color: var(--ink);
+  height:34px;
+  padding:0 12px;
+  border-radius:8px;
+}
+.seg > button.primary{
+  background: var(--panel) !important;  /* active segment */
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink) !important;
+}
+body.light .seg{ background:#f1f4ff; border-color:var(--line) }
+body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
 
-.badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
-.pill{padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff}
-
-/* Re-usable “slab” (used for notes/manual bars in both themes) */
+/* Slab block (notes/manual rows) */
 .slab{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px }
 .flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 
-/* ===== Layout rows ===== */
+/* =================== LAYOUT HELPERS =================== */
 .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px}
 .row.single{grid-template-columns:1fr}
 .right{display:flex; gap:8px; justify-content:flex-end}
 
-/* ===== KPIs ===== */
+/* =================== KPI =================== */
 .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
 .kpi .box{background:var(--card); border:1px solid #293149; border-radius:14px; padding:12px}
 body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .kpi .num{font-size:22px; font-weight:800}
 
-/* ===== Table (+ mobile cards) ===== */
+/* =================== TABLE (+ mobile cards) =================== */
 .tbl{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
 .tbl th,.tbl td{padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tbl th{color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
 .actions{display:flex; gap:6px; justify-content:flex-end; align-items:center}
-.btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0}
 
-/* ===== Agenda ===== */
+/* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .agenda-item.done{opacity:.55}
 .tiny{font-size:11px; color:var(--muted)}
@@ -115,7 +158,7 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
-/* ===== Calendar ===== */
+/* =================== CALENDAR =================== */
 #calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
 .cal-head{ font-weight:700; font-size:12px; opacity:.8; padding:4px 2px; text-align:center }
 .cal-cell{ border:1px solid var(--line); border-radius:8px; padding:8px; min-height:74px; background:#121824; cursor:pointer }
@@ -142,58 +185,19 @@ body.light #calSettings{ background:#f9fbff }
 .ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#0f1420 }
 body.light .ovr-list li{ background:#fff }
 
-/* ===== Mobile polish ===== */
+/* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
-  .wrap{padding:12px}
+  .wrap{padding-top:12px;padding-bottom:12px}
   .row{grid-template-columns:1fr}
   .kpi{grid-template-columns:repeat(2,1fr)}
-  /* table → cards */
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
   .actions{justify-content:flex-start}
-  /* compact header toggle */
-  .toggle{height:auto}
+  header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
+  .ovr{ grid-template-columns:1fr; }
 }
-  /* ===== FIX: iOS header + alignment + no horizontal nudge ===== */
-
-/* stop iOS from loading the page shifted because something is 1px wider */
-html, body { max-width: 100%; overflow-x: hidden; }
-
-/* use 100% width (not vw), and match header/content padding to safe areas */
-:root { --page-pad: 16px; } /* add once; harmless if already there */
-.wrap{
-  width: 100%;
-  max-width: var(--page-max);
-  margin-left: auto; margin-right: auto;
-  padding-left:  max(var(--page-pad), env(safe-area-inset-left));
-  padding-right: max(var(--page-pad), env(safe-area-inset-right));
-}
-
-/* header: solid in light mode so the purple gradient doesn't bleed through;
-   pad for the notch; keep blur in dark */
-header{
-  position: sticky; top: 0; z-index: 5;
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  padding-top: env(safe-area-inset-top);
-  /* keep your existing dark gradient; we only override light below */
-}
-body.light header{
-  background: var(--panel);       /* solid */
-  box-shadow: 0 1px 0 var(--line);/* subtle divider */
-}
-
-/* prevent grid children (and form rows) from forcing overflow width */
-.grid > *, .row > * { min-width: 0; }
-
-/* small screens: force solid header (looks cleaner on iOS) and stack the overrides row */
-@media (max-width:760px){
-  header{ background: var(--panel); box-shadow: 0 1px 0 var(--line); }
-  .ovr{ grid-template-columns: 1fr; }
-}
-
 </style>
 </head>
 <body>
@@ -250,12 +254,32 @@ body.light header{
               </select>
             </div>
           </div>
+
+          <!-- NEW: trip/customer details -->
+          <div class="row">
+            <div>
+              <label>Route</label>
+              <input id="route" placeholder="LAX → JFK" />
+            </div>
+            <div>
+              <label>Passengers</label>
+              <input id="pax" type="number" min="1" step="1" placeholder="2" />
+            </div>
+          </div>
+          <div class="row single">
+            <div>
+              <label>Dates</label>
+              <input id="dates" placeholder="2025-09-02 → 2025-09-10" />
+            </div>
+          </div>
+
           <div class="row single">
             <div class="full">
               <label>Notes</label>
               <textarea id="notes" rows="4" placeholder="Preferences, budget, route, remarks…"></textarea>
             </div>
           </div>
+
           <div class="row">
             <div>
               <label>Start date (defaults to today)</label>
@@ -332,9 +356,9 @@ body.light header{
 
           <div class="space"></div>
           <div class="pill">Sort:</div>
-          <div class="seg" role="group" aria-label="Sort tasks" style="display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden">
-            <button type="button" id="sortClient"  style="background:transparent; border:0; height:34px; padding:0 10px">By client</button>
-            <button type="button" id="sortType"    class="primary" style="height:34px; padding:0 10px">By task</button>
+          <div class="seg" role="group" aria-label="Sort tasks">
+            <button type="button" id="sortClient"  aria-pressed="false">By client</button>
+            <button type="button" id="sortType"    class="primary" aria-pressed="true">By task</button>
           </div>
 
           <div class="space"></div>
@@ -412,11 +436,12 @@ body.light header{
 (function(){
   'use strict';
 
-  /* ========= Utilities ========= */
+  /* ========= Helpers ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const storeKey  = 'followup_crm_v19';
+  const storeKey  = 'followup_crm_v20';
   const THEME_KEY = 'followup_crm_theme';
+  const SORT_KEY  = 'followup_crm_sort';
 
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
@@ -457,7 +482,7 @@ body.light header{
   function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
 
   /* ========= Working days logic ========= */
-  function weekdayIndex(dt){ const js=dt.getDay(); return (js+6)%7; } // Monday=0
+  function weekdayIndex(dt){ const js=dt.getDay(); return (js+6)%7; } // Mon=0
   function isWorkingDay(dt){
     const ymd = fmt(dt);
     const ov = state.settings.overrides[ymd];
@@ -469,7 +494,7 @@ body.light header{
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= SMS (improved) ========= */
+  /* ========= SMS helper ========= */
   const SMS_TEMPLATE = (name='') => `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
   function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
   function openRcWebComposePopup(number, body, { closeMs=1800, keepOpen=false } = {}){
@@ -485,12 +510,10 @@ body.light header{
     const num  = el.getAttribute('data-num')  || el.textContent || '';
     const name = el.getAttribute('data-name') || '';
     const text = SMS_TEMPLATE(name);
-
     try{
       if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); }
       else { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
     }catch(_){}
-
     if(e.altKey){ window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}`; return; }
     openRcWebComposePopup(num, text, { keepOpen: e.shiftKey, closeMs: 2200 });
   });
@@ -506,7 +529,7 @@ body.light header{
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  /* ========= Lead Parser ========= */
+  /* ========= Lead Parser (basic) ========= */
   function parseLeadBlob(text){
     const whole = (text||'').replace(/\r/g,' ').replace(/\s+/g,' ').trim();
     const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
@@ -522,7 +545,9 @@ body.light header{
   function addTask(t){
     t.id = t.id || uid();
     t.status = t.status || 'open';
-    const exists = state.tasks.some(x => x.clientId===t.clientId && x.date===t.date && x.type===t.type && (x.title||'')===(t.title||'') && (x.source||'')===(t.source||''));
+    const exists = state.tasks.some(x =>
+      x.clientId===t.clientId && x.date===t.date && x.type===t.type &&
+      (x.title||'')===(t.title||'') && (x.source||'')===(t.source||''));
     if(!exists) state.tasks.push(t);
   }
   function genDayTasks(client, date, a, label){
@@ -576,13 +601,6 @@ body.light header{
     const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date));
     return open[0]?.date || '—';
   }
-  function syncCustomClientOptions(){
-    const sel = $('#customClient');
-    if(!sel) return;
-    sel.innerHTML =
-      '<option value="">— None —</option>' +
-      state.clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  }
 
   function refresh(){
     $('#kTotal').textContent = state.clients.length;
@@ -597,7 +615,7 @@ body.light header{
     [...state.clients]
       .sort((a,b)=>a.name.localeCompare(b.name))
       .filter(c => (!sflt || c.status===sflt))
-      .filter(c => [c.name,c.email,c.phone,(c.notes||'')].join(' ').toLowerCase().includes(query))
+      .filter(c => [c.name,c.email,c.phone,(c.notes||''), (c.route||''), (c.dates||''), (c.pax||'')].join(' ').toLowerCase().includes(query))
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
@@ -637,7 +655,12 @@ body.light header{
     const c = clientById(id) || {};
     const row = document.createElement('tr'); row.className='note-row'; row.setAttribute('data-for', id);
     const td = document.createElement('td'); td.colSpan = 5;
-    td.innerHTML = `<div class="tiny slab">${escapeHtml(c.notes || 'No notes yet.')}</div>`;
+    const chips = [
+      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : ''
+    ].filter(Boolean).join(' ');
+    td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
   }
 
@@ -669,6 +692,9 @@ body.light header{
       $('#phone').value = c.phone || '';
       $('#status').value = c.status;
       $('#startDate').value = c.startDate || '';
+      $('#route').value = c.route || '';
+      $('#dates').value = c.dates || '';
+      $('#pax').value   = c.pax   || '';
       $('#notes').value = c.notes || '';
       window.scrollTo({top:0, behavior:'smooth'}); return;
     }
@@ -732,8 +758,8 @@ body.light header{
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  let sortMode = 'type';
-  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
+  let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
+
   function typeOrder(t){ return ({call:1, callvm:2, voicemail:3, sms:4, email:5, custom:6}[t]||9); }
   function clientDisplayName(t){ return t.clientName || (t.clientId ? (clientById(t.clientId)||{}).name : '') || ''; }
   function clientNameLower(t){ return clientDisplayName(t).toLowerCase(); }
@@ -744,6 +770,17 @@ body.light header{
     return sortMode==='client' ? (byName || byType || byTitle) : (byType || byName || byTitle);
   }
   function matchesFilter(t){ return !agendaFilter || clientNameLower(t).includes(agendaFilter); }
+
+  function detailsChipsFor(t){
+    const c = t.clientId ? clientById(t.clientId) : null;
+    if(!c) return '';
+    const chips = [
+      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : ''
+    ].filter(Boolean);
+    return chips.join(' ');
+  }
 
   function renderTask(t){
     const div = document.createElement('div');
@@ -765,11 +802,16 @@ body.light header{
     }
     const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
+    const chips = detailsChipsFor(t);
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
       <div>
-        <div><strong>${icon} ${escapeHtml(t.title)}</strong> ${client?`<span class="pill">${escapeHtml(client)}</span>`:''} ${contactHtml}</div>
+        <div><strong>${icon} ${escapeHtml(t.title)}</strong>
+          ${client?`<span class="pill">${escapeHtml(client)}</span>`:''}
+          ${contactHtml}
+          ${chips}
+        </div>
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
@@ -818,22 +860,26 @@ body.light header{
   });
 
   // Agenda controls
+  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
   function setSortButtons(){
     $('#sortClient').classList.toggle('primary',  sortMode === 'client');
     $('#sortType').classList.toggle('primary',    sortMode === 'type');
+    $('#sortClient').setAttribute('aria-pressed', sortMode==='client');
+    $('#sortType').setAttribute('aria-pressed',   sortMode==='type');
   }
   function setAgendaMode(mode){
     $('#viewToday').classList.toggle('primary', mode === 'today');
     $('#viewWeek').classList.toggle('primary', mode === 'week');
   }
-  $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; setSortButtons(); renderAgenda(); });
-  $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   setSortButtons(); renderAgenda(); });
+  $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
+  $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
 
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
   $('#agendaFilter').addEventListener('input', ()=>{ agendaFilter=$('#agendaFilter').value.trim().toLowerCase(); renderAgenda(); });
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; agendaFilter=''; renderAgenda(); });
+  setSortButtons(); // reflect persisted sort
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
@@ -967,7 +1013,6 @@ body.light header{
     const grid = $('#calendarGrid'); if(!grid) return;
     const year=calCursor.getFullYear(), month=calCursor.getMonth();
     $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
-
     grid.innerHTML = '';
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd); });
 
@@ -1049,6 +1094,10 @@ body.light header{
       status,
       startDate,
       reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null),
+      // NEW fields
+      route: ($('#route').value||'').trim(),
+      dates: ($('#dates').value||'').trim(),
+      pax:   ($('#pax').value||'').trim(),
       notes: ($('#notes').value||'').trim()
     };
     return { client, exists };
@@ -1102,16 +1151,17 @@ body.light header{
     save(); alert('All data cleared.');
   });
 
-  /* ========= Search / Filter Events ========= */
-  $('#search').addEventListener('input', refresh);
-  $('#statusFilter').addEventListener('change', refresh);
-
   /* ========= Notifications boot ========= */
   initNotificationsUI();
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
-  function bootstrap(){ syncCustomClientOptions(); refresh(); buildCalendar(); }
+  function bootstrap(){
+    // initialize persisted sort style
+    setSortButtons();
+    refresh();
+    buildCalendar();
+  }
   bootstrap();
 
 })();
