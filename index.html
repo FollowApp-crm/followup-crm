@@ -1379,25 +1379,76 @@ const filterInput = $('#agendaFilter');
 filterInput.addEventListener('input', ()=>{
   agendaFilter = filterInput.value.trim().toLowerCase();
   renderAgenda();
-  buildCalendar();               // keep calendar in sync
+  buildCalendar(); // keep calendar counts in sync with the filter
 });
 
 $('#agendaFilterClear').addEventListener('click', ()=>{
   filterInput.value = '';
   agendaFilter = '';
   renderAgenda();
-  buildCalendar();               // keep calendar in sync
+  buildCalendar();
   filterInput.focus();
 });
 
 filterInput.addEventListener('keydown', (e)=>{
-  if(e.key==='Escape'){
+  if(e.key === 'Escape'){
     filterInput.value = '';
     agendaFilter = '';
     renderAgenda();
     buildCalendar();
   }
 });
+
+function setAgendaMode(mode){
+  $('#viewToday').classList.toggle('primary', mode === 'today');
+  $('#viewWeek').classList.toggle('primary', mode === 'week');
+}
+
+$('#viewToday').addEventListener('click', ()=>{
+  currentAgendaDate = today();
+  renderAgenda = ()=> buildAgenda(currentAgendaDate);
+  setAgendaMode('today');
+  $('#agendaDate').value = '';
+  renderAgenda();
+});
+
+$('#viewWeek').addEventListener('click', ()=>{
+  const from = today();
+  const to = addDays(today(), 7);
+  renderAgenda = ()=> buildAgendaRange(from, to);
+  setAgendaMode('week');
+  $('#agendaDate').value = '';
+  renderAgenda();
+});
+
+$('#agendaDate').addEventListener('change', ()=>{
+  const d = $('#agendaDate').value ? parseLocalYMD($('#agendaDate').value) : today();
+  currentAgendaDate = d;
+  renderAgenda = ()=> buildAgenda(currentAgendaDate);
+  setAgendaMode(null);
+  renderAgenda();
+});
+
+function setSortButtons(){
+  $('#sortClient').classList.toggle('active',  sortMode === 'client');
+  $('#sortType').classList.toggle('active',    sortMode === 'type');
+}
+
+$('#sortClient').addEventListener('click',  ()=>{
+  sortMode = 'client';
+  setSortButtons();
+  renderAgenda();
+});
+
+$('#sortType').addEventListener('click',    ()=>{
+  sortMode = 'type';
+  setSortButtons();
+  renderAgenda();
+});
+
+/* initialize button states on load */
+setSortButtons();
+setAgendaMode('today');
 
 /* ===== Notifications: OS-only, robust ===== */
 const NOTIFY_KEY = 'followup_crm_notified_today';
@@ -1651,6 +1702,7 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
