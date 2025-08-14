@@ -677,19 +677,20 @@ body.light .cal-badge{
     window.scrollTo({ top: y, behavior: 'smooth' });
   }
 
-  /* ===== Calendar Settings (UI) ===== */
-  function loadSettingsIntoUI(){
-    const s = state.settings;
-    $('#wd_mon').checked = !!s.workingDays.mon;
-    $('#wd_tue').checked = !!s.workingDays.tue;
-    $('#wd_wed').checked = !!s.workingDays.wed;
-    $('#wd_thu').checked = !!s.workingDays.thu;
-    $('#wd_fri').checked = !!s.workingDays.fri;
-    $('#wd_sat').checked = !!s.workingDays.sat;
-    $('#wd_sun').checked = !!s.workingDays.sun;
-    $('#moveOffDays').checked = !!s.moveOffDays;
-    renderOverrideList();
-  }
+/* ===== Calendar Settings (UI) ===== */
+function loadSettingsIntoUI(){
+  const s = state.settings;
+  $('#wd_mon').checked = !!s.workingDays.mon;
+  $('#wd_tue').checked = !!s.workingDays.tue;
+  $('#wd_wed').checked = !!s.workingDays.wed;
+  $('#wd_thu').checked = !!s.workingDays.thu;
+  $('#wd_fri').checked = !!s.workingDays.fri;
+  $('#wd_sat').checked = !!s.workingDays.sat;
+  $('#wd_sun').checked = !!s.workingDays.sun;
+  $('#moveOffDays').checked = !!s.moveOffDays;
+  renderOverrideList();
+}
+
 function saveSettingsFromUI(){
   const s = state.settings;
   s.workingDays = {
@@ -698,42 +699,42 @@ function saveSettingsFromUI(){
   };
   s.moveOffDays = !!$('#moveOffDays').checked;
   save();
-  $('#calSettings').classList.add('sr');    // close settings
-  reflowAllAutoAfterSettingsChange();       // <<< re-pack future tasks
+  $('#calSettings').classList.add('sr');   // close
+  reflowAllAutoAfterSettingsChange();      // re-pack future tasks
   buildCalendar();
 }
 
+function renderOverrideList(){
+  const ul = $('#overrideList'); ul.innerHTML='';
+  const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
+  if (!entries.length){
+    const li = document.createElement('li'); li.textContent = 'No overrides yet.';
+    ul.appendChild(li); return;
   }
-  function renderOverrideList(){
-    const ul = $('#overrideList'); ul.innerHTML='';
-    const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
-    if (!entries.length){
-      const li = document.createElement('li'); li.textContent = 'No overrides yet.';
-      ul.appendChild(li); return;
-    }
-    entries.forEach(([date,type])=>{
-      const li = document.createElement('li');
-      const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
-      const del = document.createElement('button'); del.className='btn-sm'; del.textContent='Delete';
-      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; save(); renderOverrideList(); });
-      li.appendChild(left); li.appendChild(del); ul.appendChild(li);
-    });
-  }
-  $('#calSettingsBtn').addEventListener('click', ()=>{
-    $('#calSettings').classList.toggle('sr');
-    if (!$('#calSettings').classList.contains('sr')) loadSettingsIntoUI();
+  entries.forEach(([date,type])=>{
+    const li = document.createElement('li');
+    const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
+    const del = document.createElement('button'); del.className='btn-sm'; del.textContent='Delete';
+    del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; save(); renderOverrideList(); });
+    li.appendChild(left); li.appendChild(del); ul.appendChild(li);
   });
-  $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
+}
+
+$('#calSettingsBtn').addEventListener('click', ()=>{
+  $('#calSettings').classList.toggle('sr');
+  if (!$('#calSettings').classList.contains('sr')) loadSettingsIntoUI();
+});
+$('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
+
 $('#addOverride').addEventListener('click', ()=>{
   const d = $('#ovrDate').value; const t = $('#ovrType').value;
   if (!d) return alert('Pick a date');
   state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
   save();
   renderOverrideList();
-  reflowAllAutoAfterSettingsChange();       // <<< re-pack future tasks
+  reflowAllAutoAfterSettingsChange();      // re-pack future tasks
   buildCalendar();
 });
-
 
   /* ===== Working day logic ===== */
   function weekdayIndex(dt){ const js = dt.getDay(); return (js+6)%7; }
@@ -1789,6 +1790,7 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
