@@ -761,6 +761,7 @@ function scheduleReached(client){
 }
 
 
+
   function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.date >= f)); }
   function clearManualTasksForClient(id){ state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done')); }
   function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
