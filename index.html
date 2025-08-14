@@ -596,6 +596,20 @@ body.light .cal-badge{
   const SMS_MODE = 'ringcentral'; // not used for Solution A deep-link, left for compatibility
 
   const state = load();
+// --- SMS template (edit to taste) ---
+function smsTemplateFor(client){
+  const name = client?.name || 'there';
+  // You can pull bits from notes if you like:
+  const route = (client?.notes||'').match(/Route:\s*([A-Z-]{7,})/i)?.[1] || '';
+  const dates = (client?.notes||'').match(/Dates:\s*([^|]+)/i)?.[1]?.trim() || '';
+
+  let line = `Hi ${name}, just following up`;
+  if(route) line += ` about ${route}`;
+  if(dates) line += ` (${dates})`;
+  line += `. Happy to help with options or pricing.`;
+
+  return `${line}\n— Your Name`;
+}
 
   /* ===== Theme toggle ===== */
   function applyTheme(t){
@@ -630,6 +644,10 @@ body.light .cal-badge{
     }
     return base;
   }
+function smsTemplateFor(client){
+  const first = (client?.name||'').split(' ')[0] || '';
+  return `Hi ${first}, quick follow-up on your request — do you have 2 minutes for a call?`;
+}
 
   // ---- SMS deep-link (Solution A: no web fallback, no popup) ----
   function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
@@ -649,13 +667,28 @@ body.light .cal-badge{
   }
 
   // Delegated click handler for SMS links
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest('a.sms-link');
-    if(!a) return;
-    e.preventDefault();
-    const num = a.getAttribute('data-num') || a.textContent || '';
-    openSmsDeeplinkOnly(num);
-  });
+document.addEventListener('click', async (e)=>{
+  const a = e.target.closest('a.sms-link');
+  if(!a) return;
+
+  e.preventDefault();
+
+  const num = a.getAttribute('data-num') || a.textContent || '';
+  const cid = a.getAttribute('data-cid') || '';
+  const client = cid ? clientById(cid) : null;
+
+  // 1) Copy the message so you can paste immediately in RC
+  const msg = smsTemplateFor(client);
+  try{ await copyToClipboard(msg); }catch(_){ /* ignore */ }
+
+  // 2) Launch RingCentral (no popups)
+  openSmsDeeplinkOnly(num);
+
+  // 3) Tiny visual confirmation
+  const old = a.textContent;
+  a.textContent = 'Template copied ✓';
+  setTimeout(()=> a.textContent = old, 900);
+});
 
   /* De-dupe auto task inserts */
   function addTask(t){
@@ -1070,13 +1103,17 @@ body.light .cal-badge{
       if((t.type==='call' || t.type==='callvm') && c.phone){
         const href = phoneHref(c.phone);
         contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}">${escapeHtml(c.phone)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button></span>`;
-      } else if(t.type==='sms' && c.phone){
-        // Deep-link only (Solution A)
-        contactHtml = `<span class="copy-chip">
-          <a class="tiny mono sms-link" href="#" data-num="${escapeHtml(c.phone)}">${escapeHtml(c.phone)}</a>
-          <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button>
-        </span>`;
-      } else if(t.type==='email' && c.email){
+} else if(t.type==='sms' && c.phone){
+  // Deep-link only (Solution A) + pass client id for templating
+  contactHtml = `<span class="copy-chip">
+    <a class="tiny mono sms-link"
+       href="#"
+       data-num="${escapeHtml(c.phone)}"
+       data-cid="${escapeHtml(c.id || t.clientId)}">${escapeHtml(c.phone)}</a>
+    <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button>
+  </span>`;
+}
+else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.email)}" title="Copy">📋</button></span>`;
       }
@@ -1840,6 +1877,7 @@ function collectClientFromForm(){
 </script>
 </body>
 </html>
+
 
 
 
