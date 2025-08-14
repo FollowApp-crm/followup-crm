@@ -610,6 +610,11 @@ function smsTemplateFor(client){
 
   return `${line}\n— Your Name`;
 }
+/* ===== Config ===== */
+const CALL_LINK_MODE = 'tel';
+const EMAIL_MODE = 'gmail';
+const SMS_TEMPLATE = (name='') =>
+  `Hi ${name ? name.split(' ')[0] : ''}, quick follow-up — do you have 2 minutes to review?`; // <- edit to taste
 
   /* ===== Theme toggle ===== */
   function applyTheme(t){
@@ -649,46 +654,41 @@ function smsTemplateFor(client){
   return `Hi ${first}, quick follow-up on your request — do you have 2 minutes for a call?`;
 }
 
-// ---- SMS deep-link (tries several rcapp formats; Alt-click = reliable web compose) ----
+// ---- SMS via RingCentral web compose (copies template, opens popup, auto-closes) ----
 function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-function openSmsDeeplinkOnly(number, message=''){
-  const n = cleanDigits(number);
-  const txt = message ? `&text=${encodeURIComponent(message)}` : '';
-  const candidates = [
-    `rcapp://sms?number=${encodeURIComponent(n)}${txt}`,
-    `rcapp://sms/compose?number=${encodeURIComponent(n)}${txt}`,
-    `rcapp://compose?numbers=${encodeURIComponent(n)}${txt}`,
-    `rcmobile://sms?number=${encodeURIComponent(n)}${txt}`
-  ];
-  let i = 0;
-  const tryNext = () => {
-    if (i >= candidates.length) return;
-    const a = document.createElement('a');
-    a.href = candidates[i++];
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();                          // counts as a user gesture
-    setTimeout(() => { a.remove(); tryNext(); }, 300);
-  };
-  tryNext();
+function openRcWebComposePopup(number, body, closeMs=1400){
+  const num = cleanDigits(number);
+  const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}${body ? `&content=${encodeURIComponent(body)}` : ''}`;
+
+  // Open a small popup we can close (DO NOT use 'noopener' if we want to close it)
+  const w = window.open(url, 'rcsms',
+    'width=900,height=720,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1');
+
+  if(!w){
+    alert('Popup was blocked. Please allow popups for this site.');
+    return;
+  }
+  // Give RC a moment to navigate, then close
+  setTimeout(()=>{ try{ w.close(); }catch(_){} }, closeMs);
 }
 
-// Delegated click: normal click = app deep link; Alt/Option-click = open web compose in a tab
-document.addEventListener('click', (e)=>{
+// Delegated click: any .sms-link uses the web composer flow
+document.addEventListener('click', async (e)=>{
   const el = e.target.closest('a.sms-link');
   if(!el) return;
   e.preventDefault();
 
-  const num  = el.getAttribute('data-num') || el.textContent || '';
-  const body = ''; // optional: put your default SMS text here
+  const num  = el.getAttribute('data-num')  || el.textContent || '';
+  const name = el.getAttribute('data-name') || '';
 
-  if (e.altKey) {
-    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(cleanDigits(num))}${body?`&content=${encodeURIComponent(body)}`:''}`;
-    window.open(url, '_blank', 'noopener');
-  } else {
-    openSmsDeeplinkOnly(num, body);
-  }
+  const text = SMS_TEMPLATE(name);
+
+  // Copy template first (uses your existing copyToClipboard fallback)
+  try{ await copyToClipboard(text); }catch(_){ /* ignore */ }
+
+  // Open popup to exact number with text prefilled, then auto-close
+  openRcWebComposePopup(num, text);
 });
 
   /* De-dupe auto task inserts */
@@ -1107,10 +1107,11 @@ document.addEventListener('click', (e)=>{
 } else if(t.type==='sms' && c.phone){
   // Deep-link only (Solution A) + pass client id for templating
   contactHtml = `<span class="copy-chip">
-    <a class="tiny mono sms-link"
-       href="#"
-       data-num="${escapeHtml(c.phone)}"
-       data-cid="${escapeHtml(c.id || t.clientId)}">${escapeHtml(c.phone)}</a>
+   <a class="tiny mono sms-link" href="#"
+   data-num="${escapeHtml(c.phone)}"
+   data-name="${escapeHtml(c.name || '')}">
+  ${escapeHtml(c.phone)}
+</a>
     <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button>
   </span>`;
 }
@@ -1878,6 +1879,7 @@ function collectClientFromForm(){
 </script>
 </body>
 </html>
+
 
 
 
