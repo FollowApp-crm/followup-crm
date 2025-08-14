@@ -67,23 +67,27 @@ h1{font-size:22px; margin:8px 0 2px; font-weight:800; line-height:1.1}
 
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 input,select,textarea,button{
-  border-radius:10px; border:1px solid var(--line); background:#10151d; color:var(--ink); padding:10px 12px; outline:none; height:44px
+  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); padding:10px 12px; outline:none; height:44px
 }
 textarea{height:auto; min-height:96px; resize:vertical}
 input:focus,select:focus,textarea:focus{ border-color:#445; box-shadow:0 0 0 3px rgba(124,92,255,.15) }
 
-/* Light theme: keep plain buttons white but do NOT override .primary/.ghost/etc */
+/* Light theme controls */
 body.light input,
 body.light select,
 body.light textarea,
-body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.btn-icon):not(.toggle) {
-  background:#fff; color:var(--ink);
+body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.toggle) {
+  background:#fff; color:var(--ink); border-color:var(--line);
 }
 
 button{cursor:pointer; background:linear-gradient(180deg,#2c2f44,#1b2130); border:1px solid #2b3346; color:var(--ink)}
 button.primary{ background:linear-gradient(180deg,var(--accent),#6a4ff0); border-color:#6a4ff0; color:#fff }
 button.ghost{ background:transparent }
-.btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0}
+
+/* Icon buttons (look light in Light theme) */
+.btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:10px; background:var(--chip); border:1px solid var(--line)}
+body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
+
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .space{flex:1}
 .toggle{height:36px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
@@ -91,6 +95,8 @@ body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
 .pill{padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff}
+body.light .badge{ background:#eef2fb; color:#55607a }
+body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
 /* Btn danger */
 .btn-danger{
@@ -112,7 +118,7 @@ body.light .toggle{ background:#fff; border-color:#d9e1f1 }
   overflow:hidden;
 }
 .seg > button{
-  background: transparent !important;   /* flat look */
+  background: transparent !important;
   border:0;
   color: var(--ink);
   height:34px;
@@ -120,7 +126,7 @@ body.light .toggle{ background:#fff; border-color:#d9e1f1 }
   border-radius:8px;
 }
 .seg > button.primary{
-  background: var(--panel) !important;  /* active segment */
+  background: var(--panel) !important;
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--ink) !important;
 }
@@ -153,6 +159,14 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .agenda-item.done{opacity:.55}
+
+/* Group header for “By client” view */
+.group-hd{ display:flex; align-items:center; gap:8px; margin:12px 0 6px }
+.group-hd::before, .group-hd::after{ content:""; flex:1; height:1px; background:var(--line) }
+.group-hd .label{ font-size:12px; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:var(--chip); color:#bfc7ff }
+body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
+
+/* Small text utilities */
 .tiny{font-size:11px; color:var(--muted)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px}
 .progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
@@ -161,12 +175,12 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 /* =================== CALENDAR =================== */
 #calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
 .cal-head{ font-weight:700; font-size:12px; opacity:.8; padding:4px 2px; text-align:center }
-.cal-cell{ border:1px solid var(--line); border-radius:8px; padding:8px; min-height:74px; background:#121824; cursor:pointer }
+.cal-cell{ border:1px solid var(--line); border-radius:8px; padding:8px; min-height:74px; background:var(--surface); cursor:pointer }
 .cal-cell .d{ font-weight:700; font-size:12px; opacity:.9 }
 .cal-badge{ display:inline-block; margin-top:6px; font-size:11px; padding:2px 6px; border:1px solid var(--line); border-radius:999px; color:#cfd5ff }
-.cal-cell.offday{ background: linear-gradient(0deg, rgba(220,80,80,.08), rgba(220,80,80,.08)), #121824; border-color: #3a2b2f; }
+.cal-cell.offday{ background: linear-gradient(0deg, rgba(220,80,80,.08), rgba(220,80,80,.08)), var(--surface); border-color: #3a2b2f; }
 .cal-cell.offday .d { color: #e2b3b3; }
-body.light .cal-cell{ background:#fbfdff; border-color:var(--line); }
+body.light .cal-cell{ background:#fff; border-color:var(--line); }
 body.light .cal-badge{ color:#4250d4; background:#eef2ff; border-color:#cfd6f8; font-weight:600 }
 body.light .cal-cell.offday{ background: linear-gradient(0deg, rgba(255,120,120,.15), rgba(255,120,120,.15)), #fff; border-color:#ffd7d7; }
 body.light .cal-cell.offday .d{ color:#a23b3b; }
@@ -175,14 +189,14 @@ body.light .cal-cell.offday .d{ color:#a23b3b; }
 .cal-hd .space{ flex:1 }
 .cal-month{ display:flex; align-items:center; gap:8px }
 .settings-btn{ height:32px; padding:6px 10px; border-radius:999px }
-#calSettings{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#111620 }
-body.light #calSettings{ background:#f9fbff }
+#calSettings{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface) }
+body.light #calSettings{ background:#fff }
 .wdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:16px; margin-top:8px }
 .wdays .cell{ border:1px dashed var(--line); border-radius:10px; padding:12px; display:flex; align-items:center; gap:8px; justify-content:center }
 .switch-row{ display:flex; align-items:center; gap:10px; margin-top:14px }
 .ovr{ margin-top:14px; display:grid; grid-template-columns: 200px 1fr 120px auto; gap:10px; align-items:center }
 .ovr-list{ margin-top:10px; padding-left:0; list-style:none }
-.ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#0f1420 }
+.ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface) }
 body.light .ovr-list li{ background:#fff }
 
 /* =================== MOBILE POLISH =================== */
@@ -255,7 +269,7 @@ body.light .ovr-list li{ background:#fff }
             </div>
           </div>
 
-          <!-- NEW: trip/customer details -->
+          <!-- Trip/customer details -->
           <div class="row">
             <div>
               <label>Route</label>
@@ -439,7 +453,7 @@ body.light .ovr-list li{ background:#fff }
   /* ========= Helpers ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const storeKey  = 'followup_crm_v20';
+  const storeKey  = 'followup_crm_v21';
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
@@ -493,6 +507,23 @@ body.light .ovr-list li{ background:#fff }
   function nextWorkingDay(date){ let d=new Date(date); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
+
+  /* ========= Reschedule after settings change ========= */
+  function reflowFutureAutoTasks(){
+    if(!state.settings.moveOffDays) return;
+    const start = fmt(today());
+    state.tasks.forEach(t=>{
+      if(t.source!=='auto') return;
+      if(t.status==='done') return;
+      if(t.date < start) return;
+      const d = parseLocalYMD(t.date);
+      if(!isWorkingDay(d)){
+        const nd = nextWorkingDay(d);
+        t.date = fmt(nd);
+      }
+    });
+    save();
+  }
 
   /* ========= SMS helper ========= */
   const SMS_TEMPLATE = (name='') => `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
@@ -557,17 +588,14 @@ body.light .ovr-list li{ background:#fff }
     const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
     if(nm) name = nm[1].trim();
     if(!name && email){
-      // fallback from email local-part -> Title Case tokens split by . _ -
       const local = email.split('@')[0];
       const parts = local.split(/[._-]+/);
-      if(parts.length>1){
-        name = parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
-      }else{
-        name = local.charAt(0).toUpperCase()+local.slice(1); // "Teresafrench"
-      }
+      name = parts.length>1
+        ? parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ')
+        : local.charAt(0).toUpperCase()+local.slice(1);
     }
 
-    // Route: e.g., AUS-LHR-AUS or LAX → JFK
+    // Route: AUS-LHR-AUS or LAX → JFK
     const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
@@ -870,12 +898,30 @@ body.light .ovr-list li{ background:#fff }
     return div;
   }
 
+  /* Client-grouped render helper */
+  function renderGroupedByClient(container, items){
+    let current = '\u0000';
+    for(const t of items){
+      const name = clientDisplayName(t) || 'Unknown';
+      if(name !== current){
+        current = name;
+        const gh = document.createElement('div');
+        gh.className = 'group-hd';
+        gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>`;
+        container.appendChild(gh);
+      }
+      container.appendChild(renderTask(t));
+    }
+  }
+
   function buildAgenda(date){
     const f = fmt(date);
     const cont = $('#agenda');
     const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
-    cont.innerHTML = items.length ? '' : `<div class="tiny">No tasks for ${f}.</div>`;
-    items.forEach(t=>cont.appendChild(renderTask(t)));
+    cont.innerHTML = '';
+    if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
+    if (sortMode === 'client') renderGroupedByClient(cont, items);
+    else items.forEach(t=>cont.appendChild(renderTask(t)));
     updateProgress();
   }
 
@@ -888,6 +934,7 @@ body.light .ovr-list li{ background:#fff }
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
       if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
+      else if (sortMode === 'client') renderGroupedByClient(cont, items);
       else items.forEach(t=>cont.appendChild(renderTask(t)));
     }
     updateProgress();
@@ -914,8 +961,8 @@ body.light .ovr-list li{ background:#fff }
   function setSortButtons(){
     $('#sortClient').classList.toggle('primary',  sortMode === 'client');
     $('#sortType').classList.toggle('primary',    sortMode === 'type');
-    $('#sortClient').setAttribute('aria-pressed', sortMode==='client');
-    $('#sortType').setAttribute('aria-pressed',   sortMode==='type');
+    $('#sortClient').setAttribute('aria-pressed', String(sortMode==='client'));
+    $('#sortType').setAttribute('aria-pressed',   String(sortMode==='type'));
   }
   function setAgendaMode(mode){
     $('#viewToday').classList.toggle('primary', mode === 'today');
@@ -1091,7 +1138,7 @@ body.light .ovr-list li{ background:#fff }
       const li = document.createElement('li');
       const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
       const del = document.createElement('button'); del.textContent='Delete';
-      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; save(); renderOverrideList(); });
+      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; reflowFutureAutoTasks(); save(); renderOverrideList(); });
       li.appendChild(left); li.appendChild(del); ul.appendChild(li);
     });
   }
@@ -1109,12 +1156,13 @@ body.light .ovr-list li{ background:#fff }
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
+    reflowFutureAutoTasks();  // <— reassign dates that conflict with new settings
     save();
     $('#calSettings').style.display = 'none';
   }
   $('#calSettingsBtn').addEventListener('click', ()=>{ const el=$('#calSettings'); const open=el.style.display!=='none'; el.style.display = open ? 'none' : 'block'; if(!open) loadSettingsIntoUI(); });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-  $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); save(); renderOverrideList(); });
+  $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); reflowFutureAutoTasks(); save(); renderOverrideList(); });
 
   /* ========= Parse & Form wiring ========= */
   $('#parseLead').addEventListener('click', ()=>{
@@ -1151,7 +1199,6 @@ body.light .ovr-list li{ background:#fff }
       status,
       startDate,
       reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null),
-      // NEW fields
       route: ($('#route').value||'').trim(),
       dates: ($('#dates').value||'').trim(),
       pax:   ($('#pax').value||'').trim(),
@@ -1214,7 +1261,6 @@ body.light .ovr-list li{ background:#fff }
 
   /* ========= Bootstrap ========= */
   function bootstrap(){
-    // initialize persisted sort style
     setSortButtons();
     refresh();
     buildCalendar();
