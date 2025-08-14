@@ -939,6 +939,12 @@ function scheduleReached(client){
   let currentAgendaDate = today();
   let agendaFilter = '';
   let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
+// Add this helper:
+function setAgendaFilter(val){
+  agendaFilter = (val || '').trim().toLowerCase();
+  renderAgenda();       // update the list
+  buildCalendar();      // <-- keep calendar badges in sync with the filter
+}
 
   function typeOrder(t){ return ({call:1, callvm:2, voicemail:3, sms:4, email:5, custom:6}[t]||9); }
   function clientDisplayName(t){ return t.clientName || (t.clientId ? (clientById(t.clientId)||{}).name : '') || ''; }
@@ -1075,8 +1081,15 @@ function scheduleReached(client){
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-  $('#agendaFilter').addEventListener('input', ()=>{ agendaFilter=$('#agendaFilter').value.trim().toLowerCase(); renderAgenda(); });
-  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; agendaFilter=''; renderAgenda(); });
+$('#agendaFilter').addEventListener('input', () => {
+  setAgendaFilter($('#agendaFilter').value);
+});
+
+$('#agendaFilterClear').addEventListener('click', () => {
+  $('#agendaFilter').value = '';
+  setAgendaFilter('');
+});
+
   setSortButtons();
 
   /* ========= Batch Emails for Unreached today ========= */
