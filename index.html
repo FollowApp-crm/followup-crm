@@ -8,14 +8,14 @@
 <style>
 /* ===== Tokens (Dark & Light) ===== */
 :root{
-  --bg:#0f1117; --panel:#151a21; --card:#1a2130; --chip:#1b2230;
+  --bg:#0f1117; --panel:#151a21; --card:#1a2130; --chip:#1b2230; --surface:#10151d;
   --ink:#e8ecf3; --muted:#9aa3c7; --line:#262b36;
   --accent:#7c5cff; --accent-2:#28c076;
   --danger:#d94a4a; --danger-border:#9e3636; --danger-ring:rgba(217,74,74,.25);
   --page-max:1080px; --radius:16px;
 }
 body.light{
-  --bg:#f7f8fb; --panel:#ffffff; --card:#f2f4ff; --chip:#eef2fb;
+  --bg:#f7f8fb; --panel:#ffffff; --card:#f2f4ff; --chip:#eef2fb; --surface:#ffffff;
   --ink:#0f1115; --muted:#55607a; --line:#e2e7f3;
   --accent:#7c5cff; --accent-2:#28c076;
   --danger:#d94a4a; --danger-border:#c64545; --danger-ring:rgba(217,74,74,.25);
@@ -83,6 +83,10 @@ body.light .toggle{ background:#fff; border-color:var(--line) }
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
 .pill{padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff}
 
+/* Re-usable “slab” (used for notes/manual bars in both themes) */
+.slab{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px }
+.flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+
 /* ===== Layout rows ===== */
 .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px}
 .row.single{grid-template-columns:1fr}
@@ -104,11 +108,11 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0}
 
 /* ===== Agenda ===== */
-.agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:#10151d}
+.agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .agenda-item.done{opacity:.55}
 .tiny{font-size:11px; color:var(--muted)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px}
-.progress{height:12px; border-radius:999px; background:#0e131a; border:1px solid var(--line); overflow:hidden}
+.progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
 /* ===== Calendar ===== */
@@ -145,7 +149,7 @@ body.light .ovr-list li{ background:#fff }
   .kpi{grid-template-columns:repeat(2,1fr)}
   /* table → cards */
   .tbl thead{display:none}
-  .tbl tr{display:block; background:#10151d; border:1px solid var(--line); border-radius:12px; margin:10px 0}
+  .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
   .actions{justify-content:flex-start}
@@ -370,7 +374,7 @@ body.light .ovr-list li{ background:#fff }
 (function(){
   'use strict';
 
-  /* ========= Utilities (fixes “today is not defined”) ========= */
+  /* ========= Utilities ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const storeKey  = 'followup_crm_v19';
@@ -595,7 +599,7 @@ body.light .ovr-list li{ background:#fff }
     const c = clientById(id) || {};
     const row = document.createElement('tr'); row.className='note-row'; row.setAttribute('data-for', id);
     const td = document.createElement('td'); td.colSpan = 5;
-    td.innerHTML = `<div class="tiny" style="background:#10151d;border:1px solid var(--line);border-radius:12px;padding:12px">${escapeHtml(c.notes || 'No notes yet.')}</div>`;
+    td.innerHTML = `<div class="tiny slab">${escapeHtml(c.notes || 'No notes yet.')}</div>`;
     row.appendChild(td); tr.after(row);
   }
 
@@ -662,7 +666,7 @@ body.light .ovr-list li{ background:#fff }
     row.className = 'manual-row'; row.setAttribute('data-for', id);
     const td = document.createElement('td'); td.colSpan = 5;
     td.innerHTML = `
-      <div class="tiny" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:#10151d; border:1px solid var(--line); border-radius:12px; padding:12px">
+      <div class="tiny slab flex-row">
         <span>Manual next follow-up for <b>${escapeHtml(clientById(id)?.name||'Client')}</b>:</span>
         <input type="date" id="manualDate_${id}" min="${fmt(today())}" />
         <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="manualClear_${id}" checked /> Clear ALL future auto tasks</label>
