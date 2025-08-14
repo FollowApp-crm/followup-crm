@@ -229,7 +229,7 @@ body.light .ovr-list li{ background:#fff }
   <main class="wrap grid">
 
     <!-- 1) ADD / EDIT + PARSER -->
-    <section class="card">
+    <section class="card" id="addCard">
       <div class="hd"><strong>Add / Edit Customer</strong><span class="badge">Local only</span></div>
       <div class="bd">
         <div class="row single">
@@ -711,13 +711,13 @@ body.light .ovr-list li{ background:#fff }
           <td data-label="Contact" class="tiny">${contactHtml}</td>
           <td data-label="Status"><span class="badge">${c.status}</span></td>
           <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
-          <td data-label="Actions" class="actions">
-            <button class="btn-icon" data-act="note" data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
-            <button class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
-            <button class="btn-icon" data-act="edit" data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
-            <button class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
-            <button class="btn-icon btn-danger" data-act="del" data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
-          </td>`;
+<td data-label="Actions" class="actions">
+  <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
+  <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
+  <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
+  <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
+  <button type="button" class="btn-icon btn-danger" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
+</td>`;
         body.appendChild(tr);
       });
 
@@ -742,8 +742,8 @@ body.light .ovr-list li{ background:#fff }
     row.appendChild(td); tr.after(row);
   }
 
-  $('#clientsTbl').addEventListener('click', e=>{
-    const btn = e.target.closest('[data-act]'); if(!btn) return;
+$('#clientsTbl').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-act]'); if(!btn) return;
     const id = btn.getAttribute('data-id');
     const act = btn.getAttribute('data-act');
     const c = clientById(id);
@@ -763,19 +763,26 @@ body.light .ovr-list li{ background:#fff }
       $$('.manual-row').forEach(n=>n.remove()); return;
     }
     if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
-    if(act==='edit'){
-      $('#clientId').value = c.id;
-      $('#name').value = c.name || '';
-      $('#email').value = c.email || '';
-      $('#phone').value = c.phone || '';
-      $('#status').value = c.status;
-      $('#startDate').value = c.startDate || '';
-      $('#route').value = c.route || '';
-      $('#dates').value = c.dates || '';
-      $('#pax').value   = c.pax   || '';
-      $('#notes').value = c.notes || '';
-      window.scrollTo({top:0, behavior:'smooth'}); return;
-    }
+if (act==='edit'){
+  if(!c){ return; }
+  $('#clientId').value = c.id;
+  $('#name').value  = c.name  || '';
+  $('#email').value = c.email || '';
+  $('#phone').value = c.phone || '';
+  $('#status').value = c.status;
+  $('#startDate').value = c.startDate || '';
+  $('#route').value = c.route || '';
+  $('#dates').value = c.dates || '';
+  $('#pax').value   = c.pax   || '';
+  $('#notes').value = c.notes || '';
+
+  // bring the form into view and focus
+  const target = document.getElementById('addCard') || document.body;
+  target.scrollIntoView({ behavior:'smooth', block:'start' });
+  setTimeout(()=>{ try{ document.getElementById('name').focus(); }catch(_){} }, 200);
+  return;
+}
+
     if(act==='reach'){
       c.status = c.status === 'unreached' ? 'reached' : 'unreached';
       if(c.status === 'reached'){
