@@ -690,16 +690,19 @@ body.light .cal-badge{
     $('#moveOffDays').checked = !!s.moveOffDays;
     renderOverrideList();
   }
-  function saveSettingsFromUI(){
-    const s = state.settings;
-    s.workingDays = {
-      mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
-      thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
-    };
-    s.moveOffDays = !!$('#moveOffDays').checked;
-    save();
-    $('#calSettings').classList.add('sr'); // close
-    buildCalendar();
+function saveSettingsFromUI(){
+  const s = state.settings;
+  s.workingDays = {
+    mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
+    thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
+  };
+  s.moveOffDays = !!$('#moveOffDays').checked;
+  save();
+  $('#calSettings').classList.add('sr');    // close settings
+  reflowAllAutoAfterSettingsChange();       // <<< re-pack future tasks
+  buildCalendar();
+}
+
   }
   function renderOverrideList(){
     const ul = $('#overrideList'); ul.innerHTML='';
@@ -721,13 +724,16 @@ body.light .cal-badge{
     if (!$('#calSettings').classList.contains('sr')) loadSettingsIntoUI();
   });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-  $('#addOverride').addEventListener('click', ()=>{
-    const d = $('#ovrDate').value; const t = $('#ovrType').value;
-    if (!d) return alert('Pick a date');
-    state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
-    save();
-    renderOverrideList();
-  });
+$('#addOverride').addEventListener('click', ()=>{
+  const d = $('#ovrDate').value; const t = $('#ovrType').value;
+  if (!d) return alert('Pick a date');
+  state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
+  save();
+  renderOverrideList();
+  reflowAllAutoAfterSettingsChange();       // <<< re-pack future tasks
+  buildCalendar();
+});
+
 
   /* ===== Working day logic ===== */
   function weekdayIndex(dt){ const js = dt.getDay(); return (js+6)%7; }
@@ -824,6 +830,87 @@ body.light .cal-badge{
   }
 
   /* ===== Schedules ===== */
+  /* ===== Reschedule auto tasks after calendar settings change ===== */
+function reflowAllAutoAfterSettingsChange(){
+  const todayStr = fmt(today());
+  state.clients.forEach(c=>{
+    if(c.status === 'unreached') reflowUnreachedClient(c, todayStr);
+    else                        reflowReachedClient(c, todayStr);
+  });
+  save(); // persist & re-render
+}
+
+function reflowUnreachedClient(client, todayStr){
+  // remove future auto tasks (only Unreached series)
+  state.tasks = state.tasks.filter(t =>
+    !(t.clientId===client.id &&
+      t.source==='auto' &&
+      /^Unreached Day /i.test(t.label||'') &&
+      t.date >= todayStr)
+  );
+
+  // find last completed unreached day (< today)
+  const past = state.tasks.filter(t =>
+    t.clientId===client.id &&
+    t.source==='auto' &&
+    /^Unreached Day /i.test(t.label||'') &&
+    t.date < todayStr
+  );
+
+  let maxDay = 0, lastDate = null;
+  past.forEach(t=>{
+    const m = /Unreached Day\s+(\d+)/i.exec(t.label||'');
+    if(m){ const n = parseInt(m[1],10)||0; if(n>maxDay){ maxDay=n; lastDate=t.date; } }
+  });
+
+  let day, startNum;
+  if(maxDay>0){
+    startNum = maxDay + 1;
+    day = stepByWorkingDays(parseLocalYMD(lastDate), 1);     // next working day after the last completed day
+  }else{
+    startNum = 1;
+    day = nextWorkingDay(parseLocalYMD(client.startDate || fmt(today())));
+  }
+
+  for(let n=startNum; n<=5; n++){
+    const ymd = fmt(day);
+    genDayTasks(client, ymd, ACTIONS_UNREACHED(n), `Unreached Day ${n}`);
+    if(n<5) day = stepByWorkingDays(day, 1);
+  }
+}
+
+function reflowReachedClient(client, todayStr){
+  // remove future auto tasks for this client
+  state.tasks = state.tasks.filter(t =>
+    !(t.clientId===client.id && t.source==='auto' && t.date >= todayStr)
+  );
+
+  // recompute the canonical series using current settings, then only add >= today
+  const start0 = parseLocalYMD(client.reachedStart || fmt(today()));
+  const p1d1 = nextWorkingDay(start0);
+  const p1d2 = stepByWorkingDays(p1d1, 1);
+  const p1d3 = stepByWorkingDays(p1d2, 1);
+
+  const series = [
+    {date:p1d1, label:`Phase 1 (Day 1/3)`},
+    {date:p1d2, label:`Phase 1 (Day 2/3)`},
+    {date:p1d3, label:`Phase 1 (Day 3/3)`}
+  ];
+  let last = p1d3;
+  const gaps = [3,5,7,7,7];
+  for(let i=0;i<gaps.length;i++){
+    let target = addDays(last, gaps[i]);
+    target = adjustAutoDateIfNeeded(target);
+    series.push({date: target, label:`Phase ${i+2}`});
+    last = target;
+  }
+
+  for(const s of series){
+    if(fmt(s.date) < todayStr) continue;        // keep past as-is
+    genDayTasks(client, fmt(s.date), ACTIONS_REACHED, s.label);
+  }
+}
+
   const ACTIONS_UNREACHED = d => ({ calls:2, voicemail:1, sms:1, emails: d===1?2:1 });
   const ACTIONS_REACHED   = { calls:2, voicemail:1, sms:1, emails:1 };
 
@@ -1702,6 +1789,7 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
