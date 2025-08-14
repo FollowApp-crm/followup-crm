@@ -590,69 +590,14 @@ body.light .cal-badge{
   const storeKey = 'followup_crm_v18'; // bump to avoid stale/corrupt data across versions
   const THEME_KEY = 'followup_crm_theme';
 
-  /* ===== Config ===== */
-  const CALL_LINK_MODE = 'tel';
-  const EMAIL_MODE = 'gmail';
-  const SMS_MODE = 'ringcentral'; // not used for Solution A deep-link, left for compatibility
-
-  const state = load();
-// --- SMS template (edit to taste) ---
-function smsTemplateFor(client){
-  const name = client?.name || 'there';
-  // You can pull bits from notes if you like:
-  const route = (client?.notes||'').match(/Route:\s*([A-Z-]{7,})/i)?.[1] || '';
-  const dates = (client?.notes||'').match(/Dates:\s*([^|]+)/i)?.[1]?.trim() || '';
-
-  let line = `Hi ${name}, just following up`;
-  if(route) line += ` about ${route}`;
-  if(dates) line += ` (${dates})`;
-  line += `. Happy to help with options or pricing.`;
-
-  return `${line}\n— Your Name`;
-}
 /* ===== Config ===== */
 const CALL_LINK_MODE = 'tel';
 const EMAIL_MODE = 'gmail';
+const SMS_MODE = 'ringcentral'; // still used by smsHref elsewhere
+
+// One SMS template used for copy & prefill
 const SMS_TEMPLATE = (name='') =>
-  `Hi ${name ? name.split(' ')[0] : ''}, quick follow-up — do you have 2 minutes to review?`; // <- edit to taste
-
-  /* ===== Theme toggle ===== */
-  function applyTheme(t){
-    document.body.classList.toggle('light', t === 'light');
-    const btn = $('#themeToggle');
-    if(btn) btn.textContent = t === 'light' ? '🌙 Dark' : '☀️ Light';
-  }
-  const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
-  applyTheme(savedTheme);
-  $('#themeToggle').addEventListener('click', ()=>{
-    const next = document.body.classList.contains('light') ? 'dark' : 'light';
-    localStorage.setItem(THEME_KEY, next);
-    applyTheme(next);
-  });
-
-  /* ===== Helpers ===== */
-  function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
-  function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
-  function fmt(d){ if(!(d instanceof Date)) d = new Date(d); const z = n=> String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
-  function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d; }
-  function parseLocalYMD(ymd){ if(!ymd) return today(); const [y,m,d] = ymd.split('-').map(Number); const dt = new Date(y, (m||1)-1, d||1); dt.setHours(0,0,0,0); return dt; }
-  function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
-  function load(){
-    const raw = localStorage.getItem(storeKey);
-    const base = raw ? JSON.parse(raw) : {clients:[], tasks:[], settings:null};
-    if (!base.settings){
-      base.settings = {
-        workingDays: {mon:true,tue:true,wed:true,thu:true,fri:true,sat:false,sun:false},
-        moveOffDays: true,
-        overrides: {}
-      };
-    }
-    return base;
-  }
-function smsTemplateFor(client){
-  const first = (client?.name||'').split(' ')[0] || '';
-  return `Hi ${first}, quick follow-up on your request — do you have 2 minutes for a call?`;
-}
+  `Hi ${name ? name.split(' ')[0] : ''}, quick follow-up — do you have 2 minutes to review?`;
 
 // ---- SMS via RingCentral web compose (copies template, opens popup, auto-closes) ----
 function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
@@ -661,19 +606,21 @@ function openRcWebComposePopup(number, body, closeMs=1400){
   const num = cleanDigits(number);
   const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}${body ? `&content=${encodeURIComponent(body)}` : ''}`;
 
-  // Open a small popup we can close (DO NOT use 'noopener' if we want to close it)
-  const w = window.open(url, 'rcsms',
-    'width=900,height=720,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1');
+  // open a small popup we can close (don't use noopener if we want to close it)
+  const w = window.open(
+    url,
+    'rcsms',
+    'width=900,height=720,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1'
+  );
 
   if(!w){
     alert('Popup was blocked. Please allow popups for this site.');
     return;
   }
-  // Give RC a moment to navigate, then close
   setTimeout(()=>{ try{ w.close(); }catch(_){} }, closeMs);
 }
 
-// Delegated click: any .sms-link uses the web composer flow
+// Any .sms-link: copy template → open RC to the correct number → auto-close
 document.addEventListener('click', async (e)=>{
   const el = e.target.closest('a.sms-link');
   if(!el) return;
@@ -681,13 +628,9 @@ document.addEventListener('click', async (e)=>{
 
   const num  = el.getAttribute('data-num')  || el.textContent || '';
   const name = el.getAttribute('data-name') || '';
-
   const text = SMS_TEMPLATE(name);
 
-  // Copy template first (uses your existing copyToClipboard fallback)
   try{ await copyToClipboard(text); }catch(_){ /* ignore */ }
-
-  // Open popup to exact number with text prefilled, then auto-close
   openRcWebComposePopup(num, text);
 });
 
@@ -1879,6 +1822,7 @@ function collectClientFromForm(){
 </script>
 </body>
 </html>
+
 
 
 
