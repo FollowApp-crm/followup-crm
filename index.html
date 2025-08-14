@@ -1541,6 +1541,26 @@ setAgendaMode('today');
 /* ===== Notifications: OS-only, robust ===== */
 const NOTIFY_KEY = 'followup_crm_notified_today';
 let notifTickerStarted = false;
+// ===== Wipe All =====
+document.getElementById('wipeAll').addEventListener('click', () => {
+  if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
+
+  // clear in-memory state
+  state.clients = [];
+  state.tasks   = [];
+  state.settings = {
+    workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
+    moveOffDays: true,
+    overrides: {}
+  };
+
+  // reset “already notified today” cache; keep theme preference
+  try { localStorage.removeItem('followup_crm_notified_today'); } catch (_) {}
+
+  // persist & refresh UI
+  save();                  // save() already calls refresh() + buildCalendar()
+  alert('All data cleared.');
+});
 
 function notifSupported(){ return typeof window.Notification === 'function'; }
 function isSecure(){
@@ -1790,6 +1810,7 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
