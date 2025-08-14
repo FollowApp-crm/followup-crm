@@ -528,13 +528,27 @@ body.light .ovr-list li{ background:#fff }
   /* ========= SMS helper ========= */
   const SMS_TEMPLATE = (name='') => `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
   function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
-  function openRcWebComposePopup(number, body, { closeMs=1800, keepOpen=false } = {}){
-    const num = cleanDigits(number);
-    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}${body?`&content=${encodeURIComponent(body)}`:''}`;
-    const w = window.open(url,'rcsms','width=900,height=720,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1');
-    if(!w){ alert('Popup was blocked. Please allow popups for this site.'); return; }
-    if(!keepOpen) setTimeout(()=>{ try{ w.close(); }catch(_){} }, closeMs);
+// Open RingCentral SMS compose and KEEP THE WINDOW OPEN.
+// Reuses a named window so each click focuses the same compose window.
+// Hold Shift to force a brand-new window each time.
+// Hold Alt to use the mobile deep link (handled in the click handler below).
+function openRcComposeSMS(number, body, forceNew=false){
+  const num = cleanDigits(number);
+  // RC's current compose endpoint (works better than the legacy /r/sms)
+  const url = `https://app.ringcentral.com/message/compose?type=sms&number=${encodeURIComponent(num)}${body ? `&text=${encodeURIComponent(body)}` : ''}`;
+
+  // Reuse a named window unless forceNew is true (Shift key)
+  const name = forceNew ? `_blank` : `rcsms`;
+  const w = window.open(url, name, 'width=980,height=740,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1');
+
+  if (!w) {
+    // Popup blocked → fall back to same-tab navigation
+    window.location.href = url;
+    return;
   }
+  try { w.focus(); } catch (_) {}
+}
+
   document.addEventListener('click', async (e)=>{
     const el = e.target.closest('a.sms-link'); if(!el) return;
     e.preventDefault();
@@ -545,8 +559,13 @@ body.light .ovr-list li{ background:#fff }
       if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); }
       else { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
     }catch(_){}
-    if(e.altKey){ window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}`; return; }
-    openRcWebComposePopup(num, text, { keepOpen: e.shiftKey, closeMs: 2200 });
+  if (e.altKey) { // Mobile deep-link
+    window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}`;
+    return;
+  }
+  // Shift = open a brand-new window; default = reuse the "rcsms" window and keep it open
+  openRcComposeSMS(num, text, e.shiftKey);
+
   });
 
   /* ========= Contact link helpers ========= */
