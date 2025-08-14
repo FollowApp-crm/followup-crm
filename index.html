@@ -512,22 +512,30 @@ body.light .ovr-list li{ background:#fff }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= Reschedule after settings change ========= */
-  function reflowFutureAutoTasks(){
-    if(!state.settings.moveOffDays) return;
-    const start = fmt(today());
-    state.tasks.forEach(t=>{
-      if(t.source!=='auto') return;
-      if(t.status==='done') return;
-      if(t.date < start) return;
-      const d = parseLocalYMD(t.date);
-      if(!isWorkingDay(d)){
-        const nd = nextWorkingDay(d);
-        t.date = fmt(nd);
-      }
-    });
-    save();
-  }
+/* ========= Reschedule after settings change ========= */
+// New: full regeneration from anchors so newly-working days can own tasks.
+// Manual tasks remain untouched. Done tasks remain as-is.
+function regenerateAllFutureAutoTasks(){
+  const from = fmt(today());
+
+  // Remove ONLY future/today auto OPEN tasks
+  state.tasks = state.tasks.filter(t => !(t.source === 'auto' && t.status !== 'done' && t.date >= from));
+
+  // Rebuild per client based on current settings and their anchors.
+  // Generators themselves skip past dates but preserve day labels.
+  state.clients.forEach(c => {
+    if (c.status === 'unreached') scheduleUnreached(c);
+    else                          scheduleReached(c);
+  });
+
+  save();
+}
+
+// Back-compat shim: any old calls now do a full regeneration.
+function reflowFutureAutoTasks(){
+  regenerateAllFutureAutoTasks();
+}
+
 
   /* ========= SMS helper ========= */
   const SMS_TEMPLATE = (name='') =>
@@ -706,45 +714,52 @@ body.light .ovr-list li{ background:#fff }
   }
 
   // Unreached: skip past tasks, keep labels counting from anchor
-  function scheduleUnreached(client){
-    const anchor = client.startDate ? parseLocalYMD(client.startDate) : today();
-    let day = nextWorkingDay(anchor);
-    const T = today();
-    let dayNum = 1;
-    while (dayNum <= 5){
-      const dateObj = new Date(day);
-      const dateStr = fmt(dateObj);
-      const label = `Unreached Day ${dayNum}`;
-      if (dateObj >= T){
-        const a = ACTIONS_UNREACHED(dayNum);
-        genDayTasks(client, dateStr, a, label);
-      }
-      if (dayNum < 5) day = stepByWorkingDays(day, 1);
-      dayNum++;
+function scheduleUnreached(client){
+  const start0 = client.startDate ? parseLocalYMD(client.startDate) : today();
+  let day = nextWorkingDay(start0);
+  const tdy = today();
+
+  for (let dayNum = 1; dayNum <= 5; dayNum++){
+    const dt = new Date(day);
+    if (dt >= tdy){
+      const date = fmt(dt);
+      const a = ACTIONS_UNREACHED(dayNum);
+      genDayTasks(client, date, a, `Unreached Day ${dayNum}`);
     }
+    if (dayNum < 5) day = stepByWorkingDays(day, 1);
   }
+}
+
 
   // Reached: Phase 1 are consecutive working days, then gaps; skip past, preserve labels
-  function scheduleReached(client){
-    const anchor = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
-    const T = today();
+function scheduleReached(client){
+  const start0 = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
+  const tdy = today();
 
-    const p1d1 = nextWorkingDay(anchor);
-    const p1d2 = stepByWorkingDays(p1d1, 1);
-    const p1d3 = stepByWorkingDays(p1d2, 1);
-    [p1d1,p1d2,p1d3].forEach((d,i)=>{
-      if (d >= T) genDayTasks(client, fmt(d), ACTIONS_REACHED, `Phase 1 (Day ${i+1}/3)`);
-    });
+  const p1d1 = nextWorkingDay(start0);
+  const p1d2 = stepByWorkingDays(p1d1, 1);
+  const p1d3 = stepByWorkingDays(p1d2, 1);
 
-    const gaps = [3,5,7,7,7];
-    let last = p1d3;
-    gaps.forEach((gap, idx)=>{
-      let target = addDays(last, gap);
-      target = adjustAutoDateIfNeeded(target);
-      if (target >= T) genDayTasks(client, fmt(target), ACTIONS_REACHED, `Phase ${idx+2}`);
-      last = target;
-    });
-  }
+  // Phase 1 (3 consecutive working days)
+  [p1d1, p1d2, p1d3].forEach((dt, idx) => {
+    if (dt >= tdy){
+      genDayTasks(client, fmt(dt), ACTIONS_REACHED, `Phase 1 (Day ${idx+1}/3)`);
+    }
+  });
+
+  // Then +3, +5, +7, +7, +7 (calendar days), adjusted off non-working days
+  const gaps = [3,5,7,7,7];
+  let last = p1d3;
+  gaps.forEach((gap, i) => {
+    let target = addDays(last, gap);
+    target = adjustAutoDateIfNeeded(target);
+    if (target >= tdy){
+      genDayTasks(client, fmt(target), ACTIONS_REACHED, `Phase ${i+2}`);
+    }
+    last = target;
+  });
+}
+
 
   function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.date >= f)); }
   function clearManualTasksForClient(id){ state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done')); }
