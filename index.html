@@ -525,29 +525,87 @@ body.light .ovr-list li{ background:#fff }
     save();
   }
 
-  /* ========= SMS helper ========= */
-  const SMS_TEMPLATE = (name='') => `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
-  function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
-// Open RingCentral SMS compose and KEEP THE WINDOW OPEN.
-// Reuses a named window so each click focuses the same compose window.
-// Hold Shift to force a brand-new window each time.
-// Hold Alt to use the mobile deep link (handled in the click handler below).
-function openRcComposeSMS(number, body, forceNew=false){
-  const num = cleanDigits(number);
-  // RC's current compose endpoint (works better than the legacy /r/sms)
-  const url = `https://app.ringcentral.com/message/compose?type=sms&number=${encodeURIComponent(num)}${body ? `&text=${encodeURIComponent(body)}` : ''}`;
+/* ========= SMS helper ========= */
+const SMS_TEMPLATE = (name='') =>
+  `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
 
-  // Reuse a named window unless forceNew is true (Shift key)
-  const name = forceNew ? `_blank` : `rcsms`;
-  const w = window.open(url, name, 'width=980,height=740,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1');
+function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-  if (!w) {
-    // Popup blocked → fall back to same-tab navigation
-    window.location.href = url;
-    return;
+// Desktop deep link with automatic web fallback if the protocol isn't handled
+function openRcDesktopSms(number, body, { fallbackToWeb=true, keepOpen=false, timeout=1600 } = {}){
+  const num  = cleanDigits(number);
+  const deep = `rcmobile://sms?number=${encodeURIComponent(num)}&type=new`;
+
+  let timer;
+  const cancel = () => {
+    if (timer) clearTimeout(timer);
+    window.removeEventListener('blur', cancel);
+    document.removeEventListener('visibilitychange', onVis);
+  };
+  const onVis = () => { if (document.hidden) cancel(); };
+
+  if (fallbackToWeb){
+    // If the page doesn't blur/hide shortly after trying the deep link,
+    // assume the app didn't open and fall back to the web composer.
+    window.addEventListener('blur', cancel, { once:true });
+    document.addEventListener('visibilitychange', onVis, { once:true });
+    timer = setTimeout(() => {
+      cancel();
+      openRcWebComposePopup(num, body, { keepOpen, closeMs: keepOpen ? 0 : 2200 });
+    }, timeout);
   }
-  try { w.focus(); } catch (_) {}
+
+  // Try to invoke RingCentral desktop via its custom URI scheme
+  window.location.href = deep;
 }
+
+// Opens the RingCentral web composer (kept for fallback/forcing web)
+function openRcWebComposePopup(number, body, { closeMs=1800, keepOpen=false } = {}){
+  const num = cleanDigits(number);
+  const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}${
+    body ? `&content=${encodeURIComponent(body)}` : ''
+  }`;
+  const w = window.open(
+    url,
+    'rcsms',
+    'width=900,height=720,left=120,top=80,toolbar=0,location=1,menubar=0,scrollbars=1,status=0,resizable=1'
+  );
+  if (!w) { alert('Popup was blocked. Please allow popups for this site.'); return; }
+  if (!keepOpen) setTimeout(() => { try { w.close(); } catch(_) {} }, closeMs);
+}
+
+// Handle clicks on the phone number inside SMS tasks
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('a.sms-link');
+  if (!el) return;
+  e.preventDefault();
+
+  const num  = el.getAttribute('data-num')  || el.textContent || '';
+  const name = el.getAttribute('data-name') || '';
+  const text = SMS_TEMPLATE(name);
+
+  // Pre-copy the template to clipboard so you can paste into the desktop app
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+  } catch(_) {}
+
+  if (e.shiftKey) {
+    // SHIFT-click: force the web composer and keep it open
+    openRcWebComposePopup(num, text, { keepOpen: true, closeMs: 0 });
+  } else if (e.altKey) {
+    // ALT-click: try the desktop app only (no fallback)
+    window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}&type=new`;
+  } else {
+    // Default: try Windows RingCentral desktop; fall back to web if not handled
+    openRcDesktopSms(num, text, { fallbackToWeb: true, keepOpen: false });
+  }
+});
 
   document.addEventListener('click', async (e)=>{
     const el = e.target.closest('a.sms-link'); if(!el) return;
