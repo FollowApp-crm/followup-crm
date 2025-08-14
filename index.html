@@ -156,6 +156,44 @@ body.light .ovr-list li{ background:#fff }
   /* compact header toggle */
   .toggle{height:auto}
 }
+  /* ===== FIX: iOS header + alignment + no horizontal nudge ===== */
+
+/* stop iOS from loading the page shifted because something is 1px wider */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* use 100% width (not vw), and match header/content padding to safe areas */
+:root { --page-pad: 16px; } /* add once; harmless if already there */
+.wrap{
+  width: 100%;
+  max-width: var(--page-max);
+  margin-left: auto; margin-right: auto;
+  padding-left:  max(var(--page-pad), env(safe-area-inset-left));
+  padding-right: max(var(--page-pad), env(safe-area-inset-right));
+}
+
+/* header: solid in light mode so the purple gradient doesn't bleed through;
+   pad for the notch; keep blur in dark */
+header{
+  position: sticky; top: 0; z-index: 5;
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  padding-top: env(safe-area-inset-top);
+  /* keep your existing dark gradient; we only override light below */
+}
+body.light header{
+  background: var(--panel);       /* solid */
+  box-shadow: 0 1px 0 var(--line);/* subtle divider */
+}
+
+/* prevent grid children (and form rows) from forcing overflow width */
+.grid > *, .row > * { min-width: 0; }
+
+/* small screens: force solid header (looks cleaner on iOS) and stack the overrides row */
+@media (max-width:760px){
+  header{ background: var(--panel); box-shadow: 0 1px 0 var(--line); }
+  .ovr{ grid-template-columns: 1fr; }
+}
+
 </style>
 </head>
 <body>
