@@ -530,60 +530,104 @@ const SMS_TEMPLATE = (name='') =>
 
 function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-// Fallback: open RC web composer (Shift+click will use this)
+// Web fallback (Shift+click)
 function openRcWebComposeTab(number, body){
   const num = cleanDigits(number);
   const url = `https://app.ringcentral.com/r/sms?type=new`
-    + `&number=${encodeURIComponent(num)}`
-    + `&text=${encodeURIComponent(body)}`; // ensures spaces, no '+'
+            + `&number=${encodeURIComponent(num)}`
+            + `&text=${encodeURIComponent(body)}`; // %20 spaces, no '+'
   const w = window.open(url, "_blank");
   if(!w) alert("Popup was blocked. Please allow popups for this site.");
 }
 
 /**
- * Default path: try to invoke the **desktop app** via deep links from a small popup,
- * then optionally fall back to the web composer. The popup closes by itself.
+ * Default path: popup that fires desktop deep links via a hidden iframe,
+ * so the popup page is never unloaded and can close itself reliably.
+ * Also backed up by a parent-side closer.
  */
-function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2400 } = {}){
+function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2200 } = {}){
   const num = cleanDigits(number);
-  const txt = encodeURIComponent(body);          // ensures %20, never '+'
+  const txt = encodeURIComponent(body);
 
-  const popup = window.open('', 'rcsms', 'width=420,height=260,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
-  if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return; }
+  // Open a small helper popup
+  const popup = window.open('', 'rcsms',
+    'width=420,height=240,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
+  if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return null; }
 
+  // Build the popup HTML
   const html = `<!doctype html>
   <html><head><meta charset="utf-8"></head>
-  <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;display:flex;align-items:center;justify-content:center">
-    <div>Opening RingCentral…</div>
+  <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;
+               display:flex;align-items:center;justify-content:center">
+    <div>Opening RingCentral desktop…</div>
+    <iframe id="rcshim" style="display:none;width:0;height:0;border:0"></iframe>
     <script>
       const num='${num}', txt='${txt}';
-      // Try several desktop schemes (Windows client registers one of these)
+      const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
+
+      // Try several desktop schemes; the app will register one of these.
       const schemes = [
         'rcapp://sms?number='+encodeURIComponent(num)+'&text='+txt,
         'ringcentral://sms?number='+encodeURIComponent(num)+'&text='+txt,
         'rcmobile://sms?number='+encodeURIComponent(num)+'&text='+txt
       ];
-      const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
 
+      const iframe = document.getElementById('rcshim');
       let i = 0;
       function tryNext(){
         if(i < schemes.length){
-          location.href = schemes[i++];           // trigger desktop app
-          setTimeout(tryNext, 550);               // try next scheme shortly after
+          iframe.src = schemes[i++];                 // fire deep link from iframe
+          setTimeout(tryNext, 550);
         }else{
-          ${/* optional web fallback if desktop isn’t installed */''}
-          ${fallbackWeb ? 'location.href = web;' : ''}
+          ${/* Optional: open web compose in a new tab, but keep this popup alive to close */''}
+          ${fallbackWeb ? 'window.open(web, "_blank");' : ''}
         }
       }
       tryNext();
 
-      // Always close the helper window after a moment
-      setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${closeAfterMs});
+      // Always close this helper popup after a short delay.
+      setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${Math.max(1000,  closeAfterMs)});
     <\/script>
   </body></html>`;
 
   try{ popup.document.write(html); popup.document.close(); }catch(_){}
+
+  // Parent-side backup closer (in case the popup couldn't close itself)
+  [closeAfterMs+800, closeAfterMs+1800, closeAfterMs+3000].forEach(ms=>{
+    setTimeout(()=>{ try{ if(popup && !popup.closed) popup.close(); }catch(_){} }, ms);
+  });
+
+  return popup;
 }
+
+// Click handler for SMS task phone link
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('a.sms-link');
+  if (!el) return;
+  e.preventDefault();
+
+  const num  = el.getAttribute('data-num')  || el.textContent || '';
+  const name = el.getAttribute('data-name') || '';
+  const text = SMS_TEMPLATE(name);
+
+  // Put message on clipboard as a safety net
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+    }else{
+      const ta=document.createElement('textarea'); ta.value=text;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+  }catch(_){}
+
+  if (e.shiftKey) {
+    // Shift+click => open RingCentral web composer
+    openRcWebComposeTab(num, text);
+  } else {
+    // Default => desktop app via popup+iframe; popup closes automatically
+    openRcDesktopPopup(num, text, { fallbackWeb:true, closeAfterMs:2000 });
+  }
+});
 
 // Click handler for SMS task phone link
 document.addEventListener('click', async (e) => {
