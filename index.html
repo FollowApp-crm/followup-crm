@@ -530,25 +530,62 @@ const SMS_TEMPLATE = (name='') =>
 
 function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-// Open RingCentral *web* composer in a new tab (no popup to close), and prefill message.
-// Using `text=` fixes the “+ instead of spaces” issue.
+// Fallback: open RC web composer (Shift+click will use this)
 function openRcWebComposeTab(number, body){
   const num = cleanDigits(number);
   const url = `https://app.ringcentral.com/r/sms?type=new`
     + `&number=${encodeURIComponent(num)}`
-    + `&text=${encodeURIComponent(body)}`;
+    + `&text=${encodeURIComponent(body)}`; // ensures spaces, no '+'
   const w = window.open(url, "_blank");
   if(!w) alert("Popup was blocked. Please allow popups for this site.");
 }
 
-// Desktop deep link (optional, ALT-click)
-function openRcDesktopSms(number){
-  const num  = cleanDigits(number);
-  const deep = `rcmobile://sms?number=${encodeURIComponent(num)}&type=new`;
-  window.location.href = deep;
+/**
+ * Default path: try to invoke the **desktop app** via deep links from a small popup,
+ * then optionally fall back to the web composer. The popup closes by itself.
+ */
+function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2400 } = {}){
+  const num = cleanDigits(number);
+  const txt = encodeURIComponent(body);          // ensures %20, never '+'
+
+  const popup = window.open('', 'rcsms', 'width=420,height=260,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
+  if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return; }
+
+  const html = `<!doctype html>
+  <html><head><meta charset="utf-8"></head>
+  <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;display:flex;align-items:center;justify-content:center">
+    <div>Opening RingCentral…</div>
+    <script>
+      const num='${num}', txt='${txt}';
+      // Try several desktop schemes (Windows client registers one of these)
+      const schemes = [
+        'rcapp://sms?number='+encodeURIComponent(num)+'&text='+txt,
+        'ringcentral://sms?number='+encodeURIComponent(num)+'&text='+txt,
+        'rcmobile://sms?number='+encodeURIComponent(num)+'&text='+txt
+      ];
+      const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
+
+      let i = 0;
+      function tryNext(){
+        if(i < schemes.length){
+          location.href = schemes[i++];           // trigger desktop app
+          setTimeout(tryNext, 550);               // try next scheme shortly after
+        }else{
+          ${/* optional web fallback if desktop isn’t installed */''}
+          ${fallbackWeb ? 'location.href = web;' : ''}
+        }
+      }
+      tryNext();
+
+      // Always close the helper window after a moment
+      setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${closeAfterMs});
+    <\/script>
+  </body></html>`;
+
+  try{ popup.document.write(html); popup.document.close(); }catch(_){}
 }
 
-// Handle clicks on the phone number inside SMS tasks
+// Click handler for SMS task phone link
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('a.sms-link');
   if (!el) return;
@@ -558,26 +595,25 @@ document.addEventListener('click', async (e) => {
   const name = el.getAttribute('data-name') || '';
   const text = SMS_TEMPLATE(name);
 
-  // Put the template on the clipboard so you can paste if needed
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
+  // Put message on clipboard as a safety net for manual paste
+  try{
+    if(navigator.clipboard && window.isSecureContext){
       await navigator.clipboard.writeText(text);
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); ta.remove();
+    }else{
+      const ta=document.createElement('textarea'); ta.value=text;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     }
-  } catch(_) {}
+  }catch(_){}
 
-  if (e.altKey) {
-    // ALT-click => use Windows RingCentral desktop app
-    openRcDesktopSms(num);
-  } else {
-    // Default click => open RingCentral web composer in a *new tab*
-    // (no popup window left behind, and message is correctly spaced)
+  if (e.shiftKey) {
+    // Shift+click => open web composer instead
     openRcWebComposeTab(num, text);
+  } else {
+    // Default => desktop RingCentral via deep link; popup closes automatically
+    openRcDesktopPopup(num, text, { fallbackWeb: true, closeAfterMs: 2600 });
   }
 });
+
 
   document.addEventListener('click', async (e)=>{
     const el = e.target.closest('a.sms-link'); if(!el) return;
