@@ -220,7 +220,7 @@ body.light .ovr-list li{ background:#fff }
       <div class="bd">
         <div class="row single">
           <div class="full">
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone)</label>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax)</label>
             <textarea id="leadBlob" rows="5" placeholder="Paste the whole blob here…"></textarea>
             <div class="right toolbar" style="margin-top:8px">
               <button type="button" id="parseLead">Parse &amp; Fill</button>
@@ -259,7 +259,7 @@ body.light .ovr-list li{ background:#fff }
           <div class="row">
             <div>
               <label>Route</label>
-              <input id="route" placeholder="LAX → JFK" />
+              <input id="route" placeholder="LAX → JFK or AUS-LHR-AUS" />
             </div>
             <div>
               <label>Passengers</label>
@@ -269,7 +269,7 @@ body.light .ovr-list li{ background:#fff }
           <div class="row single">
             <div>
               <label>Dates</label>
-              <input id="dates" placeholder="2025-09-02 → 2025-09-10" />
+              <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
             </div>
           </div>
 
@@ -529,13 +529,63 @@ body.light .ovr-list li{ background:#fff }
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  /* ========= Lead Parser (basic) ========= */
+  /* ========= Lead Parser (robust) ========= */
   function parseLeadBlob(text){
-    const whole = (text||'').replace(/\r/g,' ').replace(/\s+/g,' ').trim();
+    const raw = (text||'').replace(/\r/g,'\n');
+    const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
+
+    // Email
     const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
-    const phone = (whole.match(/\+?\d[\d\s().-]{6,}\d/)||[''])[0] || '';
-    let name = ''; const m = whole.match(/\bnew\b\s+([^0-9\-:|/\\]+?)(?=\s+[A-Z]{2,3}\b|\s{2,}|$)/i); if(m) name = m[1].trim();
-    return { name, email, phone, notes:'' };
+
+    // Remove ISO dates/times so they don't look like phones
+    let noDates = whole
+      .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
+      .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
+
+    // Phone candidates
+    const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
+      .map(s=>s.trim())
+      .filter(s=>!/:/.test(s)) // exclude times
+      .filter(s=>{
+        const digits = s.replace(/\D/g,'');
+        return digits.length>=10 && digits.length<=15;
+      });
+    const phone = phoneCandidates[0] || '';
+
+    // Name — try "new <name> ..." pattern
+    let name = '';
+    const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
+    if(nm) name = nm[1].trim();
+    if(!name && email){
+      // fallback from email local-part -> Title Case tokens split by . _ -
+      const local = email.split('@')[0];
+      const parts = local.split(/[._-]+/);
+      if(parts.length>1){
+        name = parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
+      }else{
+        name = local.charAt(0).toUpperCase()+local.slice(1); // "Teresafrench"
+      }
+    }
+
+    // Route: e.g., AUS-LHR-AUS or LAX → JFK
+    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
+    const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
+
+    // Dates: "Sep 07 - Sep 15" OR "2025-09-02 → 2025-09-10"
+    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+    const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
+    let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
+    if(!dates){
+      const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
+      if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
+    }
+
+    // Pax: x1 / pax 2 / passengers: 3
+    let pax = '';
+    const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
+    if(mpax) pax = mpax[1];
+
+    return { name, email, phone, route, dates, pax, notes:'' };
   }
 
   /* ========= Scheduling ========= */
@@ -1066,18 +1116,25 @@ body.light .ovr-list li{ background:#fff }
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
   $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); save(); renderOverrideList(); });
 
-  /* ========= Forms ========= */
+  /* ========= Parse & Form wiring ========= */
   $('#parseLead').addEventListener('click', ()=>{
     try{
       const blob = $('#leadBlob').value;
       if(!blob.trim()) { alert('Paste your lead text first.'); return; }
       const parsed = parseLeadBlob(blob);
+
       if(parsed.name)  $('#name').value  = parsed.name;
       if(parsed.email) $('#email').value = parsed.email;
       if(parsed.phone) $('#phone').value = parsed.phone;
+      if(parsed.route) $('#route').value = parsed.route;
+      if(parsed.dates) $('#dates').value = parsed.dates;
+      if(parsed.pax)   $('#pax').value   = parsed.pax;
+
       const cur = $('#notes').value.trim();
       if(parsed.notes) $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
-    }catch(e){ alert('Parse failed. Please paste raw text exactly as copied from CRM.'); }
+    }catch(e){
+      alert('Parse failed. Please paste raw text exactly as copied from CRM.');
+    }
   });
   $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
 
