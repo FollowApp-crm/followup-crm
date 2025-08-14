@@ -633,6 +633,43 @@ document.addEventListener('click', async (e)=>{
   try{ await copyToClipboard(text); }catch(_){ /* ignore */ }
   openRcWebComposePopup(num, text);
 });
+/* ===== State + core helpers (must exist) ===== */
+const state = load();
+
+function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function today(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function fmt(d){
+  if(!(d instanceof Date)) d = new Date(d);
+  const z = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
+}
+function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d; }
+function parseLocalYMD(ymd){
+  if(!ymd) return today();
+  const [y,m,d] = ymd.split('-').map(Number);
+  const dt = new Date(y,(m||1)-1,(d||1)); dt.setHours(0,0,0,0);
+  return dt;
+}
+function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
+function load(){
+  try{
+    const raw = localStorage.getItem(storeKey);
+    const base = raw ? JSON.parse(raw) : { clients:[], tasks:[], settings:null };
+    if(!base.settings){
+      base.settings = {
+        workingDays:{mon:true,tue:true,wed:true,thu:true,fri:true,sat:false,sun:false},
+        moveOffDays:true,
+        overrides:{}
+      };
+    }
+    return base;
+  }catch(e){
+    return {
+      clients:[], tasks:[],
+      settings:{ workingDays:{mon:true,tue:true,wed:true,thu:true,fri:true,sat:false,sun:false}, moveOffDays:true, overrides:{} }
+    };
+  }
+}
 
   /* De-dupe auto task inserts */
   function addTask(t){
@@ -1822,6 +1859,7 @@ function collectClientFromForm(){
 </script>
 </body>
 </html>
+
 
 
 
