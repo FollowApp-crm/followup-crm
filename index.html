@@ -649,45 +649,46 @@ function smsTemplateFor(client){
   return `Hi ${first}, quick follow-up on your request — do you have 2 minutes for a call?`;
 }
 
-  // ---- SMS deep-link (Solution A: no web fallback, no popup) ----
-  function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
-  function openSmsDeeplinkOnly(number){
-    const n = cleanDigits(number);
-    // fire-and-forget via hidden iframes; no popups, no web fallback
-    const hit = (scheme)=>{
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = `${scheme}://sms?number=${encodeURIComponent(n)}`;
-      document.body.appendChild(iframe);
-      setTimeout(()=>iframe.remove(), 900);
-    };
-    // Prefer desktop app, then mobile app
-    hit('rcapp');
-    setTimeout(()=>hit('rcmobile'), 250);
-  }
+// ---- SMS deep-link (tries several rcapp formats; Alt-click = reliable web compose) ----
+function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
 
-  // Delegated click handler for SMS links
-document.addEventListener('click', async (e)=>{
-  const a = e.target.closest('a.sms-link');
-  if(!a) return;
+function openSmsDeeplinkOnly(number, message=''){
+  const n = cleanDigits(number);
+  const txt = message ? `&text=${encodeURIComponent(message)}` : '';
+  const candidates = [
+    `rcapp://sms?number=${encodeURIComponent(n)}${txt}`,
+    `rcapp://sms/compose?number=${encodeURIComponent(n)}${txt}`,
+    `rcapp://compose?numbers=${encodeURIComponent(n)}${txt}`,
+    `rcmobile://sms?number=${encodeURIComponent(n)}${txt}`
+  ];
+  let i = 0;
+  const tryNext = () => {
+    if (i >= candidates.length) return;
+    const a = document.createElement('a');
+    a.href = candidates[i++];
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();                          // counts as a user gesture
+    setTimeout(() => { a.remove(); tryNext(); }, 300);
+  };
+  tryNext();
+}
 
+// Delegated click: normal click = app deep link; Alt/Option-click = open web compose in a tab
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('a.sms-link');
+  if(!el) return;
   e.preventDefault();
 
-  const num = a.getAttribute('data-num') || a.textContent || '';
-  const cid = a.getAttribute('data-cid') || '';
-  const client = cid ? clientById(cid) : null;
+  const num  = el.getAttribute('data-num') || el.textContent || '';
+  const body = ''; // optional: put your default SMS text here
 
-  // 1) Copy the message so you can paste immediately in RC
-  const msg = smsTemplateFor(client);
-  try{ await copyToClipboard(msg); }catch(_){ /* ignore */ }
-
-  // 2) Launch RingCentral (no popups)
-  openSmsDeeplinkOnly(num);
-
-  // 3) Tiny visual confirmation
-  const old = a.textContent;
-  a.textContent = 'Template copied ✓';
-  setTimeout(()=> a.textContent = old, 900);
+  if (e.altKey) {
+    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(cleanDigits(num))}${body?`&content=${encodeURIComponent(body)}`:''}`;
+    window.open(url, '_blank', 'noopener');
+  } else {
+    openSmsDeeplinkOnly(num, body);
+  }
 });
 
   /* De-dupe auto task inserts */
@@ -1877,6 +1878,7 @@ function collectClientFromForm(){
 </script>
 </body>
 </html>
+
 
 
 
