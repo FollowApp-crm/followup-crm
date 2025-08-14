@@ -528,16 +528,21 @@ body.light .cal-badge{
 
     <!-- 4) CALENDAR -->
     <section class="card" id="calendarCard">
-      <div class="hd cal-hd">
-        <strong>Calendar</strong>
-        <div class="cal-month tiny">
-          <button class="btn-sm" id="calPrev" title="Previous month">◀</button>
-          <span id="calTitle" class="mono"></span>
-          <button class="btn-sm" id="calNext" title="Next month">▶</button>
-        </div>
-        <div class="space"></div>
-        <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
-      </div>
+<div class="hd cal-hd">
+  <strong>Calendar</strong>
+  <div class="cal-month tiny">
+    <button class="btn-sm" id="calPrev" title="Previous month">◀</button>
+    <span id="calTitle" class="mono"></span>
+    <button class="btn-sm" id="calNext" title="Next month">▶</button>
+  </div>
+
+  <input type="text" id="calFilter" class="mini-search" placeholder="Filter calendar by client…" />
+  <button type="button" id="calFilterClear" class="btn-sm" title="Clear calendar filter">Clear</button>
+
+  <div class="space"></div>
+  <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
+</div>
+
       <div class="bd">
         <!-- Settings panel (toggle) -->
         <div id="calSettings" class="sr">
@@ -1398,6 +1403,15 @@ body.light .cal-badge{
 
   $('#wipeAll').addEventListener('click', ()=>{ if(confirm('This will delete ALL customers and tasks stored in your browser. Continue?')){ localStorage.removeItem(storeKey); location.reload(); } });
 
+  /* ===== Calendar filter (by client) ===== */
+let calendarFilter = ''; // lowercased string
+
+function calendarMatches(t){
+  if(!calendarFilter) return true;
+  // reuse existing helper to get display name
+  return (clientDisplayName(t) || '').toLowerCase().includes(calendarFilter);
+}
+
 /* ===== Notifications: OS-only, robust ===== */
 const NOTIFY_KEY = 'followup_crm_notified_today';
 let notifTickerStarted = false;
@@ -1547,7 +1561,9 @@ function startNotificationTicker(force=false){
     for(let d=1; d<=daysInMonth; d++){
       const dt = new Date(year, month, d);
       const ymd = fmt(dt);
-      const items = state.tasks.filter(t=> t.date===ymd && t.status!=='done');
+const items = state.tasks.filter(t =>
+  t.date === ymd && t.status !== 'done' && calendarMatches(t)
+);
       const cell = document.createElement('div');
       cell.className='cal-cell';
       if(!isWorkingDay(dt)) cell.classList.add('offday');
@@ -1564,7 +1580,19 @@ function startNotificationTicker(force=false){
   }
   $('#calPrev')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); buildCalendar(); });
   $('#calNext')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); buildCalendar(); });
+/* Calendar filter UI */
+$('#calFilter')?.addEventListener('input', ()=>{
+  calendarFilter = ($('#calFilter').value || '').trim().toLowerCase();
+  buildCalendar();
+});
+$('#calFilterClear')?.addEventListener('click', ()=>{
+  calendarFilter = '';
+  if ($('#calFilter')) $('#calFilter').value = '';
+  buildCalendar();
+  $('#calFilter')?.focus();
+});
 
+  
   /* ===== Automated emails to Unreached ===== */
   function emailTemplateFor(t, client){
     if ((t.label||'').startsWith('Unreached Day 1')) return {
@@ -1627,6 +1655,7 @@ function startNotificationTicker(force=false){
 </script>
 </body>
 </html>
+
 
 
 
