@@ -1325,23 +1325,24 @@ body.light .cal-badge{
   });
   $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
 
-  function collectClientFromForm(){
-    const id = $('#clientId').value || uid();
-    thead
-    const exists = clientById(id);
-    const status = $('#status').value;
-    const startDate = $('#startDate').value || fmt(today());
-    const client = {
-      id,
-      name: ($('#name').value||'').trim(),
-      email: ($('#email').value||'').trim(),
-      phone: ($('#phone').value||'').trim(),
-      status,
-      startDate,
-      reachedStart: exists? exists.reachedStart : (status==='reached'? startDate:null),
-      notes: ($('#notes').value||'').trim()
-    };
-    return {client, exists};
+function collectClientFromForm(){
+  const id = $('#clientId').value || uid();
+  const exists = clientById(id);
+  const status = $('#status').value;
+  const startDate = $('#startDate').value || fmt(today());
+  const client = {
+    id,
+    name: ($('#name').value||'').trim(),
+    email: ($('#email').value||'').trim(),
+    phone: ($('#phone').value||'').trim(),
+    status,
+    startDate,
+    reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null),
+    notes: ($('#notes').value||'').trim()
+  };
+  return { client, exists };
+}
+
   }
 
   $('#saveCustomer').addEventListener('click', ()=>{
@@ -1838,6 +1839,7 @@ body.light .cal-badge{
 </script>
 </body>
 </html>
+
 
 
 
