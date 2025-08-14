@@ -593,7 +593,7 @@ body.light .cal-badge{
   /* ===== Config ===== */
   const CALL_LINK_MODE = 'tel';
   const EMAIL_MODE = 'gmail';
-  const SMS_MODE = 'ringcentral';
+  const SMS_MODE = 'ringcentral'; // not used for Solution A deep-link, left for compatibility
 
   const state = load();
 
@@ -631,45 +631,31 @@ body.light .cal-badge{
     return base;
   }
 
-  // ---- SMS openers (avoid stuck RingCentral web tab) ----
+  // ---- SMS deep-link (Solution A: no web fallback, no popup) ----
   function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
-
-  function tryDeeplink(kind, phone){
-    return new Promise(resolve=>{
-      const url = kind==='rcapp'
-        ? `rcapp://sms?number=${phone}`
-        : kind==='rcmobile'
-        ? `rcmobile://sms?number=${phone}`
-        : null;
-      if(!url) return resolve(false);
-
-      let done = false;
-      const finish = ok => { if(!done){ done = true; resolve(ok); } };
-
+  function openSmsDeeplinkOnly(number){
+    const n = cleanDigits(number);
+    // fire-and-forget via hidden iframes; no popups, no web fallback
+    const hit = (scheme)=>{
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
-      iframe.src = url;
+      iframe.src = `${scheme}://sms?number=${encodeURIComponent(n)}`;
       document.body.appendChild(iframe);
-
-      const t = setTimeout(()=>{ try{ document.body.removeChild(iframe); }catch(_){} finish(false); }, 900);
-      window.addEventListener('blur', ()=>{ clearTimeout(t); try{ document.body.removeChild(iframe); }catch(_){} finish(true); }, { once:true });
-    });
+      setTimeout(()=>iframe.remove(), 900);
+    };
+    // Prefer desktop app, then mobile app
+    hit('rcapp');
+    setTimeout(()=>hit('rcmobile'), 250);
   }
 
-  function openWebAndAutoClose(phone){
-    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(phone)}`;
-    const w = window.open('about:blank', 'rcsms', 'width=980,height=740');
-    if(!w){ location.href = url; return; }      // popup blocked → navigate current tab
-    w.location.href = url;
-    setTimeout(()=>{ try{ w.close(); }catch(_){} }, 1400);
-  }
-
-  async function openSmsSmart(phoneRaw){
-    const phone = cleanDigits(phoneRaw);
-    if(!phone) return;
-    const ok = await tryDeeplink('rcapp', phone) || await tryDeeplink('rcmobile', phone);
-    if(!ok) openWebAndAutoClose(phone);
-  }
+  // Delegated click handler for SMS links
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a.sms-link');
+    if(!a) return;
+    e.preventDefault();
+    const num = a.getAttribute('data-num') || a.textContent || '';
+    openSmsDeeplinkOnly(num);
+  });
 
   /* De-dupe auto task inserts */
   function addTask(t){
@@ -717,64 +703,64 @@ body.light .cal-badge{
     window.scrollTo({ top: y, behavior: 'smooth' });
   }
 
-/* ===== Calendar Settings (UI) ===== */
-function loadSettingsIntoUI(){
-  const s = state.settings;
-  $('#wd_mon').checked = !!s.workingDays.mon;
-  $('#wd_tue').checked = !!s.workingDays.tue;
-  $('#wd_wed').checked = !!s.workingDays.wed;
-  $('#wd_thu').checked = !!s.workingDays.thu;
-  $('#wd_fri').checked = !!s.workingDays.fri;
-  $('#wd_sat').checked = !!s.workingDays.sat;
-  $('#wd_sun').checked = !!s.workingDays.sun;
-  $('#moveOffDays').checked = !!s.moveOffDays;
-  renderOverrideList();
-}
-
-function saveSettingsFromUI(){
-  const s = state.settings;
-  s.workingDays = {
-    mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
-    thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
-  };
-  s.moveOffDays = !!$('#moveOffDays').checked;
-  save();
-  $('#calSettings').classList.add('sr');   // close
-  reflowAllAutoAfterSettingsChange();      // re-pack future tasks
-  buildCalendar();
-}
-
-function renderOverrideList(){
-  const ul = $('#overrideList'); ul.innerHTML='';
-  const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
-  if (!entries.length){
-    const li = document.createElement('li'); li.textContent = 'No overrides yet.';
-    ul.appendChild(li); return;
+  /* ===== Calendar Settings (UI) ===== */
+  function loadSettingsIntoUI(){
+    const s = state.settings;
+    $('#wd_mon').checked = !!s.workingDays.mon;
+    $('#wd_tue').checked = !!s.workingDays.tue;
+    $('#wd_wed').checked = !!s.workingDays.wed;
+    $('#wd_thu').checked = !!s.workingDays.thu;
+    $('#wd_fri').checked = !!s.workingDays.fri;
+    $('#wd_sat').checked = !!s.workingDays.sat;
+    $('#wd_sun').checked = !!s.workingDays.sun;
+    $('#moveOffDays').checked = !!s.moveOffDays;
+    renderOverrideList();
   }
-  entries.forEach(([date,type])=>{
-    const li = document.createElement('li');
-    const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
-    const del = document.createElement('button'); del.className='btn-sm'; del.textContent='Delete';
-    del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; save(); renderOverrideList(); });
-    li.appendChild(left); li.appendChild(del); ul.appendChild(li);
+
+  function saveSettingsFromUI(){
+    const s = state.settings;
+    s.workingDays = {
+      mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
+      thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
+    };
+    s.moveOffDays = !!$('#moveOffDays').checked;
+    save();
+    $('#calSettings').classList.add('sr');   // close
+    reflowAllAutoAfterSettingsChange();      // re-pack future tasks
+    buildCalendar();
+  }
+
+  function renderOverrideList(){
+    const ul = $('#overrideList'); ul.innerHTML='';
+    const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
+    if (!entries.length){
+      const li = document.createElement('li'); li.textContent = 'No overrides yet.';
+      ul.appendChild(li); return;
+    }
+    entries.forEach(([date,type])=>{
+      const li = document.createElement('li');
+      const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
+      const del = document.createElement('button'); del.className='btn-sm'; del.textContent='Delete';
+      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; save(); renderOverrideList(); });
+      li.appendChild(left); li.appendChild(del); ul.appendChild(li);
+    });
+  }
+
+  $('#calSettingsBtn').addEventListener('click', ()=>{
+    $('#calSettings').classList.toggle('sr');
+    if (!$('#calSettings').classList.contains('sr')) loadSettingsIntoUI();
   });
-}
+  $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
 
-$('#calSettingsBtn').addEventListener('click', ()=>{
-  $('#calSettings').classList.toggle('sr');
-  if (!$('#calSettings').classList.contains('sr')) loadSettingsIntoUI();
-});
-$('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-
-$('#addOverride').addEventListener('click', ()=>{
-  const d = $('#ovrDate').value; const t = $('#ovrType').value;
-  if (!d) return alert('Pick a date');
-  state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
-  save();
-  renderOverrideList();
-  reflowAllAutoAfterSettingsChange();      // re-pack future tasks
-  buildCalendar();
-});
+  $('#addOverride').addEventListener('click', ()=>{
+    const d = $('#ovrDate').value; const t = $('#ovrType').value;
+    if (!d) return alert('Pick a date');
+    state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
+    save();
+    renderOverrideList();
+    reflowAllAutoAfterSettingsChange();      // re-pack future tasks
+    buildCalendar();
+  });
 
   /* ===== Working day logic ===== */
   function weekdayIndex(dt){ const js = dt.getDay(); return (js+6)%7; }
@@ -872,85 +858,85 @@ $('#addOverride').addEventListener('click', ()=>{
 
   /* ===== Schedules ===== */
   /* ===== Reschedule auto tasks after calendar settings change ===== */
-function reflowAllAutoAfterSettingsChange(){
-  const todayStr = fmt(today());
-  state.clients.forEach(c=>{
-    if(c.status === 'unreached') reflowUnreachedClient(c, todayStr);
-    else                        reflowReachedClient(c, todayStr);
-  });
-  save(); // persist & re-render
-}
+  function reflowAllAutoAfterSettingsChange(){
+    const todayStr = fmt(today());
+    state.clients.forEach(c=>{
+      if(c.status === 'unreached') reflowUnreachedClient(c, todayStr);
+      else                        reflowReachedClient(c, todayStr);
+    });
+    save(); // persist & re-render
+  }
 
-function reflowUnreachedClient(client, todayStr){
-  // remove future auto tasks (only Unreached series)
-  state.tasks = state.tasks.filter(t =>
-    !(t.clientId===client.id &&
+  function reflowUnreachedClient(client, todayStr){
+    // remove future auto tasks (only Unreached series)
+    state.tasks = state.tasks.filter(t =>
+      !(t.clientId===client.id &&
+        t.source==='auto' &&
+        /^Unreached Day /i.test(t.label||'') &&
+        t.date >= todayStr)
+    );
+
+    // find last completed unreached day (< today)
+    const past = state.tasks.filter(t =>
+      t.clientId===client.id &&
       t.source==='auto' &&
       /^Unreached Day /i.test(t.label||'') &&
-      t.date >= todayStr)
-  );
+      t.date < todayStr
+    );
 
-  // find last completed unreached day (< today)
-  const past = state.tasks.filter(t =>
-    t.clientId===client.id &&
-    t.source==='auto' &&
-    /^Unreached Day /i.test(t.label||'') &&
-    t.date < todayStr
-  );
+    let maxDay = 0, lastDate = null;
+    past.forEach(t=>{
+      const m = /Unreached Day\s+(\d+)/i.exec(t.label||'');
+      if(m){ const n = parseInt(m[1],10)||0; if(n>maxDay){ maxDay=n; lastDate=t.date; } }
+    });
 
-  let maxDay = 0, lastDate = null;
-  past.forEach(t=>{
-    const m = /Unreached Day\s+(\d+)/i.exec(t.label||'');
-    if(m){ const n = parseInt(m[1],10)||0; if(n>maxDay){ maxDay=n; lastDate=t.date; } }
-  });
+    let day, startNum;
+    if(maxDay>0){
+      startNum = maxDay + 1;
+      day = stepByWorkingDays(parseLocalYMD(lastDate), 1);     // next working day after the last completed day
+    }else{
+      startNum = 1;
+      day = nextWorkingDay(parseLocalYMD(client.startDate || fmt(today())));
+    }
 
-  let day, startNum;
-  if(maxDay>0){
-    startNum = maxDay + 1;
-    day = stepByWorkingDays(parseLocalYMD(lastDate), 1);     // next working day after the last completed day
-  }else{
-    startNum = 1;
-    day = nextWorkingDay(parseLocalYMD(client.startDate || fmt(today())));
+    for(let n=startNum; n<=5; n++){
+      const ymd = fmt(day);
+      genDayTasks(client, ymd, ACTIONS_UNREACHED(n), `Unreached Day ${n}`);
+      if(n<5) day = stepByWorkingDays(day, 1);
+    }
   }
 
-  for(let n=startNum; n<=5; n++){
-    const ymd = fmt(day);
-    genDayTasks(client, ymd, ACTIONS_UNREACHED(n), `Unreached Day ${n}`);
-    if(n<5) day = stepByWorkingDays(day, 1);
+  function reflowReachedClient(client, todayStr){
+    // remove future auto tasks for this client
+    state.tasks = state.tasks.filter(t =>
+      !(t.clientId===client.id && t.source==='auto' && t.date >= todayStr)
+    );
+
+    // recompute the canonical series using current settings, then only add >= today
+    const start0 = parseLocalYMD(client.reachedStart || fmt(today()));
+    const p1d1 = nextWorkingDay(start0);
+    const p1d2 = stepByWorkingDays(p1d1, 1);
+    const p1d3 = stepByWorkingDays(p1d2, 1);
+
+    const series = [
+      {date:p1d1, label:`Phase 1 (Day 1/3)`},
+      {date:p1d2, label:`Phase 1 (Day 2/3)`},
+      {date:p1d3, label:`Phase 1 (Day 3/3)`}
+    ];
+    let last = p1d3;
+    const gaps = [3,5,7,7,7];
+    for(let i=0;i<gaps.length;i++){
+      let target = addDays(last, gaps[i]);
+      target = adjustAutoDateIfNeeded(target);
+      series.push({date: target, label:`Phase ${i+2}`});
+      last = target;
+    }
+
+    for(const s of series){
+      if(fmt(s.date) < todayStr) continue;        // keep past as-is
+      genDayTasks(client, fmt(s.date), ACTIONS_REACHED, s.label);
+    }
   }
-}
-
-function reflowReachedClient(client, todayStr){
-  // remove future auto tasks for this client
-  state.tasks = state.tasks.filter(t =>
-    !(t.clientId===client.id && t.source==='auto' && t.date >= todayStr)
-  );
-
-  // recompute the canonical series using current settings, then only add >= today
-  const start0 = parseLocalYMD(client.reachedStart || fmt(today()));
-  const p1d1 = nextWorkingDay(start0);
-  const p1d2 = stepByWorkingDays(p1d1, 1);
-  const p1d3 = stepByWorkingDays(p1d2, 1);
-
-  const series = [
-    {date:p1d1, label:`Phase 1 (Day 1/3)`},
-    {date:p1d2, label:`Phase 1 (Day 2/3)`},
-    {date:p1d3, label:`Phase 1 (Day 3/3)`}
-  ];
-  let last = p1d3;
-  const gaps = [3,5,7,7,7];
-  for(let i=0;i<gaps.length;i++){
-    let target = addDays(last, gaps[i]);
-    target = adjustAutoDateIfNeeded(target);
-    series.push({date: target, label:`Phase ${i+2}`});
-    last = target;
-  }
-
-  for(const s of series){
-    if(fmt(s.date) < todayStr) continue;        // keep past as-is
-    genDayTasks(client, fmt(s.date), ACTIONS_REACHED, s.label);
-  }
-}
 
   const ACTIONS_UNREACHED = d => ({ calls:2, voicemail:1, sms:1, emails: d===1?2:1 });
   const ACTIONS_REACHED   = { calls:2, voicemail:1, sms:1, emails:1 };
@@ -1085,9 +1071,9 @@ function reflowReachedClient(client, todayStr){
         const href = phoneHref(c.phone);
         contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}">${escapeHtml(c.phone)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        const clean = cleanDigits(c.phone);
+        // Deep-link only (Solution A)
         contactHtml = `<span class="copy-chip">
-          <a class="tiny mono sms-link" href="#" data-phone="${escapeHtml(clean)}">${escapeHtml(c.phone)}</a>
+          <a class="tiny mono sms-link" href="#" data-num="${escapeHtml(c.phone)}">${escapeHtml(c.phone)}</a>
           <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button>
         </span>`;
       } else if(t.type==='email' && c.email){
@@ -1122,13 +1108,6 @@ function reflowReachedClient(client, todayStr){
         const old = copyBtn.textContent;
         copyBtn.textContent = ok ? '✔' : '✖';
         setTimeout(()=> copyBtn.textContent = old, 700);
-      });
-    }
-    const smsA = div.querySelector('.sms-link');
-    if (smsA){
-      smsA.addEventListener('click', (e)=>{
-        e.preventDefault();
-        openSmsSmart(smsA.dataset.phone);
       });
     }
     return div;
@@ -1348,6 +1327,7 @@ function reflowReachedClient(client, todayStr){
 
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
+    thead
     const exists = clientById(id);
     const status = $('#status').value;
     const startDate = $('#startDate').value || fmt(today());
@@ -1511,294 +1491,291 @@ function reflowReachedClient(client, todayStr){
     save();
   });
 
- /* ===== Agenda filter & sort ===== */
-const filterInput = $('#agendaFilter');
+  /* ===== Agenda filter & sort ===== */
+  const filterInput = $('#agendaFilter');
 
-filterInput.addEventListener('input', ()=>{
-  agendaFilter = filterInput.value.trim().toLowerCase();
-  renderAgenda();
-  buildCalendar(); // keep calendar counts in sync with the filter
-});
+  filterInput.addEventListener('input', ()=>{
+    agendaFilter = filterInput.value.trim().toLowerCase();
+    renderAgenda();
+    buildCalendar(); // keep calendar counts in sync with the filter
+  });
 
-$('#agendaFilterClear').addEventListener('click', ()=>{
-  filterInput.value = '';
-  agendaFilter = '';
-  renderAgenda();
-  buildCalendar();
-  filterInput.focus();
-});
-
-filterInput.addEventListener('keydown', (e)=>{
-  if(e.key === 'Escape'){
+  $('#agendaFilterClear').addEventListener('click', ()=>{
     filterInput.value = '';
     agendaFilter = '';
     renderAgenda();
     buildCalendar();
+    filterInput.focus();
+  });
+
+  filterInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      filterInput.value = '';
+      agendaFilter = '';
+      renderAgenda();
+      buildCalendar();
+    }
+  });
+
+  function setAgendaMode(mode){
+    $('#viewToday').classList.toggle('primary', mode === 'today');
+    $('#viewWeek').classList.toggle('primary', mode === 'week');
   }
-});
 
-function setAgendaMode(mode){
-  $('#viewToday').classList.toggle('primary', mode === 'today');
-  $('#viewWeek').classList.toggle('primary', mode === 'week');
-}
+  $('#viewToday').addEventListener('click', ()=>{
+    currentAgendaDate = today();
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode('today');
+    $('#agendaDate').value = '';
+    renderAgenda();
+  });
 
-$('#viewToday').addEventListener('click', ()=>{
-  currentAgendaDate = today();
-  renderAgenda = ()=> buildAgenda(currentAgendaDate);
+  $('#viewWeek').addEventListener('click', ()=>{
+    const from = today();
+    const to = addDays(today(), 7);
+    renderAgenda = ()=> buildAgendaRange(from, to);
+    setAgendaMode('week');
+    $('#agendaDate').value = '';
+    renderAgenda();
+  });
+
+  $('#agendaDate').addEventListener('change', ()=>{
+    const d = $('#agendaDate').value ? parseLocalYMD($('#agendaDate').value) : today();
+    currentAgendaDate = d;
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode(null);
+    renderAgenda();
+  });
+
+  function setSortButtons(){
+    $('#sortClient').classList.toggle('active',  sortMode === 'client');
+    $('#sortType').classList.toggle('active',    sortMode === 'type');
+  }
+
+  $('#sortClient').addEventListener('click',  ()=>{
+    sortMode = 'client';
+    setSortButtons();
+    renderAgenda();
+  });
+
+  $('#sortType').addEventListener('click',    ()=>{
+    sortMode = 'type';
+    setSortButtons();
+    renderAgenda();
+  });
+
+  /* initialize button states on load */
+  setSortButtons();
   setAgendaMode('today');
-  $('#agendaDate').value = '';
-  renderAgenda();
-});
 
-$('#viewWeek').addEventListener('click', ()=>{
-  const from = today();
-  const to = addDays(today(), 7);
-  renderAgenda = ()=> buildAgendaRange(from, to);
-  setAgendaMode('week');
-  $('#agendaDate').value = '';
-  renderAgenda();
-});
+  /* ===== Notifications: OS-only, robust ===== */
+  const NOTIFY_KEY = 'followup_crm_notified_today';
+  let notifTickerStarted = false;
 
-$('#agendaDate').addEventListener('change', ()=>{
-  const d = $('#agendaDate').value ? parseLocalYMD($('#agendaDate').value) : today();
-  currentAgendaDate = d;
-  renderAgenda = ()=> buildAgenda(currentAgendaDate);
-  setAgendaMode(null);
-  renderAgenda();
-});
+  // ===== Wipe All =====
+  document.getElementById('wipeAll').addEventListener('click', () => {
+    if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
 
-function setSortButtons(){
-  $('#sortClient').classList.toggle('active',  sortMode === 'client');
-  $('#sortType').classList.toggle('active',    sortMode === 'type');
-}
+    // clear in-memory state
+    state.clients = [];
+    state.tasks   = [];
+    state.settings = {
+      workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
+      moveOffDays: true,
+      overrides: {}
+    };
 
-$('#sortClient').addEventListener('click',  ()=>{
-  sortMode = 'client';
-  setSortButtons();
-  renderAgenda();
-});
+    // reset “already notified today” cache; keep theme preference
+    try { localStorage.removeItem('followup_crm_notified_today'); } catch (_) {}
 
-$('#sortType').addEventListener('click',    ()=>{
-  sortMode = 'type';
-  setSortButtons();
-  renderAgenda();
-});
-
-/* initialize button states on load */
-setSortButtons();
-setAgendaMode('today');
-
-/* ===== Notifications: OS-only, robust ===== */
-const NOTIFY_KEY = 'followup_crm_notified_today';
-let notifTickerStarted = false;
-
-// ===== Wipe All =====
-document.getElementById('wipeAll').addEventListener('click', () => {
-  if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
-
-  // clear in-memory state
-  state.clients = [];
-  state.tasks   = [];
-  state.settings = {
-    workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
-    moveOffDays: true,
-    overrides: {}
-  };
-
-  // reset “already notified today” cache; keep theme preference
-  try { localStorage.removeItem('followup_crm_notified_today'); } catch (_) {}
-
-  // persist & refresh UI
-  save();                  // save() already calls refresh() + buildCalendar()
-  alert('All data cleared.');
-});
-
-function notifSupported(){ return typeof window.Notification === 'function'; }
-function isSecure(){
-  return window.isSecureContext || location.protocol==='https:' ||
-         ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
-}
-function setNotifStatus(txt){ const el = document.getElementById('notifStatus'); if(el) el.textContent = txt; }
-function fmtToday(){ return fmt(today()); }
-
-function notifyTask(t){
-  // OS notification only. If permission isn’t granted, do nothing.
-  if (!notifSupported() || Notification.permission!=='granted') return;
-  try{
-    const tag = t.tag || t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2)); // unique so it always shows
-    const n = new Notification(
-      `${t.title}${t.clientName ? ' — '+t.clientName : ''}`,
-      {
-        body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
-        tag,
-        renotify: true,              // if tag collides, still alert
-        silent: false,
-        requireInteraction: !!t.requireInteraction // Test sticks until dismissed
-      }
-    );
-    n.onclick = () => { try{ window.focus(); }catch(_){} };
-  }catch(e){ /* ignore */ }
-}
-
-function getNotifiedSet(){
-  const f = fmtToday();
-  try { const o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); return o[f] ? new Set(o[f]) : new Set(); } catch(e){ return new Set(); }
-}
-function saveNotifiedSet(set){
-  const f = fmtToday();
-  let o = {};
-  try { o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch(e){}
-  o[f] = Array.from(set);
-  localStorage.setItem(NOTIFY_KEY, JSON.stringify(o));
-}
-
-function notifyEligibleTodayImportant(now=new Date()){
-  const f = fmtToday();
-  const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
-  return list.filter(t => {
-    const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
-    return now >= at;
+    // persist & refresh UI
+    save();                  // save() already calls refresh() + buildCalendar()
+    alert('All data cleared.');
   });
-}
 
-function initNotificationsUI(){
-  const btn = document.getElementById('enableNotifs');
-  const test = document.getElementById('testNotif');
-  if(!btn || !test) return;
-
-  function refreshUI(){
-    if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
-    if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
-    btn.disabled = false; test.disabled = false;
-    const perm = Notification.permission;
-    if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
-    else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
-    else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
+  function notifSupported(){ return typeof window.Notification === 'function'; }
+  function isSecure(){
+    return window.isSecureContext || location.protocol==='https:' ||
+           ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
   }
-  refreshUI();
+  function setNotifStatus(txt){ const el = document.getElementById('notifStatus'); if(el) el.textContent = txt; }
+  function fmtToday(){ return fmt(today()); }
 
-  // live updates where supported
-  if (navigator.permissions && navigator.permissions.query){
-    try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
-  }
-
-  btn.addEventListener('click', async ()=>{
-    if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
-    try{
-      const res = await Notification.requestPermission(); // user gesture
-      setTimeout(refreshUI, 50);
-      if(res==='granted'){
-        // start ticker now that permission is granted
-        startNotificationTicker(true);
-        notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), notifyTime:'', requireInteraction:true });
-      }else if(res==='denied'){
-        alert('Notifications are blocked for this site. Allow them in your browser’s site settings.');
-      }
-    }catch(_){}
-  });
-
-  test.addEventListener('click', async ()=>{
-    if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
-    if(Notification.permission==='default'){
-      try{ await Notification.requestPermission(); }catch(_){}
-      refreshUI();
-    }
-    if(Notification.permission==='granted'){
-      // unique id/tag every time so Chrome shows a new banner
-      notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), notifyTime:'', requireInteraction:true });
-    }else if(Notification.permission==='denied'){
-      alert('Notifications are blocked for this site. Click the lock icon → Site settings → Allow.');
-    }
-  });
-
-  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
-}
-
-function startNotificationTicker(force=false){
-  if (notifTickerStarted && !force) return; // idempotent
-  notifTickerStarted = true;
-  let notified = getNotifiedSet();
-  function tick(){
+  function notifyTask(t){
+    // OS notification only. If permission isn’t granted, do nothing.
     if (!notifSupported() || Notification.permission!=='granted') return;
-    const due = notifyEligibleTodayImportant();
-    due.forEach(t => {
-      if (!notified.has(t.id)){
-        notifyTask(t);
-        notified.add(t.id);
+    try{
+      const tag = t.tag || t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2)); // unique so it always shows
+      const n = new Notification(
+        `${t.title}${t.clientName ? ' — '+t.clientName : ''}`,
+        {
+          body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
+          tag,
+          renotify: true,
+          silent: false,
+          requireInteraction: !!t.requireInteraction // Test sticks until dismissed
+        }
+      );
+      n.onclick = () => { try{ window.focus(); }catch(_){} };
+    }catch(e){ /* ignore */ }
+  }
+
+  function getNotifiedSet(){
+    const f = fmtToday();
+    try { const o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); return o[f] ? new Set(o[f]) : new Set(); } catch(e){ return new Set(); }
+  }
+  function saveNotifiedSet(set){
+    const f = fmtToday();
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch(e){}
+    o[f] = Array.from(set);
+    localStorage.setItem(NOTIFY_KEY, JSON.stringify(o));
+  }
+
+  function notifyEligibleTodayImportant(now=new Date()){
+    const f = fmtToday();
+    const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
+    return list.filter(t => {
+      const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
+      return now >= at;
+    });
+  }
+
+  function initNotificationsUI(){
+    const btn = document.getElementById('enableNotifs');
+    const test = document.getElementById('testNotif');
+    if(!btn || !test) return;
+
+    function refreshUI(){
+      if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
+      if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
+      btn.disabled = false; test.disabled = false;
+      const perm = Notification.permission;
+      if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
+      else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
+      else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
+    }
+    refreshUI();
+
+    // live updates where supported
+    if (navigator.permissions && navigator.permissions.query){
+      try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
+      try{
+        const res = await Notification.requestPermission(); // user gesture
+        setTimeout(refreshUI, 50);
+        if(res==='granted'){
+          // start ticker now that permission is granted
+          startNotificationTicker(true);
+          notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), notifyTime:'', requireInteraction:true });
+        }else if(res==='denied'){
+          alert('Notifications are blocked for this site. Allow them in your browser’s site settings.');
+        }
+      }catch(_){}
+    });
+
+    test.addEventListener('click', async ()=>{
+      if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
+      if(Notification.permission==='default'){
+        try{ await Notification.requestPermission(); }catch(_){}
+        refreshUI();
+      }
+      if(Notification.permission==='granted'){
+        // unique id/tag every time so Chrome shows a new banner
+        notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), notifyTime:'', requireInteraction:true });
+      }else if(Notification.permission==='denied'){
+        alert('Notifications are blocked for this site. Click the lock icon → Site settings → Allow.');
       }
     });
-    saveNotifiedSet(notified);
+
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
   }
-  tick();
-  setInterval(tick, 60*1000);
-  window.addEventListener('focus', tick);
-}
-/* ===== end Notifications ===== */
 
+  function startNotificationTicker(force=false){
+    if (notifTickerStarted && !force) return; // idempotent
+    notifTickerStarted = true;
+    let notified = getNotifiedSet();
+    function tick(){
+      if (!notifSupported() || Notification.permission!=='granted') return;
+      const due = notifyEligibleTodayImportant();
+      due.forEach(t => {
+        if (!notified.has(t.id)){
+          notifyTask(t);
+          notified.add(t.id);
+        }
+      });
+      saveNotifiedSet(notified);
+    }
+    tick();
+    setInterval(tick, 60*1000);
+    window.addEventListener('focus', tick);
+  }
+  /* ===== end Notifications ===== */
 
+  /* ===== Calendar ===== */
+  let calCursor = new Date(); 
+  calCursor.setDate(1);
 
-/* ===== Calendar ===== */
-let calCursor = new Date(); 
-calCursor.setDate(1);
+  function buildCalendar(){
+    const grid = $('#calendarGrid'); 
+    if(!grid) return;
 
-function buildCalendar(){
-  const grid = $('#calendarGrid'); 
-  if(!grid) return;
+    const year  = calCursor.getFullYear();
+    const month = calCursor.getMonth();
+    $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
 
-  const year  = calCursor.getFullYear();
-  const month = calCursor.getMonth();
-  $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
-
-  grid.innerHTML = '';
-  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{
-    const hd = document.createElement('div'); 
-    hd.className='cal-head'; 
-    hd.textContent=h; 
-    grid.appendChild(hd);
-  });
-
-  const first = new Date(year, month, 1);
-  const startIdx = (first.getDay()+6)%7; // Monday start
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-
-  for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
-
-  for(let d=1; d<=daysInMonth; d++){
-    const dt  = new Date(year, month, d);
-    const ymd = fmt(dt);
-
-    // Only count tasks that match the Actions/Tasks filter
-    const items = state.tasks.filter(t =>
-      t.date === ymd && t.status !== 'done' && matchesFilter(t)
-    );
-
-    const cell = document.createElement('div');
-    cell.className='cal-cell';
-    if(!isWorkingDay(dt)) cell.classList.add('offday');
-
-    cell.innerHTML = `<div class="d">${d}</div>` + 
-      (items.length ? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
-
-    cell.addEventListener('click', ()=>{
-      $('#agendaDate').value = ymd;
-      const ev = new Event('change');
-      $('#agendaDate').dispatchEvent(ev);
-      scrollCardIntoView(document.getElementById('actionsCard'));
+    grid.innerHTML = '';
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{
+      const hd = document.createElement('div'); 
+      hd.className='cal-head'; 
+      hd.textContent=h; 
+      grid.appendChild(hd);
     });
 
-    grid.appendChild(cell);
-  }
-}
-$('#calPrev')?.addEventListener('click', ()=>{
-  calCursor.setMonth(calCursor.getMonth()-1); 
-  buildCalendar();
-});
-$('#calNext')?.addEventListener('click', ()=>{
-  calCursor.setMonth(calCursor.getMonth()+1); 
-  buildCalendar();
-});
+    const first = new Date(year, month, 1);
+    const startIdx = (first.getDay()+6)%7; // Monday start
+    const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  
+    for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
+
+    for(let d=1; d<=daysInMonth; d++){
+      const dt  = new Date(year, month, d);
+      const ymd = fmt(dt);
+
+      // Only count tasks that match the Actions/Tasks filter
+      const items = state.tasks.filter(t =>
+        t.date === ymd && t.status !== 'done' && matchesFilter(t)
+      );
+
+      const cell = document.createElement('div');
+      cell.className='cal-cell';
+      if(!isWorkingDay(dt)) cell.classList.add('offday');
+
+      cell.innerHTML = `<div class="d">${d}</div>` + 
+        (items.length ? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
+
+      cell.addEventListener('click', ()=>{
+        $('#agendaDate').value = ymd;
+        const ev = new Event('change');
+        $('#agendaDate').dispatchEvent(ev);
+        scrollCardIntoView(document.getElementById('actionsCard'));
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+  $('#calPrev')?.addEventListener('click', ()=>{
+    calCursor.setMonth(calCursor.getMonth()-1); 
+    buildCalendar();
+  });
+  $('#calNext')?.addEventListener('click', ()=>{
+    calCursor.setMonth(calCursor.getMonth()+1); 
+    buildCalendar();
+  });
+
   /* ===== Automated emails to Unreached ===== */
   function emailTemplateFor(t, client){
     if ((t.label||'').startsWith('Unreached Day 1')) return {
@@ -1861,6 +1838,7 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
