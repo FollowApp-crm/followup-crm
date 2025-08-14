@@ -631,6 +631,46 @@ body.light .cal-badge{
     return base;
   }
 
+  // ---- SMS openers (avoid stuck RingCentral web tab) ----
+  function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
+
+  function tryDeeplink(kind, phone){
+    return new Promise(resolve=>{
+      const url = kind==='rcapp'
+        ? `rcapp://sms?number=${phone}`
+        : kind==='rcmobile'
+        ? `rcmobile://sms?number=${phone}`
+        : null;
+      if(!url) return resolve(false);
+
+      let done = false;
+      const finish = ok => { if(!done){ done = true; resolve(ok); } };
+
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+
+      const t = setTimeout(()=>{ try{ document.body.removeChild(iframe); }catch(_){} finish(false); }, 900);
+      window.addEventListener('blur', ()=>{ clearTimeout(t); try{ document.body.removeChild(iframe); }catch(_){} finish(true); }, { once:true });
+    });
+  }
+
+  function openWebAndAutoClose(phone){
+    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(phone)}`;
+    const w = window.open('about:blank', 'rcsms', 'width=980,height=740');
+    if(!w){ location.href = url; return; }      // popup blocked → navigate current tab
+    w.location.href = url;
+    setTimeout(()=>{ try{ w.close(); }catch(_){} }, 1400);
+  }
+
+  async function openSmsSmart(phoneRaw){
+    const phone = cleanDigits(phoneRaw);
+    if(!phone) return;
+    const ok = await tryDeeplink('rcapp', phone) || await tryDeeplink('rcmobile', phone);
+    if(!ok) openWebAndAutoClose(phone);
+  }
+
   /* De-dupe auto task inserts */
   function addTask(t){
     t.id = t.id || uid();
@@ -1044,10 +1084,13 @@ function reflowReachedClient(client, todayStr){
       if((t.type==='call' || t.type==='callvm') && c.phone){
         const href = phoneHref(c.phone);
         contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}">${escapeHtml(c.phone)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button></span>`;
-      }else if(t.type==='sms' && c.phone){
-        const href = smsHref(c.phone);
-        contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.phone)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button></span>`;
-      }else if(t.type==='email' && c.email){
+      } else if(t.type==='sms' && c.phone){
+        const clean = cleanDigits(c.phone);
+        contactHtml = `<span class="copy-chip">
+          <a class="tiny mono sms-link" href="#" data-phone="${escapeHtml(clean)}">${escapeHtml(c.phone)}</a>
+          <button class="btn-sm" data-copy="${escapeHtml(c.phone)}" title="Copy">📋</button>
+        </span>`;
+      } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="copy-chip"><a class="tiny mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="btn-sm" data-copy="${escapeHtml(c.email)}" title="Copy">📋</button></span>`;
       }
@@ -1079,6 +1122,13 @@ function reflowReachedClient(client, todayStr){
         const old = copyBtn.textContent;
         copyBtn.textContent = ok ? '✔' : '✖';
         setTimeout(()=> copyBtn.textContent = old, 700);
+      });
+    }
+    const smsA = div.querySelector('.sms-link');
+    if (smsA){
+      smsA.addEventListener('click', (e)=>{
+        e.preventDefault();
+        openSmsSmart(smsA.dataset.phone);
       });
     }
     return div;
@@ -1541,6 +1591,7 @@ setAgendaMode('today');
 /* ===== Notifications: OS-only, robust ===== */
 const NOTIFY_KEY = 'followup_crm_notified_today';
 let notifTickerStarted = false;
+
 // ===== Wipe All =====
 document.getElementById('wipeAll').addEventListener('click', () => {
   if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
@@ -1810,9 +1861,6 @@ $('#calNext')?.addEventListener('click', ()=>{
 </script>
 </body>
 </html>
-
-
-
 
 
 
