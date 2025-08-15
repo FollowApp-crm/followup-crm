@@ -115,6 +115,19 @@ body.light textarea,
 body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.toggle) {
   background:#fff; color:var(--ink); border-color:var(--line);
 }
+/* Flash the Agenda date field when it’s changed from the calendar */
+@keyframes agendaDateGlow{
+  0%   { box-shadow: 0 0 0 0 rgba(124,92,255,.45), 0 0 0 6px rgba(124,92,255,.18); }
+  100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
+}
+#agendaDate.glow{
+  animation: agendaDateGlow 900ms ease-out;
+  border-color:#6a4ff0;
+  background:linear-gradient(180deg, rgba(124,92,255,.12), rgba(124,92,255,.05)), var(--surface);
+}
+@media (prefers-reduced-motion: reduce){
+  #agendaDate.glow{ animation:none; }
+}
 
 button{cursor:pointer; background:linear-gradient(180deg,#2c2f44,#1b2130); border:1px solid #2b3346; color:var(--ink)}
 button.primary{ background:linear-gradient(180deg,var(--accent),#6a4ff0); border-color:#6a4ff0; color:#fff }
@@ -713,6 +726,16 @@ input[type="checkbox"]{
       toast('Parsed from paste. Review & save.');
     });
   });
+
+  function flashAgendaDate(){
+  const el = document.getElementById('agendaDate');
+  if(!el) return;
+  el.classList.remove('glow');   // restart if already applied
+  void el.offsetWidth;           // reflow to retrigger animation
+  el.classList.add('glow');
+  clearTimeout(flashAgendaDate._t);
+  flashAgendaDate._t = setTimeout(()=> el.classList.remove('glow'), 950);
+}
 
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
@@ -1387,7 +1410,8 @@ function closeNewTaskUI(){
   function buildCalendar(){
     const grid = $('#calendarGrid'); if(!grid) return;
     const year=calCursor.getFullYear(), month=calCursor.getMonth();
-    $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+$('#calTitle').textContent = `${monthNames[month]} ${year}`;
     grid.innerHTML = '';
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd); });
     const first = new Date(year, month, 1);
@@ -1403,6 +1427,7 @@ cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-
       cell.addEventListener('click', ()=>{
         $('#agendaDate').value = ymd;
         $('#agendaDate').dispatchEvent(new Event('change'));
+        flashAgendaDate(); 
         const target = document.getElementById('actionsCard');
         if (target && target.scrollIntoView){
           target.scrollIntoView({ behavior:'smooth', block:'start' });
