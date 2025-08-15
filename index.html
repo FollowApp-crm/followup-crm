@@ -6,6 +6,52 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
+  /* ===== Lead paste block (textarea + side buttons) ===== */
+.lead-block{
+  display:grid;
+  grid-template-columns: 1fr 140px; /* textarea | side column */
+  gap:12px;
+  align-items:start;
+  margin-bottom:14px;
+}
+.lead-actions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.lead-actions > button{
+  height:44px;
+  width:100%;
+}
+
+/* Make the side buttons stay visible if the form grows tall */
+@media (min-width:761px){
+  .lead-actions{ position:sticky; top:84px; }
+}
+
+/* Mobile: stack buttons under the textarea */
+@media (max-width:760px){
+  .lead-block{
+    grid-template-columns:1fr;
+  }
+  .lead-actions{
+    position:static;
+    flex-direction:row;
+    flex-wrap:wrap;
+  }
+  .lead-actions > button{ width:auto; }
+}
+
+/* Bottom-right action buttons on the form */
+.form-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  align-items:center;
+}
+/* Keeps the action group aligned to the bottom of the grid row */
+.form-actions.is-end{ align-self:end; }
+
 /* =================== TOKENS =================== */
 :root{
   --bg:#0f1117; --panel:#151a21; --card:#1a2130; --chip:#1b2230; --surface:#10151d;
@@ -235,16 +281,18 @@ body.light .ovr-list li{ background:#fff }
     <section class="card" id="addCard">
       <div class="hd"><strong>Add / Edit Customer</strong><span class="badge">Local only</span></div>
       <div class="bd">
-        <div class="row single">
-          <div class="full">
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax)</label>
-            <textarea id="leadBlob" rows="5" placeholder="Paste the whole blob here…"></textarea>
-            <div class="right toolbar" style="margin-top:8px">
-              <button type="button" id="parseLead">Paste &amp; Edit</button>
-              <button type="button" id="clearLead" class="ghost">Clear</button>
-            </div>
-          </div>
-        </div>
+ <div class="lead-block">
+  <div>
+    <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax)</label>
+    <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
+  </div>
+
+  <div class="lead-actions" aria-label="Paste tools">
+    <button type="button" id="parseLead">Paste &amp; Edit</button>
+    <button type="button" id="clearLead" class="ghost">Clear</button>
+  </div>
+</div>
+
 
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
@@ -302,7 +350,7 @@ body.light .ovr-list li{ background:#fff }
               <label>Start date (defaults to today)</label>
               <input id="startDate" type="date" />
             </div>
-            <div class="right" style="align-self:end">
+<div class="form-actions is-end">
               <button type="button" class="ghost" id="resetForm">Clear</button>
               <button class="primary" type="button" id="saveCustomer">Save Customer</button>
             </div>
