@@ -369,6 +369,16 @@ input[type="checkbox"]{
     <section class="card" id="addCard">
       <div class="hd"><strong>Add / Edit Customer</strong><span class="badge">Local only</span></div>
       <div class="bd">
+        <div class="lead-block highlight">
+          <div>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+            <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
+          </div>
+          <div class="lead-actions" aria-label="Paste tools">
+            <button type="button" id="parseLead">Paste &amp; Edit</button>
+            <button type="button" id="clearLead" class="ghost">Clear</button>
+          </div>
+        </div>
 
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
@@ -398,26 +408,7 @@ input[type="checkbox"]{
 
           <!-- Trip/customer details -->
           <div class="row">
-            <div>
-              <label>Route</label>
-              <input id="route" placeholder="LAX → JFK or AUS-LHR-AUS" />
-            </div>
-            <div>
-              <label>Passengers</label>
-              <input id="pax" type="number" min="1" step="1" placeholder="2" />
-            </div>
-          </div>
-
-          <!-- Manual OR Paste choice -->
-          <div class="row">
-            <div></div>
-            <div>
-              <div class="or-note" aria-hidden="true">OR</div>
-
-              <!-- Lead paste block (moved here) -->
-              <div class="lead-block highlight">
-                <div>
-                  <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+        
                   <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
                 </div>
                 <div class="lead-actions" aria-label="Paste tools">
