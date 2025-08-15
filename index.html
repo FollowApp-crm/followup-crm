@@ -143,7 +143,34 @@ body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
-.pill{padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff}
+/* keep chips on one line + room for a tiny icon */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:11px;
+  border:1px solid var(--line);
+  background:var(--chip);
+  color:#bfc7ff;
+  white-space:nowrap;            /* <-- makes "Pax: 2", "Lead: 55692" unseparable */
+}
+
+/* small copy button to sit beside links or inside pills */
+.copy-btn{
+  margin-left:6px;
+  width:18px; height:18px;
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:6px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  font-size:12px; line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+.copy-btn:active{ transform:translateY(1px); }
+body.light .copy-btn{ background:#fff; }
   /* Keep label + value together inside a pill */
 .pill{
   display:inline-flex;           /* draws a single capsule */
@@ -778,6 +805,34 @@ input[type="checkbox"]{
   function parseLocalYMD(ymd){ if(!ymd) return today(); const [y,m,d]=ymd.split('-').map(Number); const dt=new Date(y,(m||1)-1,d||1); dt.setHours(0,0,0,0); return dt; }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
+  /* Copy helper */
+function copyTextToClipboard(text, what='value'){
+  if(!text) return;
+  const done = () => toast(`Copied ${what}`, 'ok', 900);
+  try{
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>{
+        const ta=document.createElement('textarea');
+        ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+      });
+    }else{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+    }
+  }catch(_){}
+}
+
+/* One listener for all copy buttons */
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('[data-copy]');
+  if(!btn) return;
+  const text = btn.getAttribute('data-copy') || '';
+  const what = btn.getAttribute('data-what') || 'value';
+  copyTextToClipboard(text, what);
+});
+
 
   // Close + reset the New Task UI
 function closeNewTaskUI(){
@@ -1024,10 +1079,11 @@ function closeNewTaskUI(){
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
-        const contactHtml = `
-          ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a>` : '-'}
-          <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a>` : '-'}`;
+              const contactHtml = `
+           ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
+           <br>
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
+
         tr.innerHTML = `
           <td data-label="Name">
             <strong>${escapeHtml(c.name)}</strong>
@@ -1209,15 +1265,16 @@ const chips = [
     let contactHtml = '';
     if(t.clientId){
       const c = clientById(t.clientId) || {};
-      if((t.type==='call' || t.type==='callvm') && c.phone){
-        const href = phoneHref(c.phone);
-        contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a></span>`;
-      } else if(t.type==='sms' && c.phone){
-        contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a></span>`;
-      } else if(t.type==='email' && c.email){
-        const href = emailHref(c.email,'Follow-up','Hi …');
-        contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a></span>`;
-      }
+            if((t.type==='call' || t.type==='callvm') && c.phone){
+          const href = phoneHref(c.phone);
+          contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        } else if(t.type==='sms' && c.phone){
+          contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        } else if(t.type==='email' && c.email){
+          const href = emailHref(c.email,'Follow-up','Hi …');
+          contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
+        }
+
     }
     const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
