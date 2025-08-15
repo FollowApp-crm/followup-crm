@@ -574,6 +574,22 @@ body.light .ovr-list li{ background:#fff }
     return { name, email, phone, route, dates, pax, notes:'' };
   }
 
+  /* ========= Contact link helpers ========= */
+  // Helper to generate tel: or callto: links from a phone number
+  const CALL_LINK_MODE = 'tel';
+  const EMAIL_MODE     = 'gmail';
+  function phoneHref(num){
+    const clean=(num||'').replace(/[^\d+]/g,'');
+    return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`;
+  }
+  // Helper to generate mailto: or Gmail compose URLs from an email address
+  function emailHref(addr, subject='', body=''){
+    const enc = s => encodeURIComponent(s || '');
+    return EMAIL_MODE === 'gmail'
+      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
+      : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
+  }
+
   /* ========= Scheduling ========= */
   const ACTIONS_UNREACHED = d => ({ calls:2, voicemail:1, sms:1, emails: d===1?2:1 });
   const ACTIONS_REACHED   = { calls:2, voicemail:1, sms:1, emails:1 };
