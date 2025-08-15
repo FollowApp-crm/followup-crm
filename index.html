@@ -58,7 +58,7 @@ h1{font-size:22px; margin:8px 0 2px; font-weight:800; line-height:1.1}
 .sub{color:var(--muted); font-size:13px}
 
 /* =================== CARDS / CONTROLS =================== */
-.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
 .card .hd{padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
 .card .bd{padding:16px}
 
@@ -105,9 +105,28 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
 
 /* Segmented control (sort) */
-.seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
-.seg > button{ background: transparent !important; border:0; color: var(--ink); height:34px; padding:0 12px; border-radius:8px; }
-.seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
+.seg{
+  display:inline-flex;
+  gap:0;
+  background: var(--chip);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:2px;
+  overflow:hidden;
+}
+.seg > button{
+  background: transparent !important;
+  border:0;
+  color: var(--ink);
+  height:34px;
+  padding:0 12px;
+  border-radius:8px;
+}
+.seg > button.primary{
+  background: var(--panel) !important;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink) !important;
+}
 body.light .seg{ background:#f1f4ff; border-color:var(--line) }
 body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
 
@@ -253,6 +272,7 @@ body.light .ovr-list li{ background:#fff }
             </div>
           </div>
 
+          <!-- Trip/customer details -->
           <div class="row">
             <div>
               <label>Route</label>
@@ -451,7 +471,7 @@ body.light .ovr-list li{ background:#fff }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
-  /* ========= Toasts ========= */
+  /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
     const el = document.createElement('div');
@@ -567,7 +587,6 @@ body.light .ovr-list li{ background:#fff }
     if(!exists) state.tasks.push(t);
   }
 
-  // Never create past tasks. Labels still count from the anchor.
   function genDayTasks(client, date, a, label){
     const todayY = fmt(today());
     if(date < todayY) return;
@@ -621,19 +640,13 @@ body.light .ovr-list li{ background:#fff }
   function regenerateAutoOpenTasksFromAnchors(){
     const from = fmt(today());
     state.tasks = state.tasks.filter(t => !(t.source==='auto' && t.status!=='done' && t.date >= from));
-    for(const c of state.clients){
-      if(c.status==='unreached') scheduleUnreached(c);
-      else scheduleReached(c);
-    }
+    for(const c of state.clients){ if(c.status==='unreached') scheduleUnreached(c); else scheduleReached(c); }
     save();
   }
 
   /* ========= Customers table ========= */
   function clientById(id){ return state.clients.find(c=>c.id===id); }
-  function nextActionDateForClient(id){
-    const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date));
-    return open[0]?.date || '—';
-  }
+  function nextActionDateForClient(id){ const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date)); return open[0]?.date || '—'; }
 
   function refresh(){
     $('#kTotal').textContent = state.clients.length;
@@ -644,7 +657,6 @@ body.light .ovr-list li{ background:#fff }
     const body = $('#clientsTbl tbody'); body.innerHTML = '';
     const query = ($('#search').value||'').toLowerCase();
     const sflt  = ($('#statusFilter').value||'').toLowerCase();
-
     [...state.clients]
       .sort((a,b)=>a.name.localeCompare(b.name))
       .filter(c => (!sflt || c.status===sflt))
@@ -675,7 +687,6 @@ body.light .ovr-list li{ background:#fff }
           </td>`;
         body.appendChild(tr);
       });
-
     renderAgenda();
     updateProgress();
   }
@@ -792,17 +803,6 @@ body.light .ovr-list li{ background:#fff }
     save();
   }
 
-  /* ========= Contact link helpers ========= */
-  const CALL_LINK_MODE = 'tel';
-  const EMAIL_MODE     = 'gmail';
-  function phoneHref(num){ const clean=(num||'').replace(/[^\d+]/g,''); return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`; }
-  function emailHref(addr, subject='', body=''){
-    const enc = s => encodeURIComponent(s || '');
-    return EMAIL_MODE === 'gmail'
-      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
-      : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
-  }
-
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
@@ -811,7 +811,7 @@ body.light .ovr-list li{ background:#fff }
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
     renderAgenda();
-    buildCalendar(); // keep calendar badges in sync with the filter
+    buildCalendar();
   }
 
   function typeOrder(t){ return ({call:1, callvm:2, voicemail:3, sms:4, email:5, custom:6}[t]||9); }
@@ -949,10 +949,8 @@ body.light .ovr-list li{ background:#fff }
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-
   $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
-
   setSortButtons();
 
   /* ========= Batch Emails for Unreached today ========= */
@@ -1018,68 +1016,9 @@ body.light .ovr-list li{ background:#fff }
     if (hhmm && /^\d{2}:\d{2}$/.test(hhmm)) { [H,M] = hhmm.split(':').map(Number); }
     return new Date(y, (m||1)-1, d||1, H, M, 0, 0);
   }
-  function notifyEligibleTodayImportant(now=new Date()){
-    const f = fmtToday();
-    const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
-    return list.filter(t => {
-      const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
-      return now >= at;
-    });
-  }
-  function initNotificationsUI(){
-    const btn = $('#enableNotifs'), test = $('#testNotif');
-    if(!btn || !test) return;
-    function refreshUI(){
-      if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
-      if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
-      btn.disabled = false; test.disabled = false;
-      const perm = Notification.permission;
-      if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
-      else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
-      else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
-    }
-    refreshUI();
-    if (navigator.permissions && navigator.permissions.query){
-      try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
-    }
-    btn.addEventListener('click', async ()=>{
-      if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
-      try{
-        const res = await Notification.requestPermission();
-        setTimeout(refreshUI, 50);
-        if(res==='granted'){ notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), requireInteraction:true }); }
-        else if(res==='denied'){ alert('Notifications are blocked. Allow them in your browser’s site settings.'); }
-      }catch(_){}
-    });
-    test.addEventListener('click', async ()=>{
-      if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
-      if(Notification.permission==='default'){
-        try{ await Notification.requestPermission(); }catch(_){}
-        refreshUI();
-      }
-      if(Notification.permission==='granted'){
-        notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), requireInteraction:true });
-      }else if(Notification.permission==='denied'){
-        alert('Notifications are blocked. Click the lock icon → Site settings → Allow.');
-      }
-    });
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
-  }
-  function startNotificationTicker(){
-    let notified = getNotifiedSet();
-    function tick(){
-      if (!notifSupported() || Notification.permission!=='granted') return;
-      const due = notifyEligibleTodayImportant();
-      due.forEach(t => {
-        if (!notified.has(t.id)){
-          notifyTask(t);
-          notified.add(t.id);
-        }
-      });
-      saveNotifiedSet(notified);
-    }
-    tick(); setInterval(tick, 60*1000); window.addEventListener('focus', tick);
-  }
+  function notifyEligibleTodayImportant(now=new Date()){ const f = fmtToday(); const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f); return list.filter(t => { const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00'); return now >= at; }); }
+  function initNotificationsUI(){ const btn = $('#enableNotifs'), test = $('#testNotif'); if(!btn || !test) return; function refreshUI(){ if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; } if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; } btn.disabled = false; test.disabled = false; const perm = Notification.permission; if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); } else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); } else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); } } refreshUI(); if (navigator.permissions && navigator.permissions.query){ try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}} btn.addEventListener('click', async ()=>{ if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; } try{ const res = await Notification.requestPermission(); setTimeout(refreshUI, 50); if(res==='granted'){ notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), requireInteraction:true }); } else if(res==='denied'){ alert('Notifications are blocked. Allow them in your browser’s site settings.'); } }catch(_){}}); test.addEventListener('click', async ()=>{ if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; } if(Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(_){}} if(Notification.permission==='granted'){ notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), requireInteraction:true }); }else if(Notification.permission==='denied'){ alert('Notifications are blocked. Click the lock icon → Site settings → Allow.'); } }); document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); }); }
+  function startNotificationTicker(){ let notified = getNotifiedSet(); function tick(){ if (!notifSupported() || Notification.permission!=='granted') return; const due = notifyEligibleTodayImportant(); due.forEach(t => { if (!notified.has(t.id)){ notifyTask(t); notified.add(t.id); } }); saveNotifiedSet(notified); } tick(); setInterval(tick, 60*1000); window.addEventListener('focus', tick); }
 
   /* ========= Calendar ========= */
   let calCursor = new Date(); calCursor.setDate(1);
@@ -1089,7 +1028,6 @@ body.light .ovr-list li{ background:#fff }
     $('#calTitle').textContent = `${year}-${String(month+1).padStart(2,'0')}`;
     grid.innerHTML = '';
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd); });
-
     const first = new Date(year, month, 1);
     const startIdx = (first.getDay()+6)%7; const daysInMonth = new Date(year, month+1, 0).getDate();
     for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
@@ -1106,41 +1044,14 @@ body.light .ovr-list li{ background:#fff }
   }
   $('#calPrev')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); buildCalendar(); });
   $('#calNext')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); buildCalendar(); });
-
-  function renderOverrideList(){
-    const ul = $('#overrideList'); ul.innerHTML='';
-    const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
-    if (!entries.length){ const li=document.createElement('li'); li.textContent='No overrides yet.'; ul.appendChild(li); return; }
-    entries.forEach(([date,type])=>{
-      const li = document.createElement('li');
-      const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
-      const del = document.createElement('button'); del.textContent='Delete';
-      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); });
-      li.appendChild(left); li.appendChild(del); ul.appendChild(li);
-    });
-  }
-  function loadSettingsIntoUI(){
-    const s = state.settings;
-    $('#wd_mon').checked = !!s.workingDays.mon; $('#wd_tue').checked = !!s.workingDays.tue; $('#wd_wed').checked = !!s.workingDays.wed;
-    $('#wd_thu').checked = !!s.workingDays.thu; $('#wd_fri').checked = !!s.workingDays.fri; $('#wd_sat').checked = !!s.workingDays.sat; $('#wd_sun').checked = !!s.workingDays.sun;
-    $('#moveOffDays').checked = !!s.moveOffDays;
-    renderOverrideList();
-  }
-  function saveSettingsFromUI(){
-    const s = state.settings;
-    s.workingDays = {
-      mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
-      thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
-    };
-    s.moveOffDays = !!$('#moveOffDays').checked;
-    regenerateAutoOpenTasksFromAnchors(); // full regen from anchors
-    $('#calSettings').style.display = 'none';
-  }
+  function renderOverrideList(){ const ul = $('#overrideList'); ul.innerHTML=''; const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0])); if (!entries.length){ const li=document.createElement('li'); li.textContent='No overrides yet.'; ul.appendChild(li); return; } entries.forEach(([date,type])=>{ const li = document.createElement('li'); const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`; const del = document.createElement('button'); del.textContent='Delete'; del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); }); li.appendChild(left); li.appendChild(del); ul.appendChild(li); }); }
+  function loadSettingsIntoUI(){ const s = state.settings; $('#wd_mon').checked = !!s.workingDays.mon; $('#wd_tue').checked = !!s.workingDays.tue; $('#wd_wed').checked = !!s.workingDays.wed; $('#wd_thu').checked = !!s.workingDays.thu; $('#wd_fri').checked = !!s.workingDays.fri; $('#wd_sat').checked = !!s.workingDays.sat; $('#wd_sun').checked = !!s.workingDays.sun; $('#moveOffDays').checked = !!s.moveOffDays; renderOverrideList(); }
+  function saveSettingsFromUI(){ const s = state.settings; s.workingDays = { mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked, thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked }; s.moveOffDays = !!$('#moveOffDays').checked; regenerateAutoOpenTasksFromAnchors(); $('#calSettings').style.display = 'none'; }
   $('#calSettingsBtn').addEventListener('click', ()=>{ const el=$('#calSettings'); const open=el.style.display!=='none'; el.style.display = open ? 'none' : 'block'; if(!open) loadSettingsIntoUI(); });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
   $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); });
 
-  /* ========= Parse + Form wiring (Paste & Edit + auto-parse Save) ========= */
+  /* ========= Parse + Form wiring ========= */
   function applyParsedToForm(parsed, { onlyFillEmpty = false } = {}){
     if(!parsed) return;
     const set = (id, val) => {
@@ -1156,10 +1067,7 @@ body.light .ovr-list li{ background:#fff }
     set('#route', parsed.route);
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
-    if(parsed.notes){
-      const cur = ($('#notes').value || '').trim();
-      $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
-    }
+    if(parsed.notes){ const cur = ($('#notes').value || '').trim(); $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes; }
   }
   function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     const blob = ($('#leadBlob').value || '').trim();
@@ -1168,81 +1076,28 @@ body.light .ovr-list li{ background:#fff }
     applyParsedToForm(parsed, { onlyFillEmpty });
     return parsed;
   }
-
-  function collectClientFromForm(){
-    const id = $('#clientId').value || uid();
-    const exists = state.clients.find(c=>c.id===id);
-    const status = $('#status').value;
-    const startDate = $('#startDate').value || fmt(today());
-    const client = {
-      id,
-      name: ($('#name').value||'').trim(),
-      email: ($('#email').value||'').trim(),
-      phone: ($('#phone').value||'').trim(),
-      status,
-      startDate,
-      reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null),
-      route: ($('#route').value||'').trim(),
-      dates: ($('#dates').value||'').trim(),
-      pax:   ($('#pax').value||'').trim(),
-      notes: ($('#notes').value||'').trim()
-    };
-    return { client, exists };
-  }
-
-  // Paste & Edit (parse only, no save)
-  $('#parseLead').addEventListener('click', ()=>{
-    const has = ($('#leadBlob').value || '').trim();
-    if(!has){ alert('Paste your lead text first.'); return; }
-    parseBlob({ onlyFillEmpty:false });
-    toast('Parsed. Review & save.');
-  });
+  function collectClientFromForm(){ const id = $('#clientId').value || uid(); const exists = state.clients.find(c=>c.id===id); const status = $('#status').value; const startDate = $('#startDate').value || fmt(today()); const client = { id, name: ($('#name').value||'').trim(), email: ($('#email').value||'').trim(), phone: ($('#phone').value||'').trim(), status, startDate, reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null), route: ($('#route').value||'').trim(), dates: ($('#dates').value||'').trim(), pax:   ($('#pax').value||'').trim(), notes: ($('#notes').value||'').trim() }; return { client, exists }; }
+  $('#parseLead').addEventListener('click', ()=>{ const has = ($('#leadBlob').value || '').trim(); if(!has){ alert('Paste your lead text first.'); return; } parseBlob({ onlyFillEmpty:false }); toast('Parsed. Review & save.'); });
   $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
-
-  // SAVE CUSTOMER — auto-parse blob (top off empties), then save
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
-
-      if(!exists){
-        state.clients.push(client);
-        if(client.status==='unreached') scheduleUnreached(client);
-        else { client.reachedStart = client.startDate; scheduleReached(client); }
-        toast('Customer added');
-      }else{
+      if(!exists){ state.clients.push(client); if(client.status==='unreached') scheduleUnreached(client); else { client.reachedStart = client.startDate; scheduleReached(client); } toast('Customer added'); }
+      else{
         const i = state.clients.findIndex(x=>x.id===client.id);
         const prev = state.clients[i];
         state.clients[i] = client;
-
         const statusChanged = prev.status!==client.status;
         const anchorChanged = prev.startDate!==client.startDate || prev.reachedStart!==client.reachedStart;
-
-        if(statusChanged){
-          clearFutureTasksForClientFrom(client.id, today());
-          if(client.status==='reached'){
-            client.reachedStart = fmt(today());
-            scheduleReached(client);
-          }else{
-            client.startDate = fmt(today());
-            scheduleUnreached(client);
-          }
-        }else if(anchorChanged){
-          clearFutureTasksForClientFrom(client.id, today());
-          if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client);
-        }
+        if(statusChanged){ clearFutureTasksForClientFrom(client.id, today()); if(client.status==='reached'){ client.reachedStart = fmt(today()); scheduleReached(client); } else { client.startDate = fmt(today()); scheduleUnreached(client); } }
+        else if(anchorChanged){ clearFutureTasksForClientFrom(client.id, today()); if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client); }
         toast('Customer updated');
       }
-
-      $('#clientForm').reset(); $('#clientId').value='';
-      save();
-    }catch(e){
-      console.error(e);
-      alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
-      toast('Save failed', 'err', 2200);
-    }
+      $('#clientForm').reset(); $('#clientId').value=''; save();
+    }catch(e){ console.error(e); alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.'); toast('Save failed', 'err', 2200); }
   });
 
   /* ========= Wipe All ========= */
@@ -1260,10 +1115,7 @@ body.light .ovr-list li{ background:#fff }
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
-  function bootstrap(){
-    refresh();
-    buildCalendar();
-  }
+  function bootstrap(){ refresh(); buildCalendar(); }
   bootstrap();
 
 })();
