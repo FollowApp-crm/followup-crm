@@ -1383,7 +1383,7 @@ function closeNewTaskUI(){
       const items = state.tasks.filter(t => t.date === ymd && t.status !== 'done' && (!agendaFilter || clientNameLower(t).includes(agendaFilter)));
       const cell = document.createElement('div');
       cell.className='cal-cell'; if(!isWorkingDay(dt)) cell.classList.add('offday');
-      cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
+cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length}</div>` : '');
       cell.addEventListener('click', ()=>{
         $('#agendaDate').value = ymd;
         $('#agendaDate').dispatchEvent(new Event('change'));
