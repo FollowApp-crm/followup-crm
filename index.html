@@ -170,6 +170,40 @@ body.light .seg{ background:#f1f4ff; border-color:var(--line) }
 body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
 
 /* Slab block (notes/manual rows) */
+/* Divider that makes it clear you can either type OR paste */
+.or-note{
+  margin: 6px 0 10px;
+  text-align:center;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  color: var(--muted);
+}
+.or-note::before,
+.or-note::after{
+  content:"";
+  display:inline-block;
+  width:24px;
+  height:1px;
+  background: var(--line);
+  margin: 0 8px;
+  vertical-align: middle;
+}
+
+/* Subtle highlight for the paste block to draw attention */
+.lead-block.highlight{
+  padding:12px;
+  border:1px dashed var(--accent);
+  border-radius:12px;
+  background:
+    linear-gradient(180deg, rgba(124,92,255,.09), rgba(124,92,255,.04)),
+    var(--surface);
+}
+.lead-block.highlight textarea{
+  border-width:2px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,92,255,.12);
+}
 .slab{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px }
 .flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 
@@ -336,17 +370,6 @@ input[type="checkbox"]{
       <div class="hd"><strong>Add / Edit Customer</strong><span class="badge">Local only</span></div>
       <div class="bd">
 
-        <div class="lead-block">
-          <div>
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
-            <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
-          </div>
-          <div class="lead-actions" aria-label="Paste tools">
-            <button type="button" id="parseLead">Paste &amp; Edit</button>
-            <button type="button" id="clearLead" class="ghost">Clear</button>
-          </div>
-        </div>
-
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
           <div class="row">
@@ -382,6 +405,27 @@ input[type="checkbox"]{
             <div>
               <label>Passengers</label>
               <input id="pax" type="number" min="1" step="1" placeholder="2" />
+            </div>
+          </div>
+
+          <!-- Manual OR Paste choice -->
+          <div class="row">
+            <div></div>
+            <div>
+              <div class="or-note" aria-hidden="true">OR</div>
+
+              <!-- Lead paste block (moved here) -->
+              <div class="lead-block highlight">
+                <div>
+                  <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+                  <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
+                </div>
+                <div class="lead-actions" aria-label="Paste tools">
+                  <button type="button" id="parseLead">Paste &amp; Edit</button>
+                  <button type="button" id="clearLead" class="ghost">Clear</button>
+                </div>
+              </div>
+              <!-- /Lead paste block -->
             </div>
           </div>
 
