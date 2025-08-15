@@ -261,6 +261,61 @@ body.light .ovr-list li{ background:#fff }
   header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
   .ovr{ grid-template-columns:1fr; }
 }
+  /* =================== SCROLLBARS =================== */
+/* Keep layout from shifting when scrollbars appear */
+html{ scrollbar-gutter: stable both-edges; }
+
+/* Let browsers auto-tint UI where supported */
+:root{ color-scheme: dark light; }
+
+/* Tokens for scrollbar */
+:root{
+  --sb-size: 12px;
+  --sb-radius: 10px;
+  --sb-thumb: #2f3547;          /* dark thumb */
+  --sb-thumb-hover: #3b4362;
+  --sb-thumb-active:#4a568e;
+  --sb-track: transparent;
+}
+body.light{
+  --sb-thumb: #c1c9ee;          /* light thumb */
+  --sb-thumb-hover: #aeb8ea;
+  --sb-thumb-active:#97a4e6;
+  --sb-track: #eef2ff;
+}
+
+/* Firefox */
+*{
+  scrollbar-width: thin;                           /* thin | auto */
+  scrollbar-color: var(--sb-thumb) var(--sb-track);
+}
+
+/* WebKit (Chrome/Edge/Safari) */
+*::-webkit-scrollbar{
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+*::-webkit-scrollbar-track{
+  background: var(--sb-track);
+}
+*::-webkit-scrollbar-thumb{
+  background: var(--sb-thumb);
+  border-radius: var(--sb-radius);
+  /* Creates a “pill” with a little inset gap */
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+*::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
+*::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
+*::-webkit-scrollbar-corner{ background: transparent; }
+
+/* Optional: give scrollable tables a subtle track so the bar feels attached */
+.customers-scroll::-webkit-scrollbar-track{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--sb-radius);
+}
+
 </style>
 </head>
 <body>
