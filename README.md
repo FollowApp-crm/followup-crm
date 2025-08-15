@@ -1,2 +1,2 @@
 web address: 
-https://bujorvictor10-cyber.github.io/followup-crm/
+https://followapp-crm.github.io/followup-crm/
