@@ -331,6 +331,14 @@ body.light .ovr-list li{ background:#fff }
               <input id="pax" type="number" min="1" step="1" placeholder="2" />
             </div>
           </div>
+          <!-- NEW: Lead ID -->
+<div class="row single">
+  <div>
+    <label>Lead ID</label>
+    <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
+  </div>
+</div>
+
           <div class="row single">
             <div>
               <label>Dates</label>
@@ -634,8 +642,26 @@ leadBlobEl.addEventListener('paste', () => {
     let pax = '';
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
+// ---- Lead ID (e.g., 55471) ----
+let leadId = '';
+try{
+  const phoneDigits = (phone || '').replace(/\D/g,'');
+  const paxDigits   = (pax   || '').replace(/\D/g,'');
 
-    return { name, email, phone, route, dates, pax, notes:'' };
+  // numeric tokens of 4–9 digits, delimited by whitespace/punct
+  const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g))
+    .map(m => m[1]);
+
+  for(const cand of idCandidates){
+    if (cand === paxDigits) continue;                      // skip pax
+    if (phoneDigits && phoneDigits.includes(cand)) continue; // skip phone fragments
+    if (/^\d{8}$/.test(cand)) continue;                    // likely yyyymmdd
+    leadId = cand;
+    break;
+  }
+}catch(_){}
+
+return { name, email, phone, route, dates, pax, leadId, notes:'' };
   }
 
   /* ========= Contact link helpers ========= */
@@ -740,7 +766,7 @@ leadBlobEl.addEventListener('paste', () => {
     [...state.clients]
       .sort((a,b)=>a.name.localeCompare(b.name))
       .filter(c => (!sflt || c.status===sflt))
-      .filter(c => [c.name,c.email,c.phone,(c.notes||''),(c.route||''),(c.dates||''),(c.pax||'')].join(' ').toLowerCase().includes(query))
+      .filter(c => [c.name,c.email,c.phone,(c.notes||''),(c.route||''),(c.dates||''),(c.pax||''),(c.leadId||'')].join(' ').toLowerCase().includes(query))
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
@@ -779,11 +805,13 @@ leadBlobEl.addEventListener('paste', () => {
     const c = clientById(id) || {};
     const row = document.createElement('tr'); row.className='note-row'; row.setAttribute('data-for', id);
     const td = document.createElement('td'); td.colSpan = 5;
-    const chips = [
-      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
-      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
-      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : ''
-    ].filter(Boolean).join(' ');
+const chips = [
+  c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+  c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+  c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
+  c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+].filter(Boolean).join(' ');
+
     td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
   }
@@ -820,6 +848,7 @@ leadBlobEl.addEventListener('paste', () => {
       $('#route').value = c.route || '';
       $('#dates').value = c.dates || '';
       $('#pax').value   = c.pax   || '';
+      $('#leadId').value = c.leadId || '';
       $('#notes').value = c.notes || '';
       const target = document.getElementById('addCard') || document.body;
       target.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -908,11 +937,13 @@ leadBlobEl.addEventListener('paste', () => {
   function detailsChipsFor(t){
     const c = t.clientId ? clientById(t.clientId) : null;
     if(!c) return '';
-    const chips = [
-      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
-      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
-      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : ''
-    ].filter(Boolean);
+const chips = [
+  c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+  c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+  c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
+  c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+].filter(Boolean);
+
     return chips.join(' ');
   }
 
@@ -1147,6 +1178,8 @@ leadBlobEl.addEventListener('paste', () => {
     set('#route', parsed.route);
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
+    set('#leadId', parsed.leadId);
+
     if(parsed.notes){ const cur = ($('#notes').value || '').trim(); $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes; }
   }
   function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
@@ -1156,7 +1189,8 @@ leadBlobEl.addEventListener('paste', () => {
     applyParsedToForm(parsed, { onlyFillEmpty });
     return parsed;
   }
-  function collectClientFromForm(){ const id = $('#clientId').value || uid(); const exists = state.clients.find(c=>c.id===id); const status = $('#status').value; const startDate = $('#startDate').value || fmt(today()); const client = { id, name: ($('#name').value||'').trim(), email: ($('#email').value||'').trim(), phone: ($('#phone').value||'').trim(), status, startDate, reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null), route: ($('#route').value||'').trim(), dates: ($('#dates').value||'').trim(), pax:   ($('#pax').value||'').trim(), notes: ($('#notes').value||'').trim() }; return { client, exists }; }
+  function collectClientFromForm(){ const id = $('#clientId').value || uid(); const exists = state.clients.find(c=>c.id===id); const status = $('#status').value; const startDate = $('#startDate').value || fmt(today()); const client = { id, name: ($('#name').value||'').trim(), email: ($('#email').value||'').trim(), phone: ($('#phone').value||'').trim(), status, startDate, reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null), route: ($('#route').value||'').trim(), dates: ($('#dates').value||'').trim(), pax:   ($('#pax').value||'').trim(), leadId: ($('#leadId').value||'').trim(),
+notes: ($('#notes').value||'').trim() }; return { client, exists }; }
   $('#parseLead').addEventListener('click', ()=>{ const has = ($('#leadBlob').value || '').trim(); if(!has){ alert('Paste your lead text first.'); return; } parseBlob({ onlyFillEmpty:false }); toast('Parsed. Review & save.'); });
   $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
