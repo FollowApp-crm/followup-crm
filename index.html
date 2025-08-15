@@ -6,7 +6,7 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-  /* ===== Lead paste block (textarea + side buttons) ===== */
+/* ===== Lead paste block (textarea + side buttons) ===== */
 .lead-block{
   display:grid;
   grid-template-columns: 1fr 140px; /* textarea | side column */
@@ -31,14 +31,8 @@
 
 /* Mobile: stack buttons under the textarea */
 @media (max-width:760px){
-  .lead-block{
-    grid-template-columns:1fr;
-  }
-  .lead-actions{
-    position:static;
-    flex-direction:row;
-    flex-wrap:wrap;
-  }
+  .lead-block{ grid-template-columns:1fr; }
+  .lead-actions{ position:static; flex-direction:row; flex-wrap:wrap; }
   .lead-actions > button{ width:auto; }
 }
 
@@ -49,7 +43,6 @@
   justify-content:flex-end;
   align-items:center;
 }
-/* Keeps the action group aligned to the bottom of the grid row */
 .form-actions.is-end{ align-self:end; }
 
 /* =================== TOKENS =================== */
@@ -240,6 +233,18 @@ body.light #calSettings{ background:#fff }
 .ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface) }
 body.light .ovr-list li{ background:#fff }
 
+/* =================== POPOVER (Add Custom Task) =================== */
+.popover{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  margin-top:10px;
+}
+.pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.popover input, .popover select, .popover textarea{ width:100% }
+
 /* =================== TOAST =================== */
 #toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
 .toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
@@ -261,61 +266,41 @@ body.light .ovr-list li{ background:#fff }
   header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
   .ovr{ grid-template-columns:1fr; }
 }
-  /* =================== SCROLLBARS =================== */
-/* Keep layout from shifting when scrollbars appear */
+
+/* =================== SCROLLBARS =================== */
 html{ scrollbar-gutter: stable both-edges; }
-
-/* Let browsers auto-tint UI where supported */
 :root{ color-scheme: dark light; }
-
-/* Tokens for scrollbar */
 :root{
   --sb-size: 12px;
   --sb-radius: 10px;
-  --sb-thumb: #2f3547;          /* dark thumb */
+  --sb-thumb: #2f3547;
   --sb-thumb-hover: #3b4362;
   --sb-thumb-active:#4a568e;
   --sb-track: transparent;
 }
 body.light{
-  --sb-thumb: #c1c9ee;          /* light thumb */
+  --sb-thumb: #c1c9ee;
   --sb-thumb-hover: #aeb8ea;
   --sb-thumb-active:#97a4e6;
   --sb-track: #eef2ff;
 }
-
-/* Firefox */
-*{
-  scrollbar-width: thin;                           /* thin | auto */
-  scrollbar-color: var(--sb-thumb) var(--sb-track);
-}
-
-/* WebKit (Chrome/Edge/Safari) */
-*::-webkit-scrollbar{
-  width: var(--sb-size);
-  height: var(--sb-size);
-}
-*::-webkit-scrollbar-track{
-  background: var(--sb-track);
-}
+*{ scrollbar-width: thin; scrollbar-color: var(--sb-thumb) var(--sb-track); }
+*::-webkit-scrollbar{ width: var(--sb-size); height: var(--sb-size); }
+*::-webkit-scrollbar-track{ background: var(--sb-track); }
 *::-webkit-scrollbar-thumb{
   background: var(--sb-thumb);
   border-radius: var(--sb-radius);
-  /* Creates a “pill” with a little inset gap */
   background-clip: padding-box;
   border: 3px solid transparent;
 }
 *::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
 *::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
 *::-webkit-scrollbar-corner{ background: transparent; }
-
-/* Optional: give scrollable tables a subtle track so the bar feels attached */
 .customers-scroll::-webkit-scrollbar-track{
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--sb-radius);
 }
-
 </style>
 </head>
 <body>
@@ -336,18 +321,17 @@ body.light{
     <section class="card" id="addCard">
       <div class="hd"><strong>Add / Edit Customer</strong><span class="badge">Local only</span></div>
       <div class="bd">
- <div class="lead-block">
-  <div>
-    <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax)</label>
-    <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
-  </div>
 
-  <div class="lead-actions" aria-label="Paste tools">
-    <button type="button" id="parseLead">Paste &amp; Edit</button>
-    <button type="button" id="clearLead" class="ghost">Clear</button>
-  </div>
-</div>
-
+        <div class="lead-block">
+          <div>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+            <textarea id="leadBlob" rows="7" placeholder="Paste the whole blob here…"></textarea>
+          </div>
+          <div class="lead-actions" aria-label="Paste tools">
+            <button type="button" id="parseLead">Paste &amp; Edit</button>
+            <button type="button" id="clearLead" class="ghost">Clear</button>
+          </div>
+        </div>
 
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
@@ -386,13 +370,14 @@ body.light{
               <input id="pax" type="number" min="1" step="1" placeholder="2" />
             </div>
           </div>
-          <!-- NEW: Lead ID -->
-<div class="row single">
-  <div>
-    <label>Lead ID</label>
-    <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
-  </div>
-</div>
+
+          <!-- Lead ID -->
+          <div class="row single">
+            <div>
+              <label>Lead ID</label>
+              <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
+            </div>
+          </div>
 
           <div class="row single">
             <div>
@@ -413,7 +398,7 @@ body.light{
               <label>Start date (defaults to today)</label>
               <input id="startDate" type="date" />
             </div>
-<div class="form-actions is-end">
+            <div class="form-actions is-end">
               <button type="button" class="ghost" id="resetForm">Clear</button>
               <button class="primary" type="button" id="saveCustomer">Save Customer</button>
             </div>
@@ -471,9 +456,9 @@ body.light{
       </div>
     </section>
 
-    <!-- 3) TODAY / FUTURE ACTIONS -->
+    <!-- 3) AGENDA -->
     <section class="card" id="actionsCard">
-      <div class="hd"><strong>Today / Future actions</strong></div>
+      <div class="hd"><strong>Agenda</strong></div>
       <div class="bd">
         <div class="toolbar">
           <button type="button" id="viewToday" class="primary">Today</button>
@@ -481,6 +466,8 @@ body.light{
           <input type="date" id="agendaDate" />
           <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
           <button type="button" id="agendaFilterClear" title="Clear filter">Clear</button>
+
+          <button type="button" id="addTaskBtn" class="tiny" title="Create a custom task">+ Add task</button>
 
           <div class="space"></div>
           <div class="pill">Sort:</div>
@@ -502,6 +489,66 @@ body.light{
             <span id="progressPct" class="mono">0%</span>
           </div>
         </div>
+
+        <!-- Add Custom Task popover -->
+        <div id="customTaskPop" class="popover" style="display:none">
+          <div class="pop-head">
+            <strong>New task</strong>
+            <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Client</label>
+              <select id="ctClient"></select>
+            </div>
+            <div>
+              <label>Type</label>
+              <select id="ctType">
+                <option value="call">call</option>
+                <option value="callvm">callvm</option>
+                <option value="sms">sms</option>
+                <option value="email">email</option>
+                <option value="custom">custom</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Title</label>
+              <input id="ctTitle" placeholder="Call / Email / Custom…" />
+            </div>
+            <div>
+              <label>Date</label>
+              <input id="ctDate" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Time (optional)</label>
+              <input id="ctTime" type="time" />
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
+              <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+              <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
+            </div>
+          </div>
+
+          <div class="row single">
+            <div>
+              <label>Notes (optional)</label>
+              <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
+            </div>
+          </div>
+
+          <div class="right" style="margin-top:8px">
+            <button type="button" id="ctCancel" class="ghost">Cancel</button>
+            <button type="button" id="ctSave" class="primary">Save task</button>
+          </div>
+        </div>
+
         <div class="mt12 progress"><span id="progressBar"></span></div>
         <div id="agenda" class="mt12"></div>
       </div>
@@ -574,21 +621,16 @@ body.light{
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
-
   // === Instant parse on paste into the lead blob ===
-const leadBlobEl = $('#leadBlob');
-
-// Parse as soon as something is pasted (after the textarea value updates)
-leadBlobEl.addEventListener('paste', () => {
-  // next frame ensures the pasted text is in the textarea
-  requestAnimationFrame(() => {
-    const has = (leadBlobEl.value || '').trim();
-    if (!has) return;
-    // Overwrite fields with parsed values so user can immediately Save or tweak
-    parseBlob({ onlyFillEmpty: false });
-    toast('Parsed from paste. Review & save.');
+  const leadBlobEl = $('#leadBlob');
+  leadBlobEl.addEventListener('paste', () => {
+    requestAnimationFrame(() => {
+      const has = (leadBlobEl.value || '').trim();
+      if (!has) return;
+      parseBlob({ onlyFillEmpty: false });
+      toast('Parsed from paste. Review & save.');
+    });
   });
-});
 
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
@@ -697,37 +739,31 @@ leadBlobEl.addEventListener('paste', () => {
     let pax = '';
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
-// ---- Lead ID (e.g., 55471) ----
-let leadId = '';
-try{
-  const phoneDigits = (phone || '').replace(/\D/g,'');
-  const paxDigits   = (pax   || '').replace(/\D/g,'');
 
-  // numeric tokens of 4–9 digits, delimited by whitespace/punct
-  const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g))
-    .map(m => m[1]);
+    // Lead ID (4–9 digits not part of phone/date/pax)
+    let leadId = '';
+    try{
+      const phoneDigits = (phone || '').replace(/\D/g,'');
+      const paxDigits   = (pax   || '').replace(/\D/g,'');
+      const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
+      for(const cand of idCandidates){
+        if (cand === paxDigits) continue;
+        if (phoneDigits && phoneDigits.includes(cand)) continue;
+        if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
+        leadId = cand; break;
+      }
+    }catch(_){}
 
-  for(const cand of idCandidates){
-    if (cand === paxDigits) continue;                      // skip pax
-    if (phoneDigits && phoneDigits.includes(cand)) continue; // skip phone fragments
-    if (/^\d{8}$/.test(cand)) continue;                    // likely yyyymmdd
-    leadId = cand;
-    break;
-  }
-}catch(_){}
-
-return { name, email, phone, route, dates, pax, leadId, notes:'' };
+    return { name, email, phone, route, dates, pax, leadId, notes:'' };
   }
 
   /* ========= Contact link helpers ========= */
-  // Helper to generate tel: or callto: links from a phone number
   const CALL_LINK_MODE = 'tel';
   const EMAIL_MODE     = 'gmail';
   function phoneHref(num){
     const clean=(num||'').replace(/[^\d+]/g,'');
     return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`;
   }
-  // Helper to generate mailto: or Gmail compose URLs from an email address
   function emailHref(addr, subject='', body=''){
     const enc = s => encodeURIComponent(s || '');
     return EMAIL_MODE === 'gmail'
@@ -850,6 +886,7 @@ return { name, email, phone, route, dates, pax, leadId, notes:'' };
       });
     renderAgenda();
     updateProgress();
+    try{ buildClientOptionsForPopover(); }catch(_){}
   }
 
   function toggleNotesRow(id){
@@ -860,13 +897,12 @@ return { name, email, phone, route, dates, pax, leadId, notes:'' };
     const c = clientById(id) || {};
     const row = document.createElement('tr'); row.className='note-row'; row.setAttribute('data-for', id);
     const td = document.createElement('td'); td.colSpan = 5;
-const chips = [
-  c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
-  c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
-  c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
-  c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
-].filter(Boolean).join(' ');
-
+    const chips = [
+      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
+      c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+    ].filter(Boolean).join(' ');
     td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
   }
@@ -992,13 +1028,12 @@ const chips = [
   function detailsChipsFor(t){
     const c = t.clientId ? clientById(t.clientId) : null;
     if(!c) return '';
-const chips = [
-  c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
-  c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
-  c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
-  c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
-].filter(Boolean);
-
+    const chips = [
+      c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
+      c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
+      c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
+      c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+    ].filter(Boolean);
     return chips.join(' ');
   }
 
@@ -1182,9 +1217,64 @@ const chips = [
     if (hhmm && /^\d{2}:\d{2}$/.test(hhmm)) { [H,M] = hhmm.split(':').map(Number); }
     return new Date(y, (m||1)-1, d||1, H, M, 0, 0);
   }
-  function notifyEligibleTodayImportant(now=new Date()){ const f = fmtToday(); const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f); return list.filter(t => { const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00'); return now >= at; }); }
-  function initNotificationsUI(){ const btn = $('#enableNotifs'), test = $('#testNotif'); if(!btn || !test) return; function refreshUI(){ if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; } if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; } btn.disabled = false; test.disabled = false; const perm = Notification.permission; if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); } else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); } else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); } } refreshUI(); if (navigator.permissions && navigator.permissions.query){ try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}} btn.addEventListener('click', async ()=>{ if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; } try{ const res = await Notification.requestPermission(); setTimeout(refreshUI, 50); if(res==='granted'){ notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), requireInteraction:true }); } else if(res==='denied'){ alert('Notifications are blocked. Allow them in your browser’s site settings.'); } }catch(_){}}); test.addEventListener('click', async ()=>{ if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; } if(Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(_){}} if(Notification.permission==='granted'){ notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), requireInteraction:true }); }else if(Notification.permission==='denied'){ alert('Notifications are blocked. Click the lock icon → Site settings → Allow.'); } }); document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); }); }
-  function startNotificationTicker(){ let notified = getNotifiedSet(); function tick(){ if (!notifSupported() || Notification.permission!=='granted') return; const due = notifyEligibleTodayImportant(); due.forEach(t => { if (!notified.has(t.id)){ notifyTask(t); notified.add(t.id); } }); saveNotifiedSet(notified); } tick(); setInterval(tick, 60*1000); window.addEventListener('focus', tick); }
+  function notifyEligibleTodayImportant(now=new Date()){
+    const f = fmtToday();
+    const list = state.tasks.filter(t => t.important === true && t.status !== 'done' && t.date === f);
+    return list.filter(t => {
+      const at = t.notifyAt ? new Date(t.notifyAt) : combineYmdTimeLocal(t.date, t.notifyTime || '09:00');
+      return now >= at;
+    });
+  }
+  function initNotificationsUI(){
+    const btn = $('#enableNotifs'), test = $('#testNotif'); if(!btn || !test) return;
+    function refreshUI(){
+      if(!notifSupported()){ btn.disabled = true; test.disabled = true; setNotifStatus('Not supported'); return; }
+      if(!isSecure()){ btn.disabled = true; test.disabled = false; setNotifStatus('HTTPS/localhost required'); return; }
+      btn.disabled = false; test.disabled = false;
+      const perm = Notification.permission;
+      if(perm==='granted'){ btn.textContent = '🔔 Enabled'; setNotifStatus('Enabled'); }
+      else if(perm==='denied'){ btn.textContent = '🔔 Enable'; setNotifStatus('Blocked'); }
+      else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
+    }
+    refreshUI();
+    if (navigator.permissions && navigator.permissions.query){
+      try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
+    }
+    btn.addEventListener('click', async ()=>{
+      if(!isSecure()){ alert('Use HTTPS or http://localhost for notifications.'); return; }
+      try{
+        const res = await Notification.requestPermission();
+        setTimeout(refreshUI, 50);
+        if(res==='granted'){
+          notifyTask({ id:'enabled-'+Date.now(), title:'✅ Notifications enabled', clientName:'', date:fmtToday(), requireInteraction:true });
+        } else if(res==='denied'){
+          alert('Notifications are blocked. Allow them in your browser’s site settings.');
+        }
+      }catch(_){}
+    });
+    test.addEventListener('click', async ()=>{
+      if(!isSecure()){ alert('Run from HTTPS or http://localhost.'); return; }
+      if(Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(_){} }
+      if(Notification.permission==='granted'){
+        notifyTask({ id:'test-'+Date.now(), title:'🔔 Test notification', clientName:'', date:fmtToday(), requireInteraction:true });
+      }else if(Notification.permission==='denied'){
+        alert('Notifications are blocked. Click the lock icon → Site settings → Allow.');
+      }
+    });
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshUI(); });
+  }
+  function startNotificationTicker(){
+    let notified = getNotifiedSet();
+    function tick(){
+      if (!notifSupported() || Notification.permission!=='granted') return;
+      const due = notifyEligibleTodayImportant();
+      due.forEach(t => {
+        if (!notified.has(t.id)){ notifyTask(t); notified.add(t.id); }
+      });
+      saveNotifiedSet(notified);
+    }
+    tick(); setInterval(tick, 60*1000); window.addEventListener('focus', tick);
+  }
 
   /* ========= Calendar ========= */
   let calCursor = new Date(); calCursor.setDate(1);
@@ -1204,18 +1294,73 @@ const chips = [
       const cell = document.createElement('div');
       cell.className='cal-cell'; if(!isWorkingDay(dt)) cell.classList.add('offday');
       cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length} task${items.length>1?'s':''}</div>` : '');
-      cell.addEventListener('click', ()=>{ $('#agendaDate').value = ymd; $('#agendaDate').dispatchEvent(new Event('change')); window.scrollTo({top:$('#actionsCard').offsetTop-70, behavior:'smooth'}); });
+      cell.addEventListener('click', ()=>{
+        $('#agendaDate').value = ymd;
+        $('#agendaDate').dispatchEvent(new Event('change'));
+        const target = document.getElementById('actionsCard');
+        if (target && target.scrollIntoView){
+          target.scrollIntoView({ behavior:'smooth', block:'start' });
+        } else {
+          window.scrollTo({ top: $('#actionsCard').offsetTop - 70, behavior:'smooth' });
+        }
+      });
       grid.appendChild(cell);
     }
   }
   $('#calPrev')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); buildCalendar(); });
   $('#calNext')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); buildCalendar(); });
-  function renderOverrideList(){ const ul = $('#overrideList'); ul.innerHTML=''; const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0])); if (!entries.length){ const li=document.createElement('li'); li.textContent='No overrides yet.'; ul.appendChild(li); return; } entries.forEach(([date,type])=>{ const li = document.createElement('li'); const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`; const del = document.createElement('button'); del.textContent='Delete'; del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); }); li.appendChild(left); li.appendChild(del); ul.appendChild(li); }); }
-  function loadSettingsIntoUI(){ const s = state.settings; $('#wd_mon').checked = !!s.workingDays.mon; $('#wd_tue').checked = !!s.workingDays.tue; $('#wd_wed').checked = !!s.workingDays.wed; $('#wd_thu').checked = !!s.workingDays.thu; $('#wd_fri').checked = !!s.workingDays.fri; $('#wd_sat').checked = !!s.workingDays.sat; $('#wd_sun').checked = !!s.workingDays.sun; $('#moveOffDays').checked = !!s.moveOffDays; renderOverrideList(); }
-  function saveSettingsFromUI(){ const s = state.settings; s.workingDays = { mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked, thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked }; s.moveOffDays = !!$('#moveOffDays').checked; regenerateAutoOpenTasksFromAnchors(); $('#calSettings').style.display = 'none'; }
-  $('#calSettingsBtn').addEventListener('click', ()=>{ const el=$('#calSettings'); const open=el.style.display!=='none'; el.style.display = open ? 'none' : 'block'; if(!open) loadSettingsIntoUI(); });
+  function renderOverrideList(){
+    const ul = $('#overrideList'); ul.innerHTML='';
+    const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
+    if (!entries.length){ const li=document.createElement('li'); li.textContent='No overrides yet.'; ul.appendChild(li); return; }
+    entries.forEach(([date,type])=>{
+      const li = document.createElement('li');
+      const left = document.createElement('span');
+      left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
+      const del = document.createElement('button');
+      del.textContent='Delete';
+      del.addEventListener('click', ()=>{
+        delete state.settings.overrides[date];
+        regenerateAutoOpenTasksFromAnchors();
+        renderOverrideList();
+      });
+      li.appendChild(left); li.appendChild(del); ul.appendChild(li);
+    });
+  }
+  function loadSettingsIntoUI(){
+    const s = state.settings;
+    $('#wd_mon').checked = !!s.workingDays.mon;
+    $('#wd_tue').checked = !!s.workingDays.tue;
+    $('#wd_wed').checked = !!s.workingDays.wed;
+    $('#wd_thu').checked = !!s.workingDays.thu;
+    $('#wd_fri').checked = !!s.workingDays.fri;
+    $('#wd_sat').checked = !!s.workingDays.sat;
+    $('#wd_sun').checked = !!s.workingDays.sun;
+    $('#moveOffDays').checked = !!s.moveOffDays;
+    renderOverrideList();
+  }
+  function saveSettingsFromUI(){
+    const s = state.settings;
+    s.workingDays = {
+      mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
+      thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
+    };
+    s.moveOffDays = !!$('#moveOffDays').checked;
+    regenerateAutoOpenTasksFromAnchors();
+    $('#calSettings').style.display = 'none';
+  }
+  $('#calSettingsBtn').addEventListener('click', ()=>{
+    const el=$('#calSettings'); const open=el.style.display!=='none';
+    el.style.display = open ? 'none' : 'block';
+    if(!open) loadSettingsIntoUI();
+  });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-  $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); });
+  $('#addOverride').addEventListener('click', ()=>{
+    const d=$('#ovrDate').value; const t=$('#ovrType').value;
+    if(!d) return alert('Pick a date');
+    state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
+    regenerateAutoOpenTasksFromAnchors(); renderOverrideList();
+  });
 
   /* ========= Parse + Form wiring ========= */
   function applyParsedToForm(parsed, { onlyFillEmpty = false } = {}){
@@ -1234,8 +1379,10 @@ const chips = [
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
-
-    if(parsed.notes){ const cur = ($('#notes').value || '').trim(); $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes; }
+    if(parsed.notes){
+      const cur = ($('#notes').value || '').trim();
+      $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
+    }
   }
   function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     const blob = ($('#leadBlob').value || '').trim();
@@ -1244,9 +1391,32 @@ const chips = [
     applyParsedToForm(parsed, { onlyFillEmpty });
     return parsed;
   }
-  function collectClientFromForm(){ const id = $('#clientId').value || uid(); const exists = state.clients.find(c=>c.id===id); const status = $('#status').value; const startDate = $('#startDate').value || fmt(today()); const client = { id, name: ($('#name').value||'').trim(), email: ($('#email').value||'').trim(), phone: ($('#phone').value||'').trim(), status, startDate, reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null), route: ($('#route').value||'').trim(), dates: ($('#dates').value||'').trim(), pax:   ($('#pax').value||'').trim(), leadId: ($('#leadId').value||'').trim(),
-notes: ($('#notes').value||'').trim() }; return { client, exists }; }
-  $('#parseLead').addEventListener('click', ()=>{ const has = ($('#leadBlob').value || '').trim(); if(!has){ alert('Paste your lead text first.'); return; } parseBlob({ onlyFillEmpty:false }); toast('Parsed. Review & save.'); });
+  function collectClientFromForm(){
+    const id = $('#clientId').value || uid();
+    const exists = state.clients.find(c=>c.id===id);
+    const status = $('#status').value;
+    const startDate = $('#startDate').value || fmt(today());
+    const client = {
+      id,
+      name: ($('#name').value||'').trim(),
+      email: ($('#email').value||'').trim(),
+      phone: ($('#phone').value||'').trim(),
+      status,
+      startDate,
+      reachedStart: exists ? exists.reachedStart : (status === 'reached' ? startDate : null),
+      route: ($('#route').value||'').trim(),
+      dates: ($('#dates').value||'').trim(),
+      pax:   ($('#pax').value||'').trim(),
+      leadId: ($('#leadId').value||'').trim(),
+      notes: ($('#notes').value||'').trim()
+    };
+    return { client, exists };
+  }
+  $('#parseLead').addEventListener('click', ()=>{
+    const has = ($('#leadBlob').value || '').trim();
+    if(!has){ alert('Paste your lead text first.'); return; }
+    parseBlob({ onlyFillEmpty:false }); toast('Parsed. Review & save.');
+  });
   $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
   $('#saveCustomer').addEventListener('click', ()=>{
@@ -1254,23 +1424,127 @@ notes: ($('#notes').value||'').trim() }; return { client, exists }; }
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
-      if(!exists){ state.clients.push(client); if(client.status==='unreached') scheduleUnreached(client); else { client.reachedStart = client.startDate; scheduleReached(client); } toast('Customer added'); }
-      else{
+      if(!exists){
+        state.clients.push(client);
+        if(client.status==='unreached') scheduleUnreached(client);
+        else { client.reachedStart = client.startDate; scheduleReached(client); }
+        toast('Customer added');
+      } else {
         const i = state.clients.findIndex(x=>x.id===client.id);
         const prev = state.clients[i];
         state.clients[i] = client;
         const statusChanged = prev.status!==client.status;
         const anchorChanged = prev.startDate!==client.startDate || prev.reachedStart!==client.reachedStart;
-        if(statusChanged){ clearFutureTasksForClientFrom(client.id, today()); if(client.status==='reached'){ client.reachedStart = fmt(today()); scheduleReached(client); } else { client.startDate = fmt(today()); scheduleUnreached(client); } }
-        else if(anchorChanged){ clearFutureTasksForClientFrom(client.id, today()); if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client); }
+        if(statusChanged){
+          clearFutureTasksForClientFrom(client.id, today());
+          if(client.status==='reached'){ client.reachedStart = fmt(today()); scheduleReached(client); }
+          else { client.startDate = fmt(today()); scheduleUnreached(client); }
+        } else if(anchorChanged){
+          clearFutureTasksForClientFrom(client.id, today());
+          if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client);
+        }
         toast('Customer updated');
       }
-      // Clear the parse box after saving (per your spec)
+      // Clear the parse box after saving
       $('#leadBlob').value = '';
-      $('#clientForm').reset(); 
+      $('#clientForm').reset();
       $('#clientId').value = '';
       save();
-    }catch(e){ console.error(e); alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.'); toast('Save failed', 'err', 2200); }
+    }catch(e){
+      console.error(e);
+      alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
+      toast('Save failed', 'err', 2200);
+    }
+  });
+
+  /* ===== Add Custom Task popover ===== */
+  function titleDefaultFor(type){
+    return ({call:'Call', callvm:'Call + Voicemail', sms:'SMS', email:'Email'}[type] || '');
+  }
+  function buildClientOptionsForPopover(){
+    const sel = $('#ctClient'); if(!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = '';
+    const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
+    sel.insertAdjacentHTML('beforeend', `<option value="" disabled selected hidden>Select client…</option>`);
+    opts.forEach(c=>{
+      const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
+      sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
+    });
+    if (opts.length && keep) sel.value = keep;
+  }
+  function openCustomTaskPopover(){
+    buildClientOptionsForPopover();
+    const pop = $('#customTaskPop'); if(!pop) return;
+    if (pop.style.display === 'none'){
+      $('#ctType').value = $('#ctType').value || 'call';
+      const agendaYmd = fmt(currentAgendaDate || today());
+      if (!$('#ctDate').value) $('#ctDate').value = agendaYmd;
+      if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
+      $('#ctNotify').disabled = !$('#ctTime').value;
+      pop.style.display = 'block';
+    } else {
+      pop.style.display = 'none';
+    }
+  }
+  function clearCustomTaskForm(){
+    ['ctClient','ctType','ctTitle','ctDate','ctTime','ctNotes'].forEach(id=>{
+      const el = $('#'+id); if(!el) return;
+      if (id==='ctType') el.value='call'; else el.value='';
+    });
+    $('#ctImportant').checked = false;
+    $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
+  }
+  function saveCustomTaskFromPopover(){
+    const clientId = $('#ctClient').value;
+    if(!clientId) return alert('Pick a client');
+    const c = clientById(clientId); if(!c) return alert('Unknown client');
+    const type  = $('#ctType').value || 'custom';
+    let title   = ($('#ctTitle').value||'').trim();
+    if (!title) title = titleDefaultFor(type) || 'Custom';
+    const date  = $('#ctDate').value || fmt(currentAgendaDate || today());
+    const time  = $('#ctTime').value || '';
+    const notes = ($('#ctNotes').value||'').trim();
+    const notify = !!$('#ctNotify').checked && !!time;
+    const important = notify ? true : !!$('#ctImportant').checked;
+
+    const t = {
+      clientId: c.id,
+      clientName: c.name,
+      date,
+      type,
+      title,
+      label: 'Custom',
+      source: 'custom',
+      status: 'open',
+      notes,
+      important
+    };
+    if (time){
+      t.notifyTime = time;
+      if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
+    }
+
+    addTask(t);
+    save();
+    toast('Custom task added');
+  }
+  $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
+  $('#ctClose')?.addEventListener('click', ()=>{ $('#customTaskPop').style.display='none'; });
+  $('#ctCancel')?.addEventListener('click', ()=>{ clearCustomTaskForm(); $('#customTaskPop').style.display='none'; });
+  $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
+  $('#ctType')?.addEventListener('change', ()=>{
+    const cur = ($('#ctTitle').value||'').trim();
+    const defaults = ['Call','Call + Voicemail','SMS','Email'];
+    if (!cur || defaults.includes(cur)) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
+  });
+  $('#ctTime')?.addEventListener('input', ()=>{
+    const has = !!$('#ctTime').value;
+    $('#ctNotify').disabled = !has;
+    if (!has){ $('#ctNotify').checked = false; }
+  });
+  $('#ctNotify')?.addEventListener('change', ()=>{
+    if ($('#ctNotify').checked) $('#ctImportant').checked = true; // notify implies important
   });
 
   /* ========= Wipe All ========= */
