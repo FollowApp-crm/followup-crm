@@ -511,6 +511,22 @@ body.light .ovr-list li{ background:#fff }
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
+
+  // === Instant parse on paste into the lead blob ===
+const leadBlobEl = $('#leadBlob');
+
+// Parse as soon as something is pasted (after the textarea value updates)
+leadBlobEl.addEventListener('paste', () => {
+  // next frame ensures the pasted text is in the textarea
+  requestAnimationFrame(() => {
+    const has = (leadBlobEl.value || '').trim();
+    if (!has) return;
+    // Overwrite fields with parsed values so user can immediately Save or tweak
+    parseBlob({ onlyFillEmpty: false });
+    toast('Parsed from paste. Review & save.');
+  });
+});
+
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
   function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
@@ -1160,7 +1176,11 @@ body.light .ovr-list li{ background:#fff }
         else if(anchorChanged){ clearFutureTasksForClientFrom(client.id, today()); if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client); }
         toast('Customer updated');
       }
-      $('#clientForm').reset(); $('#clientId').value=''; save();
+      // Clear the parse box after saving (per your spec)
+      $('#leadBlob').value = '';
+      $('#clientForm').reset(); 
+      $('#clientId').value = '';
+      save();
     }catch(e){ console.error(e); alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.'); toast('Save failed', 'err', 2200); }
   });
 
