@@ -581,7 +581,7 @@ input[type="checkbox"]{
         <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
       </div>
       <div class="bd">
-        <div id="calSettings" class="sr" style="display:none">
+        <div id="calSettings" style="display:none">
           <div class="tiny" style="font-weight:600; margin-bottom:6px">Working days (auto-scheduled tasks):</div>
           <div class="wdays">
             <label class="cell"><input type="checkbox" id="wd_mon"><span>Mon</span></label>
@@ -1514,7 +1514,8 @@ function closeNewTaskUI(){
   function openCustomTaskPopover(){
     buildClientOptionsForPopover();
     const pop = $('#customTaskPop'); if(!pop) return;
-    if (pop.style.display === 'none'){
+const isHidden = getComputedStyle(pop).display === 'none';
+if (isHidden){
       $('#ctType').value = $('#ctType').value || 'call';
       const agendaYmd = fmt(currentAgendaDate || today());
       if (!$('#ctDate').value) $('#ctDate').value = agendaYmd;
@@ -1576,13 +1577,13 @@ function closeNewTaskUI(){
 
   }
   $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
-  $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);, ()=>{ $('#customTaskPop').style.display='none'; });
-  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover); ()=>{ clearCustomTaskForm(); $('#customTaskPop').style.display='none'; });
+$('#ctClose')?.addEventListener('click', closeCustomTaskPopover);
+$('#ctCancel')?.addEventListener('click', closeCustomTaskPopover);
   $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
   $('#ctType')?.addEventListener('change', ()=>{
     const cur = ($('#ctTitle').value||'').trim();
-    const defaults = ['Call','Call + Voicemail','SMS','Email'];
-    if (!cur || defaults.includes(cur)) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
+const titleDefaults = ['Call','Call + Voicemail','SMS','Email'];
+    if (!cur || titleDefaults.includes(cur)) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
   });
   $('#ctTime')?.addEventListener('input', ()=>{
     const has = !!$('#ctTime').value;
