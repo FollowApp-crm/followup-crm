@@ -301,6 +301,20 @@ body.light{
   border: 1px solid var(--line);
   border-radius: var(--sb-radius);
 }
+  /* === Fix: light-theme checkboxes appear dark === */
+/* Force form-controls to match the active theme */
+body { color-scheme: dark; }        /* default app theme */
+body.light { color-scheme: light; } /* override in light mode */
+
+/* Give checkboxes a consistent size + accent color */
+.agenda-item input[type="checkbox"],
+input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--accent); /* purple when checked */
+}
+
 </style>
 </head>
 <body>
