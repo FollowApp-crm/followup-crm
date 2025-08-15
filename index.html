@@ -53,10 +53,7 @@ header{
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
 }
-body.light header{
-  background:var(--panel);
-  box-shadow:0 1px 0 var(--line);
-}
+body.light header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
 h1{font-size:22px; margin:8px 0 2px; font-weight:800; line-height:1.1}
 .sub{color:var(--muted); font-size:13px}
 
@@ -108,28 +105,9 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
 
 /* Segmented control (sort) */
-.seg{
-  display:inline-flex;
-  gap:0;
-  background: var(--chip);
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:2px;
-  overflow:hidden;
-}
-.seg > button{
-  background: transparent !important;
-  border:0;
-  color: var(--ink);
-  height:34px;
-  padding:0 12px;
-  border-radius:8px;
-}
-.seg > button.primary{
-  background: var(--panel) !important;
-  box-shadow: inset 0 0 0 1px var(--line);
-  color: var(--ink) !important;
-}
+.seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
+.seg > button{ background: transparent !important; border:0; color: var(--ink); height:34px; padding:0 12px; border-radius:8px; }
+.seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
 body.light .seg{ background:#f1f4ff; border-color:var(--line) }
 body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
 
@@ -159,8 +137,6 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .agenda-item.done{opacity:.55}
-
-/* Group header for “By client” view */
 .group-hd{ display:flex; align-items:center; gap:8px; margin:12px 0 6px }
 .group-hd::before, .group-hd::after{ content:""; flex:1; height:1px; background:var(--line) }
 .group-hd .label{ font-size:12px; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:var(--chip); color:#bfc7ff }
@@ -198,6 +174,14 @@ body.light #calSettings{ background:#fff }
 .ovr-list{ margin-top:10px; padding-left:0; list-style:none }
 .ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface) }
 body.light .ovr-list li{ background:#fff }
+
+/* =================== TOAST =================== */
+#toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+.toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
+       background:var(--panel);color:var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.28);font-size:13px;
+       display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(-6px);transition:.18s ease-out}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-color:#2b9c6b} .toast.err{border-color:#b94444}
 
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
@@ -237,7 +221,7 @@ body.light .ovr-list li{ background:#fff }
             <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax)</label>
             <textarea id="leadBlob" rows="5" placeholder="Paste the whole blob here…"></textarea>
             <div class="right toolbar" style="margin-top:8px">
-              <button type="button" id="parseLead">Parse &amp; Fill</button>
+              <button type="button" id="parseLead">Paste &amp; Edit</button>
               <button type="button" id="clearLead" class="ghost">Clear</button>
             </div>
           </div>
@@ -269,7 +253,6 @@ body.light .ovr-list li{ background:#fff }
             </div>
           </div>
 
-          <!-- Trip/customer details -->
           <div class="row">
             <div>
               <label>Route</label>
@@ -446,6 +429,9 @@ body.light .ovr-list li{ background:#fff }
 
   </main>
 
+  <!-- Toast container -->
+  <div id="toaster" aria-live="polite"></div>
+
 <script>
 (function(){
   'use strict';
@@ -460,14 +446,21 @@ body.light .ovr-list li{ background:#fff }
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
   function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
-  function fmt(d){
-    if(!(d instanceof Date)) d=new Date(d);
-    const z=n=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-  }
+  function fmt(d){ if(!(d instanceof Date)) d=new Date(d); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
   function parseLocalYMD(ymd){ if(!ymd) return today(); const [y,m,d]=ymd.split('-').map(Number); const dt=new Date(y,(m||1)-1,d||1); dt.setHours(0,0,0,0); return dt; }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
+
+  /* ========= Toasts ========= */
+  function toast(msg, kind='ok', ms=1800){
+    const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
+    const el = document.createElement('div');
+    el.className = 'toast ' + (kind==='err'?'err':'ok');
+    el.innerHTML = (kind==='err' ? '⚠️' : '✅') + ' ' + (msg||'');
+    host.appendChild(el);
+    requestAnimationFrame(()=> el.classList.add('show'));
+    setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=> el.remove(), 220); }, ms);
+  }
 
   /* ========= Theme ========= */
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = t==='light' ? '🌙 Dark' : '☀️ Light'; }
@@ -511,132 +504,6 @@ body.light .ovr-list li{ background:#fff }
   function nextWorkingDay(date){ let d=new Date(date); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
-
-/* ========= Reschedule after settings change ========= */
-// New: full regeneration from anchors so newly-working days can own tasks.
-// Manual tasks remain untouched. Done tasks remain as-is.
-function regenerateAllFutureAutoTasks(){
-  const from = fmt(today());
-
-  // Remove ONLY future/today auto OPEN tasks
-  state.tasks = state.tasks.filter(t => !(t.source === 'auto' && t.status !== 'done' && t.date >= from));
-
-  // Rebuild per client based on current settings and their anchors.
-  // Generators themselves skip past dates but preserve day labels.
-  state.clients.forEach(c => {
-    if (c.status === 'unreached') scheduleUnreached(c);
-    else                          scheduleReached(c);
-  });
-
-  save();
-}
-
-// Back-compat shim: any old calls now do a full regeneration.
-function reflowFutureAutoTasks(){
-  regenerateAllFutureAutoTasks();
-}
-
-
-  /* ========= SMS helper ========= */
-  const SMS_TEMPLATE = (name='') =>
-    `Hi ${(name||'').split(' ')[0]}, quick follow-up — do you have 2 minutes to review?`;
-
-  function cleanDigits(num){ return (num||'').replace(/[^\d+]/g,''); }
-
-  // Web fallback (Shift+click)
-  function openRcWebComposeTab(number, body){
-    const num = cleanDigits(number);
-    const url = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(num)}&text=${encodeURIComponent(body)}`;
-    const w = window.open(url, "_blank");
-    if(!w) alert("Popup was blocked. Please allow popups for this site.");
-  }
-
-  function openRcDesktopPopup(number, body, { fallbackWeb = true, closeAfterMs = 2200 } = {}){
-    const num = cleanDigits(number);
-    const txt = encodeURIComponent(body);
-
-    const popup = window.open('', 'rcsms',
-      'width=420,height=240,left=140,top=120,toolbar=0,location=0,menubar=0,scrollbars=0,status=0,resizable=1');
-    if(!popup){ alert('Popup was blocked. Please allow popups for this site.'); return null; }
-
-    const html = `<!doctype html>
-    <html><head><meta charset="utf-8"></head>
-    <body style="margin:0;font:14px system-ui;background:#0b0f16;color:#cfd6ff;display:flex;align-items:center;justify-content:center">
-      <div>Opening RingCentral desktop…</div>
-      <iframe id="rcshim" style="display:none;width:0;height:0;border:0"></iframe>
-      <script>
-        const num='${num}', txt='${txt}';
-        const web = 'https://app.ringcentral.com/r/sms?type=new&number=' + encodeURIComponent(num) + '&text=' + txt;
-        const schemes = [
-          'rcapp://sms?number='+encodeURIComponent(num)+'&text='+txt,
-          'ringcentral://sms?number='+encodeURIComponent(num)+'&text='+txt,
-          'rcmobile://sms?number='+encodeURIComponent(num)+'&text='+txt
-        ];
-        const iframe = document.getElementById('rcshim');
-        let i = 0;
-        function tryNext(){
-          if(i < schemes.length){
-            iframe.src = schemes[i++];
-            setTimeout(tryNext, 550);
-          }else{
-            window.open(web, "_blank");
-          }
-        }
-        tryNext();
-        setTimeout(()=>{ try{ window.close(); }catch(_){} }, ${Math.max(1000, 2200)});
-      </` + `script>
-    </body></html>`;
-
-    try{ popup.document.write(html); popup.document.close(); }catch(_){}
-    [3000, 4000, 5200].forEach(ms=>{
-      setTimeout(()=>{ try{ if(popup && !popup.closed) popup.close(); }catch(_){} }, ms);
-    });
-    return popup;
-  }
-
-  // Single consolidated handler
-  document.addEventListener('click', async (e) => {
-    const el = e.target.closest('a.sms-link'); if(!el) return;
-    e.preventDefault();
-
-    const num  = el.getAttribute('data-num')  || el.textContent || '';
-    const name = el.getAttribute('data-name') || '';
-    const text = SMS_TEMPLATE(name);
-
-    // Copy message as a safety net
-    try{
-      if(navigator.clipboard && window.isSecureContext){
-        await navigator.clipboard.writeText(text);
-      }else{
-        const ta=document.createElement('textarea'); ta.value=text;
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-      }
-    }catch(_){}
-
-    if (e.altKey){
-      window.location.href = `rcmobile://sms?number=${encodeURIComponent(cleanDigits(num))}&text=${encodeURIComponent(text)}`;
-      return;
-    }
-    if (e.shiftKey){
-      openRcWebComposeTab(num, text);
-    } else {
-      openRcDesktopPopup(num, text, { fallbackWeb:true, closeAfterMs:2200 });
-    }
-  });
-
-  /* ========= Contact link helpers ========= */
-  const CALL_LINK_MODE = 'tel';
-  const EMAIL_MODE     = 'gmail';
-  function phoneHref(num){
-    const clean=(num||'').replace(/[^\d+]/g,'');
-    return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`;
-  }
-  function emailHref(addr, subject='', body=''){
-    const enc = s => encodeURIComponent(s || '');
-    return EMAIL_MODE === 'gmail'
-      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
-      : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
-  }
 
   /* ========= Lead Parser ========= */
   function parseLeadBlob(text){
@@ -699,7 +566,11 @@ function reflowFutureAutoTasks(){
       (x.title||'')===(t.title||'') && (x.source||'')===(t.source||''));
     if(!exists) state.tasks.push(t);
   }
+
+  // Never create past tasks. Labels still count from the anchor.
   function genDayTasks(client, date, a, label){
+    const todayY = fmt(today());
+    if(date < todayY) return;
     const base = {clientId:client.id, clientName:client.name, date, source:'auto', label};
     if (a.calls >= 1) addTask({...base, type:'call',   title:'Call'});
     if (a.voicemail >= 1) addTask({...base, type:'callvm', title:'Call + Voicemail'});
@@ -713,59 +584,49 @@ function reflowFutureAutoTasks(){
     }
   }
 
-  // Unreached: skip past tasks, keep labels counting from anchor
-function scheduleUnreached(client){
-  const start0 = client.startDate ? parseLocalYMD(client.startDate) : today();
-  let day = nextWorkingDay(start0);
-  const tdy = today();
-
-  for (let dayNum = 1; dayNum <= 5; dayNum++){
-    const dt = new Date(day);
-    if (dt >= tdy){
-      const date = fmt(dt);
-      const a = ACTIONS_UNREACHED(dayNum);
-      genDayTasks(client, date, a, `Unreached Day ${dayNum}`);
+  function scheduleUnreached(client){
+    const start0 = client.startDate ? parseLocalYMD(client.startDate) : today();
+    let day1 = nextWorkingDay(start0);
+    for(let dayNum=1; dayNum<=5; dayNum++){
+      const date = fmt(adjustAutoDateIfNeeded(day1));
+      genDayTasks(client, date, ACTIONS_UNREACHED(dayNum), `Unreached Day ${dayNum}`);
+      if(dayNum<5) day1 = stepByWorkingDays(day1, 1);
     }
-    if (dayNum < 5) day = stepByWorkingDays(day, 1);
   }
-}
 
-
-  // Reached: Phase 1 are consecutive working days, then gaps; skip past, preserve labels
-function scheduleReached(client){
-  const start0 = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
-  const tdy = today();
-
-  const p1d1 = nextWorkingDay(start0);
-  const p1d2 = stepByWorkingDays(p1d1, 1);
-  const p1d3 = stepByWorkingDays(p1d2, 1);
-
-  // Phase 1 (3 consecutive working days)
-  [p1d1, p1d2, p1d3].forEach((dt, idx) => {
-    if (dt >= tdy){
-      genDayTasks(client, fmt(dt), ACTIONS_REACHED, `Phase 1 (Day ${idx+1}/3)`);
-    }
-  });
-
-  // Then +3, +5, +7, +7, +7 (calendar days), adjusted off non-working days
-  const gaps = [3,5,7,7,7];
-  let last = p1d3;
-  gaps.forEach((gap, i) => {
-    let target = addDays(last, gap);
-    target = adjustAutoDateIfNeeded(target);
-    if (target >= tdy){
+  function scheduleReached(client){
+    const start0 = client.reachedStart ? parseLocalYMD(client.reachedStart) : today();
+    const p1d1 = adjustAutoDateIfNeeded(nextWorkingDay(start0));
+    const p1d2 = adjustAutoDateIfNeeded(stepByWorkingDays(p1d1, 1));
+    const p1d3 = adjustAutoDateIfNeeded(stepByWorkingDays(p1d2, 1));
+    genDayTasks(client, fmt(p1d1), ACTIONS_REACHED, `Phase 1 (Day 1/3)`);
+    genDayTasks(client, fmt(p1d2), ACTIONS_REACHED, `Phase 1 (Day 2/3)`);
+    genDayTasks(client, fmt(p1d3), ACTIONS_REACHED, `Phase 1 (Day 3/3)`);
+    const gaps = [3,5,7,7,7];
+    let last = p1d3;
+    for (let i=0;i<gaps.length;i++){
+      let target = addDays(last, gaps[i]);
+      target = adjustAutoDateIfNeeded(target);
       genDayTasks(client, fmt(target), ACTIONS_REACHED, `Phase ${i+2}`);
+      last = target;
     }
-    last = target;
-  });
-}
+  }
 
-
-
-  function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.date >= f)); }
+  function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='auto' && t.status!=='done' && t.date >= f)); }
   function clearManualTasksForClient(id){ state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done')); }
   function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
   function deleteTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); save(); }
+
+  // Full regeneration per settings/override change
+  function regenerateAutoOpenTasksFromAnchors(){
+    const from = fmt(today());
+    state.tasks = state.tasks.filter(t => !(t.source==='auto' && t.status!=='done' && t.date >= from));
+    for(const c of state.clients){
+      if(c.status==='unreached') scheduleUnreached(c);
+      else scheduleReached(c);
+    }
+    save();
+  }
 
   /* ========= Customers table ========= */
   function clientById(id){ return state.clients.find(c=>c.id===id); }
@@ -787,15 +648,14 @@ function scheduleReached(client){
     [...state.clients]
       .sort((a,b)=>a.name.localeCompare(b.name))
       .filter(c => (!sflt || c.status===sflt))
-      .filter(c => [c.name,c.email,c.phone,(c.notes||''), (c.route||''), (c.dates||''), (c.pax||'')].join(' ').toLowerCase().includes(query))
+      .filter(c => [c.name,c.email,c.phone,(c.notes||''),(c.route||''),(c.dates||''),(c.pax||'')].join(' ').toLowerCase().includes(query))
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
         const contactHtml = `
           ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a>` : '-'}
           <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a>` : '-'}
-        `;
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a>` : '-'}`;
         tr.innerHTML = `
           <td data-label="Name">
             <strong>${escapeHtml(c.name)}</strong>
@@ -858,7 +718,6 @@ function scheduleReached(client){
       $$('.manual-row').forEach(n=>n.remove()); return;
     }
     if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
-
     if (act==='edit'){
       if(!c){ return; }
       $('#clientId').value = c.id;
@@ -871,13 +730,11 @@ function scheduleReached(client){
       $('#dates').value = c.dates || '';
       $('#pax').value   = c.pax   || '';
       $('#notes').value = c.notes || '';
-
       const target = document.getElementById('addCard') || document.body;
       target.scrollIntoView({ behavior:'smooth', block:'start' });
       setTimeout(()=>{ try{ document.getElementById('name').focus(); }catch(_){} }, 200);
       return;
     }
-
     if(act==='reach'){
       c.status = c.status === 'unreached' ? 'reached' : 'unreached';
       if(c.status === 'reached'){
@@ -916,7 +773,7 @@ function scheduleReached(client){
         <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="manualClear_${id}" checked /> Clear ALL future auto tasks</label>
         <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="manualClearPrev_${id}" checked /> Remove previous manual tasks</label>
         <input type="text" id="manualNotes_${id}" placeholder="Optional notes" style="min-width:220px" />
-        <span>Creates: 2 Calls (1h apart), 1 SMS, 1 Email.</span>
+        <span>Creates: 2 Calls, 1 SMS, 1 Email.</span>
         <span class="space"></span>
         <button class="primary" data-act="manual-apply" data-id="${id}">Schedule</button>
         <button data-act="manual-cancel" data-id="${id}">Cancel</button>
@@ -935,16 +792,27 @@ function scheduleReached(client){
     save();
   }
 
+  /* ========= Contact link helpers ========= */
+  const CALL_LINK_MODE = 'tel';
+  const EMAIL_MODE     = 'gmail';
+  function phoneHref(num){ const clean=(num||'').replace(/[^\d+]/g,''); return CALL_LINK_MODE==='callto' ? `callto:${clean}` : `tel:${clean}`; }
+  function emailHref(addr, subject='', body=''){
+    const enc = s => encodeURIComponent(s || '');
+    return EMAIL_MODE === 'gmail'
+      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
+      : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
+  }
+
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
   let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
-// Add this helper:
-function setAgendaFilter(val){
-  agendaFilter = (val || '').trim().toLowerCase();
-  renderAgenda();       // update the list
-  buildCalendar();      // <-- keep calendar badges in sync with the filter
-}
+
+  function setAgendaFilter(val){
+    agendaFilter = (val || '').trim().toLowerCase();
+    renderAgenda();
+    buildCalendar(); // keep calendar badges in sync with the filter
+  }
 
   function typeOrder(t){ return ({call:1, callvm:2, voicemail:3, sms:4, email:5, custom:6}[t]||9); }
   function clientDisplayName(t){ return t.clientName || (t.clientId ? (clientById(t.clientId)||{}).name : '') || ''; }
@@ -980,7 +848,7 @@ function setAgendaFilter(val){
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a></span>`;
       } else if(t.type==='sms' && c.phone){
-        contactHtml = `<span class="pill"><a class="mono sms-link" href="#" data-num="${escapeHtml(c.phone)}" data-name="${escapeHtml(c.name || '')}">${escapeHtml(c.phone)}</a></span>`;
+        contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a></span>`;
@@ -1081,23 +949,15 @@ function setAgendaFilter(val){
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-$('#agendaFilter').addEventListener('input', () => {
-  setAgendaFilter($('#agendaFilter').value);
-});
 
-$('#agendaFilterClear').addEventListener('click', () => {
-  $('#agendaFilter').value = '';
-  setAgendaFilter('');
-});
+  $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
+  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
 
   setSortButtons();
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
-    if((t.label||'').startsWith('Unreached Day 1')) return {
-      subject:'Welcome — next steps',
-      body:`Hi ${client?.name||''},\n\nGreat to connect. Here’s the info we discussed…\n\nBest,\n`
-    };
+    if((t.label||'').startsWith('Unreached Day 1')) return {subject:'Welcome — next steps', body:`Hi ${client?.name||''},\n\nGreat to connect. Here’s the info we discussed…\n\nBest,\n`};
     return { subject:'Quick follow-up', body:`Hi ${client?.name||''},\n\nJust checking in on …\n\nBest,\n` };
   }
   function collectDueUnreachedEmails(){
@@ -1134,10 +994,9 @@ $('#agendaFilterClear').addEventListener('click', () => {
     if (!notifSupported() || Notification.permission!=='granted') return;
     try{
       const tag = t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-      const title = `${t.title}${t.clientName ? ' — '+t.clientName : ''}`;
-      const body  = `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`;
-      const n = new Notification(title, {
-        body, tag, renotify:true, silent:false, requireInteraction: !!t.requireInteraction
+      const n = new Notification(`${t.title}${t.clientName ? ' — '+t.clientName : ''}`, {
+        body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
+        tag, renotify:true, silent:false, requireInteraction: !!t.requireInteraction
       });
       n.onclick = () => { try{ window.focus(); }catch(_){} };
     }catch(e){}
@@ -1256,7 +1115,7 @@ $('#agendaFilterClear').addEventListener('click', () => {
       const li = document.createElement('li');
       const left = document.createElement('span'); left.textContent = `${date} — ${type==='work'?'Working':'Off'}`;
       const del = document.createElement('button'); del.textContent='Delete';
-      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; reflowFutureAutoTasks(); save(); renderOverrideList(); });
+      del.addEventListener('click', ()=>{ delete state.settings.overrides[date]; regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); });
       li.appendChild(left); li.appendChild(del); ul.appendChild(li);
     });
   }
@@ -1274,39 +1133,45 @@ $('#agendaFilterClear').addEventListener('click', () => {
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
-    reflowFutureAutoTasks();  // reassign dates that conflict with new settings
-    save();
-    $('#calSettings').style.display = 'none'; // close dropdown after save
+    regenerateAutoOpenTasksFromAnchors(); // full regen from anchors
+    $('#calSettings').style.display = 'none';
   }
   $('#calSettingsBtn').addEventListener('click', ()=>{ const el=$('#calSettings'); const open=el.style.display!=='none'; el.style.display = open ? 'none' : 'block'; if(!open) loadSettingsIntoUI(); });
   $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-  $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); reflowFutureAutoTasks(); save(); renderOverrideList(); });
+  $('#addOverride').addEventListener('click', ()=>{ const d=$('#ovrDate').value; const t=$('#ovrType').value; if(!d) return alert('Pick a date'); state.settings.overrides[d] = (t==='work' ? 'work' : 'off'); regenerateAutoOpenTasksFromAnchors(); renderOverrideList(); });
 
-  /* ========= Parse & Form wiring ========= */
-  $('#parseLead').addEventListener('click', ()=>{
-    try{
-      const blob = $('#leadBlob').value;
-      if(!blob.trim()) { alert('Paste your lead text first.'); return; }
-      const parsed = parseLeadBlob(blob);
-
-      if(parsed.name)  $('#name').value  = parsed.name;
-      if(parsed.email) $('#email').value = parsed.email;
-      if(parsed.phone) $('#phone').value = parsed.phone;
-      if(parsed.route) $('#route').value = parsed.route;
-      if(parsed.dates) $('#dates').value = parsed.dates;
-      if(parsed.pax)   $('#pax').value   = parsed.pax;
-
-      const cur = $('#notes').value.trim();
-      if(parsed.notes) $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
-    }catch(e){
-      alert('Parse failed. Please paste raw text exactly as copied from CRM.');
+  /* ========= Parse + Form wiring (Paste & Edit + auto-parse Save) ========= */
+  function applyParsedToForm(parsed, { onlyFillEmpty = false } = {}){
+    if(!parsed) return;
+    const set = (id, val) => {
+      if(!val) return;
+      const el = document.querySelector(id);
+      if(!el) return;
+      if(onlyFillEmpty && (el.value || '').trim()) return;
+      el.value = val;
+    };
+    set('#name',  parsed.name);
+    set('#email', parsed.email);
+    set('#phone', parsed.phone);
+    set('#route', parsed.route);
+    set('#dates', parsed.dates);
+    set('#pax',   parsed.pax);
+    if(parsed.notes){
+      const cur = ($('#notes').value || '').trim();
+      $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
     }
-  });
-  $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
+  }
+  function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
+    const blob = ($('#leadBlob').value || '').trim();
+    if(!blob) return null;
+    const parsed = parseLeadBlob(blob);
+    applyParsedToForm(parsed, { onlyFillEmpty });
+    return parsed;
+  }
 
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
-    const exists = clientById(id);
+    const exists = state.clients.find(c=>c.id===id);
     const status = $('#status').value;
     const startDate = $('#startDate').value || fmt(today());
     const client = {
@@ -1325,8 +1190,20 @@ $('#agendaFilterClear').addEventListener('click', () => {
     return { client, exists };
   }
 
+  // Paste & Edit (parse only, no save)
+  $('#parseLead').addEventListener('click', ()=>{
+    const has = ($('#leadBlob').value || '').trim();
+    if(!has){ alert('Paste your lead text first.'); return; }
+    parseBlob({ onlyFillEmpty:false });
+    toast('Parsed. Review & save.');
+  });
+  $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
+  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
+
+  // SAVE CUSTOMER — auto-parse blob (top off empties), then save
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
+      if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
 
@@ -1334,6 +1211,7 @@ $('#agendaFilterClear').addEventListener('click', () => {
         state.clients.push(client);
         if(client.status==='unreached') scheduleUnreached(client);
         else { client.reachedStart = client.startDate; scheduleReached(client); }
+        toast('Customer added');
       }else{
         const i = state.clients.findIndex(x=>x.id===client.id);
         const prev = state.clients[i];
@@ -1355,18 +1233,22 @@ $('#agendaFilterClear').addEventListener('click', () => {
           clearFutureTasksForClientFrom(client.id, today());
           if(client.status==='unreached') scheduleUnreached(client); else scheduleReached(client);
         }
+        toast('Customer updated');
       }
 
       $('#clientForm').reset(); $('#clientId').value='';
       save();
-    }catch(e){ alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.'); }
+    }catch(e){
+      console.error(e);
+      alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
+      toast('Save failed', 'err', 2200);
+    }
   });
-  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
 
   /* ========= Wipe All ========= */
   $('#wipeAll').addEventListener('click', () => {
     if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
-    const tPref = localStorage.getItem(THEME_KEY); // keep theme
+    const tPref = localStorage.getItem(THEME_KEY);
     localStorage.removeItem(storeKey);
     state.clients=[]; state.tasks=[]; state.settings=defaults().settings;
     if(tPref) localStorage.setItem(THEME_KEY, tPref);
@@ -1379,7 +1261,6 @@ $('#agendaFilterClear').addEventListener('click', () => {
 
   /* ========= Bootstrap ========= */
   function bootstrap(){
-    setSortButtons();
     refresh();
     buildCalendar();
   }
