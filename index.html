@@ -654,6 +654,30 @@ input[type="checkbox"]{
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
+  // Close + reset the New Task UI
+function closeNewTaskUI(){
+  const panel =
+    document.getElementById('newTaskPanel') ||
+    document.getElementById('addTaskPopover') ||
+    document.getElementById('taskPopover') ||
+    document.getElementById('newTask') ||
+    document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
+
+  if (panel){
+    panel.classList.remove('open','show');
+    panel.removeAttribute('data-open');
+    panel.style.display = 'none';
+  }
+
+  const form =
+    document.getElementById('newTaskForm') ||
+    document.getElementById('addTaskForm') ||
+    document.getElementById('taskForm');
+
+  form?.reset();
+}
+
+
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
@@ -1509,6 +1533,12 @@ input[type="checkbox"]{
     $('#ctImportant').checked = false;
     $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
   }
+  function closeCustomTaskPopover(){
+  clearCustomTaskForm();
+  const pop = document.getElementById('customTaskPop');
+  if (pop) pop.style.display = 'none';
+}
+
   function saveCustomTaskFromPopover(){
     const clientId = $('#ctClient').value;
     if(!clientId) return alert('Pick a client');
@@ -1542,10 +1572,12 @@ input[type="checkbox"]{
     addTask(t);
     save();
     toast('Custom task added');
+    closeCustomTaskPopover();
+
   }
   $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
-  $('#ctClose')?.addEventListener('click', ()=>{ $('#customTaskPop').style.display='none'; });
-  $('#ctCancel')?.addEventListener('click', ()=>{ clearCustomTaskForm(); $('#customTaskPop').style.display='none'; });
+  $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);, ()=>{ $('#customTaskPop').style.display='none'; });
+  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover); ()=>{ clearCustomTaskForm(); $('#customTaskPop').style.display='none'; });
   $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
   $('#ctType')?.addEventListener('change', ()=>{
     const cur = ($('#ctTitle').value||'').trim();
