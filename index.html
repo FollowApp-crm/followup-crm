@@ -180,10 +180,23 @@ body.light .copy-btn{ background:#fff; }
 }
 .pill a{ white-space:nowrap; }   /* phone/email inside a pill shouldn't wrap */
 
-body.light .badge{ background:#eef2fb; color:#55607a }
-body.light .pill{ background:#f1f4ff; color:#1e2758 }
+  body.light .badge{ background:#eef2fb; color:#55607a }
+  body.light .pill{ background:#f1f4ff; color:#1e2758 }
+  
+  /* Reached badge — a little green */
+  .badge.reached{
+    background: rgba(40,192,118,.14);
+    border-color:#2a6b4f;
+    color:#9fe1bd;
+  }
+  body.light .badge.reached{
+    background:#e9fff3;
+    border-color:#bfead3;
+    color:#227a52;
+  }
+  
+  /* Btn danger */
 
-/* Btn danger */
 .btn-danger{
   background: var(--danger) !important; border-color: var(--danger-border) !important;
   color:#fff !important; box-shadow:none !important;
@@ -1091,9 +1104,10 @@ function closeNewTaskUI(){
               ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
             </div>
           </td>
-          <td data-label="Contact" class="tiny">${contactHtml}</td>
-          <td data-label="Status"><span class="badge">${c.status}</span></td>
-          <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
+                     <td data-label="Contact" class="tiny">${contactHtml}</td>
+            <td data-label="Status"><span class="badge ${c.status}">${c.status}</span></td>
+            <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
+
           <td data-label="Actions" class="actions">
             <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
             <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
@@ -1368,12 +1382,17 @@ const chips = [
   $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
   $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
 
-  $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-  $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
-  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
-  setSortButtons();
+     $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
+    $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
+    $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
+    $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
+    $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
+    setSortButtons();
+
+    // Customers: live search + status filter
+    $('#search')?.addEventListener('input', refresh);
+    $('#statusFilter')?.addEventListener('change', refresh);
+
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
