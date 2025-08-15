@@ -51,7 +51,7 @@
   --ink:#e8ecf3; --muted:#9aa3c7; --line:#262b36;
   --accent:#7c5cff; --accent-2:#28c076;
   --danger:#d94a4a; --danger-border:#9e3636; --danger-ring:rgba(217,74,74,.25);
-  --page-max:1080px; --page-pad:16px; --radius:16px;
+  --page-max:1440px; --page-pad:16px; --radius:16px;
 }
 body.light{
   --bg:#f7f8fb; --panel:#ffffff; --card:#f2f4ff; --chip:#eef2fb; --surface:#ffffff;
@@ -214,7 +214,7 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
 
   /* === Two-column Agenda + Calendar (desktop) === */
 .row.agenda-layout{
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1.2fr);
   gap:16px;
   align-items:start;
 }
@@ -274,7 +274,16 @@ body.light .cal-cell.offday .d{ color:#a23b3b; }
 .cal-hd{ display:flex; align-items:center; gap:10px }
 .cal-hd .space{ flex:1 }
 .cal-month{ display:flex; align-items:center; gap:8px }
-.settings-btn{ height:32px; padding:6px 10px; border-radius:999px }
+.settings-btn{
+  height:32px;
+  padding:6px 12px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  line-height:1;
+}
 #calSettings{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface) }
 body.light #calSettings{ background:#fff }
 .wdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:16px; margin-top:8px }
