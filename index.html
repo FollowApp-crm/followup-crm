@@ -51,7 +51,7 @@
   --ink:#e8ecf3; --muted:#9aa3c7; --line:#262b36;
   --accent:#7c5cff; --accent-2:#28c076;
   --danger:#d94a4a; --danger-border:#9e3636; --danger-ring:rgba(217,74,74,.25);
-  --page-max:1440px; --page-pad:16px; --radius:16px;
+  --page-max:1080px; --page-pad:16px; --radius:16px;
 }
 body.light{
   --bg:#f7f8fb; --panel:#ffffff; --card:#f2f4ff; --chip:#eef2fb; --surface:#ffffff;
@@ -226,9 +226,16 @@ grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1.2fr);
 .cal-badge{ margin-top:4px; font-size:10.5px; }
 
 /* Stack on narrower screens */
-@media (max-width:1000px){
-  .row.agenda-layout{ grid-template-columns:1fr; }
+/* Make ONLY the Agenda + Calendar row wider than the page wrap (desktop) */
+@media (min-width:1001px){
+  .row.agenda-layout{
+    --agenda-bleed: clamp(80px, 6vw, 180px); /* widen amount on EACH side */
+    width: calc(100% + var(--agenda-bleed) * 2);
+    margin-left: calc(var(--agenda-bleed) * -1);
+    margin-right: calc(var(--agenda-bleed) * -1);
+  }
 }
+
 
 /* =================== KPI =================== */
 .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
