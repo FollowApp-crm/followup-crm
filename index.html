@@ -353,6 +353,35 @@ body.light { color-scheme: light; }
 /* Spacing utilities used in markup */
 .mt12{margin-top:12px}
 .mt16{margin-top:16px}
+  /* === Calendar settings: robust layout (fix "Add" row overflow) === */
+#calSettings{ max-width:100%; }
+
+.wdays{
+  display:grid;
+  grid-template-columns:repeat(7, minmax(0, 1fr)); /* shrink safely */
+  gap:12px;
+}
+.wdays .cell{ min-width:0; }
+
+.ovr{
+  /* Stack fields vertically so nothing overflows */
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  align-items:center;
+}
+.ovr > *{ min-width:0; }                 /* prevent long text from widening the grid */
+.ovr .tiny{ grid-column:1 / -1; }        /* helper text on its own line */
+#overrideList{ margin-top:10px; }
+
+/* Optional: on very wide screens you can re-enable a tidy 4-col row */
+@media (min-width: 1000px){
+  .ovr{
+    grid-template-columns:minmax(160px,220px) 1fr minmax(110px,150px) auto;
+  }
+  .ovr .tiny{ grid-column:1 / -1; }
+}
+
 </style>
 </head>
 <body>
