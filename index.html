@@ -60,9 +60,20 @@ header{
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
 }
-body.light header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
-h1{font-size:22px; margin:6px 0 2px; font-weight:800; line-height:1.1}
-.sub{color:var(--muted); font-size:13px}
+/* Light mode: keep the glassy blur like dark mode */
+body.light header{
+  background: linear-gradient(
+      180deg,
+      rgba(255,255,255,.85),
+      rgba(255,255,255,.65) 70%,
+      rgba(255,255,255,0)
+  );
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: none; /* remove the flat divider shadow */
+}
+
 
 /* =================== CARDS / CONTROLS =================== */
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
