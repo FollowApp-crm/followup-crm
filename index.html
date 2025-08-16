@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+v <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -185,7 +185,40 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(.95) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
+  
+/* Wipe All — soft danger card look (a bit bolder) */
+#wipeAll{
+  background: linear-gradient(180deg, rgba(217,74,74,.20), rgba(217,74,74,.12)) !important;
+  border-color: #b94a4a !important;
+  color: #ffd6d6 !important;
+  font-weight: 700;
+  border-radius: 14px;
+  height: 42px;
+  padding: 0 14px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.03),
+    0 10px 26px rgba(217,74,74,.18);
+}
+#wipeAll:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05),
+    0 12px 32px rgba(217,74,74,.28);
+}
+#wipeAll:active{ transform: translateY(0); }
+#wipeAll:focus{ box-shadow: 0 0 0 3px var(--danger-ring) !important; }
 
+/* Light theme tune */
+body.light #wipeAll{
+  background: linear-gradient(180deg, #ffe9ea, #ffe1e2) !important;
+  color: #b43b3b !important;
+  border-color: #f0b4b4 !important;
+  box-shadow:
+    inset 0 0 0 1px #ffe5e5,
+    0 10px 24px rgba(217,74,74,.18);
+}
+
+  
 /* Segmented control (sort) */
 .seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
 .seg > button{ background: transparent !important; border:0; color: var(--ink); height:32px; padding:0 12px; border-radius:8px; }
