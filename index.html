@@ -6,24 +6,14 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-/* ===== Lead paste block (textarea + side buttons) ===== */
+/* ===== Paste block ===== */
 .lead-block{ display:block; margin-bottom:10px; }
 .lead-actions{ display:none; }
 @media (max-width:760px){ .lead-block{ display:block; } }
 
 /* Bottom-right action buttons on the form */
-.form-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+.form-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-top:10px; }
 .form-actions.is-end{ align-self:end; }
-
-/* Sticky footer for modal actions */
-.sticky-footer{
-  position: sticky; bottom: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0), var(--panel) 50%);
-  padding-top:10px; margin-top:8px;
-}
-body.light .sticky-footer{
-  background: linear-gradient(180deg, rgba(255,255,255,0), var(--panel) 50%);
-}
 
 /* =================== TOKENS =================== */
 :root{
@@ -94,7 +84,6 @@ input,select,textarea,button{
 textarea{height:auto; min-height:72px; resize:vertical}
 input:focus,select:focus,textarea:focus{ border-color:#445; box-shadow:0 0 0 3px rgba(124,92,255,.15) }
 
-/* Light theme controls */
 body.light input,
 body.light select,
 body.light textarea,
@@ -102,10 +91,10 @@ body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.toggle) {
   background:#fff; color:var(--ink); border-color:var(--line);
 }
 
-/* Flash the Agenda date field when it’s changed from the calendar */
+/* Agenda date glow */
 @keyframes agendaDateGlow{
-  0%   { box-shadow: 0 0 0 0 rgba(124,92,255,.45), 0 0 0 6px rgba(124,92,255,.18); }
-  100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
+  0%{ box-shadow:0 0 0 0 rgba(124,92,255,.45),0 0 0 6px rgba(124,92,255,.18) }
+  100%{ box-shadow:0 0 0 0 rgba(124,92,255,0) }
 }
 #agendaDate.glow{
   animation: agendaDateGlow 900ms ease-out;
@@ -117,41 +106,30 @@ body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.toggle) {
 button{cursor:pointer; background:linear-gradient(180deg,#2c2f44,#1b2130); border:1px solid #2b3346; color:var(--ink)}
 button.primary{ background:linear-gradient(180deg,var(--accent),#6a4ff0); border-color:#6a4ff0; color:#fff }
 button.ghost{ background:transparent }
-
-/* Icon buttons */
 .btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:10px; background:var(--chip); border:1px solid var(--line)}
 body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
 
-/* === Add Customer modal + fancy "+" === */
+/* === Add Customer modal === */
 body.modal-open{ overflow:hidden; }
 .add-btn{
   width:34px; height:34px; border-radius:999px;
-  background:linear-gradient(180deg,var(--accent),#6a4ff0);
-  color:#fff; border:1px solid #6a4ff0;
-  box-shadow:0 8px 26px rgba(124,92,255,.35);
-  font-weight:900; line-height:1; padding:0;
+  background:linear-gradient(180deg,var(--accent),#6a4ff0); color:#fff; border:1px solid #6a4ff0;
+  box-shadow:0 8px 26px rgba(124,92,255,.35); font-weight:900; line-height:1; padding:0;
 }
 .add-btn:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 .add-btn:active{ transform:translateY(0); }
 
-/* Modal container */
 .modal{
-  position:fixed; inset:0; display:none;
-  align-items:center; justify-content:center;
-  padding:18px; background:rgba(0,0,0,.55);
-  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  padding:18px; background:rgba(0,0,0,.55); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
   z-index:9998; overflow:auto;
 }
 .modal.open{ display:flex; }
 .modal .card{
-  width:min(740px, 100%);
-  max-height:84vh;
-  overflow:auto;               /* scroll inside if needed */
-  animation:pop .16s ease-out;
+  width:min(740px, 100%); max-height:84vh; overflow:auto; animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
-/* Hide the Add/Edit section until JS moves it into the modal */
-#addCard{ display:none; }
+#addCard{ display:none; } /* moved into modal */
 
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .space{flex:1}
@@ -159,14 +137,8 @@ body.modal-open{ overflow:hidden; }
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
-.pill{
-  display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff; white-space:nowrap;
-}
-.copy-btn{
-  margin-left:6px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;
-  border-radius:6px; border:1px solid var(--line); background:var(--panel);
-  font-size:12px; line-height:1; cursor:pointer; padding:0;
-}
+.pill{display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff; white-space:nowrap;}
+.copy-btn{ margin-left:6px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--line); background:var(--panel); font-size:12px; line-height:1; cursor:pointer; padding:0; }
 .copy-btn:active{ transform:translateY(1px); }
 body.light .copy-btn{ background:#fff; }
 .pill a{ white-space:nowrap; }
@@ -174,39 +146,21 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger */
-.btn-danger{
-  background: var(--danger) !important; border-color: var(--danger-border) !important;
-  color:#fff !important; box-shadow:none !important;
-}
+.btn-danger{ background:var(--danger)!important; border-color:var(--danger-border)!important; color:#fff!important; box-shadow:none!important; }
 .btn-danger:hover{ filter:brightness(.95) }
 .btn-danger:active{ transform:translateY(1px) }
-.btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
+.btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring)!important }
 
-/* Segmented control (sort) */
-.seg{
-  display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden;
-}
-.seg > button{
-  background: transparent !important; border:0; color: var(--ink);
-  height:32px; padding:0 12px; border-radius:8px;
-}
-.seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
+/* Segmented control */
+.seg{ display:inline-flex; gap:0; background:var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
+.seg > button{ background:transparent!important; border:0; color:var(--ink); height:32px; padding:0 12px; border-radius:8px; }
+.seg > button.primary{ background:var(--panel)!important; box-shadow:inset 0 0 0 1px var(--line); color:var(--ink)!important; }
 body.light .seg{ background:#f1f4ff; border-color:var(--line) }
-body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
-
-/* Slab block (notes/manual rows) */
-.or-note{ margin: 6px 0 10px; text-align:center; font-size:12px; font-weight:700; letter-spacing:.06em; color: var(--muted); }
-.or-note::before,.or-note::after{ content:""; display:inline-block; width:24px; height:1px; background: var(--line); margin: 0 8px; vertical-align: middle; }
+body.light .seg > button.primary{ background:#e9ecff!important; box-shadow:inset 0 0 0 1px #cfd6f8; color:#1e2758!important }
 
 /* Subtle highlight for the paste block */
-.lead-block.highlight{
-  padding:10px; border:1px dashed var(--accent); border-radius:12px;
-  background: linear-gradient(180deg, rgba(124,92,255,.09), rgba(124,92,255,.04)), var(--surface);
-}
-.lead-block.highlight textarea{ border-width:2px; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,92,255,.12); }
-.slab{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px }
-.flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+.lead-block.highlight{ padding:10px; border:1px dashed var(--accent); border-radius:12px; background:linear-gradient(180deg, rgba(124,92,255,.09), rgba(124,92,255,.04)), var(--surface); }
+.lead-block.highlight textarea{ border-width:2px; border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,92,255,.12); }
 
 /* =================== LAYOUT HELPERS =================== */
 .row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
@@ -214,10 +168,7 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
 .right{display:flex; gap:8px; justify-content:flex-end}
 
 /* === Two-column Agenda + Calendar (desktop) === */
-.row.agenda-layout{
-  grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1.2fr);
-  gap:16px; align-items:start;
-}
+.row.agenda-layout{ grid-template-columns:minmax(0,2.2fr) minmax(360px,1.2fr); gap:16px; align-items:start; }
 
 /* Compact calendar look (small right rail) */
 #calendarCard .bd{ padding:12px; }
@@ -225,7 +176,7 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
 .cal-cell{ min-height:56px; padding:6px; }
 .cal-badge{ margin-top:4px; font-size:10.5px; }
 
-/* Make ONLY the Agenda + Calendar row wider than the page wrap (desktop) */
+/* Wider agenda+calendar row */
 @media (min-width:1001px){
   .row.agenda-layout{
     --agenda-bleed: clamp(80px, 6vw, 180px);
@@ -289,39 +240,27 @@ body.light #calSettings{ background:#fff }
 /* Calendar settings layout */
 #calSettings{ max-width:100%; }
 .wdays{
-  display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr));
-  gap:10px;
-  margin-top:8px;
+  display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:10px; margin-top:8px;
 }
 .wdays .cell{
-  border:1px dashed var(--line);
-  border-radius:12px;
-  padding:10px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  min-height:72px;
+  border:1px dashed var(--line); border-radius:12px; padding:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:72px;
 }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; opacity:.95; }
 
 .switch-row{ display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
 
-/* FIXED: overrides row */
+/* ✔ Fixed: overrides row */
 .ovr{
   margin-top:14px;
   display:grid;
-  grid-template-columns: 180px 1fr 120px;
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto;
   gap:10px; align-items:center;
 }
 #calSettings .ovr input, #calSettings .ovr select{ height:34px; }
-#calSettings .ovr button{ height:34px; padding:0 12px; }
-.ovr .help{ grid-column:1 / -1; font-size:12px; opacity:.8; }
+#calSettings .ovr button{ height:34px; padding:0 14px; white-space:nowrap; }
+.ovr .help{ grid-column:1 / -1; }  /* help text goes full width under row */
 
-/* override list smaller */
 .ovr-list{ margin-top:10px; padding-left:0; list-style:none }
 .ovr-list li{
   display:flex; align-items:center; justify-content:space-between;
@@ -332,18 +271,13 @@ body.light #calSettings{ background:#fff }
 body.light .ovr-list li{ background:#fff }
 
 /* =================== POPOVER (Add Custom Task) =================== */
-.popover{
-  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
-  box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px;
-}
+.popover{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px; }
 .pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .popover input, .popover select, .popover textarea{ width:100% }
 
 /* =================== TOAST =================== */
 #toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
-.toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
-       background:var(--panel);color:var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.28);font-size:13px;
-       display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(-6px);transition:.18s ease-out}
+.toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.28);font-size:13px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(-6px);transition:.18s ease-out}
 .toast.show{opacity:1;transform:translateY(0)}
 .toast.ok{border-color:#2b9c6b} .toast.err{border-color:#b94444}
 
@@ -358,7 +292,8 @@ body.light .ovr-list li{ background:#fff }
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
-  .ovr{ grid-template-columns:1fr; }
+  #calSettings .ovr{ grid-template-columns:1fr; }
+  #calSettings .ovr button{ width:100%; }
 }
 
 /* =================== SCROLLBARS =================== */
@@ -369,34 +304,18 @@ html{ scrollbar-gutter: stable both-edges; }
   --sb-thumb: #2f3547; --sb-thumb-hover: #3b4362; --sb-thumb-active:#4a568e;
   --sb-track: transparent;
 }
-body.light{
-  --sb-thumb: #c1c9ee; --sb-thumb-hover: #aeb8ea; --sb-thumb-active:#97a4e6; --sb-track: #eef2ff;
-}
+body.light{ --sb-thumb:#c1c9ee; --sb-thumb-hover:#aeb8ea; --sb-thumb-active:#97a4e6; --sb-track:#eef2ff; }
 *{ scrollbar-width: thin; scrollbar-color: var(--sb-thumb) var(--sb-track); }
-*::-webkit-scrollbar{ width: var(--sb-size); height: var(--sb-size); }
+*::-webkit-scrollbar{ width:var(--sb-size); height:var(--sb-size); }
 *::-webkit-scrollbar-track{ background: var(--sb-track); }
-*::-webkit-scrollbar-thumb{
-  background: var(--sb-thumb); border-radius: var(--sb-radius);
-  background-clip: padding-box; border: 3px solid transparent;
-}
+*::-webkit-scrollbar-thumb{ background: var(--sb-thumb); border-radius:var(--sb-radius); background-clip:padding-box; border:3px solid transparent; }
 *::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
 *::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
 *::-webkit-scrollbar-corner{ background: transparent; }
 
-/* Theme declarations so native controls match */
 body { color-scheme: dark; }
 body.light { color-scheme: light; }
-
-/* Checkbox polish */
-.agenda-item input[type="checkbox"], input[type="checkbox"]{
-  width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
-}
-
-/* a11y helper */
-.visually-hidden{
-  position:absolute !important; height:1px; width:1px; overflow:hidden;
-  clip:rect(1px,1px,1px,1px); white-space:nowrap;
-}
+.agenda-item input[type="checkbox"], input[type="checkbox"]{ width:18px; height:18px; padding:0; accent-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -416,7 +335,7 @@ body.light { color-scheme: light; }
     <!-- Add/Edit card (moved into modal at runtime) -->
     <section class="card" id="addCard">
       <div class="hd">
-        <strong id="addEditTitle">Add / Edit Customer</strong>
+        <strong>Add / Edit Customer</strong>
         <span class="badge">Local only</span>
         <div class="space"></div>
         <button id="closeAdd" class="btn-icon" title="Close">✖</button>
@@ -431,24 +350,25 @@ body.light { color-scheme: light; }
 
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
+
           <div class="row">
             <div>
-              <label for="name">Name</label>
-              <input id="name" required placeholder="John Appleseed" autocomplete="name" />
+              <label>Name</label>
+              <input id="name" required placeholder="John Appleseed" />
             </div>
             <div>
-              <label for="email">Email</label>
-              <input id="email" type="email" placeholder="john@company.com" autocomplete="email" />
+              <label>Email</label>
+              <input id="email" type="email" placeholder="john@company.com" />
             </div>
           </div>
 
           <div class="row">
             <div>
-              <label for="phone">Phone</label>
-              <input id="phone" placeholder="+1 555 123 4567" autocomplete="tel" />
+              <label>Phone</label>
+              <input id="phone" placeholder="+1 555 123 4567" />
             </div>
             <div>
-              <label for="status">Status</label>
+              <label>Status</label>
               <select id="status">
                 <option value="unreached">Unreached</option>
                 <option value="reached">Reached</option>
@@ -456,51 +376,45 @@ body.light { color-scheme: light; }
             </div>
           </div>
 
-          <!-- Trip/customer details -->
           <div class="row">
             <div>
-              <label for="route">Route</label>
+              <label>Route</label>
               <input id="route" placeholder="JFK-LHR-AMS" />
             </div>
             <div>
-              <label for="pax">Pax</label>
+              <label>Pax</label>
               <input id="pax" inputmode="numeric" pattern="\d*" placeholder="2" />
             </div>
           </div>
 
-          <!-- Lead ID -->
-          <div class="row single">
+          <div class="row">
             <div>
-              <label for="leadId">Lead ID</label>
+              <label>Lead ID</label>
               <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
             </div>
-          </div>
-
-          <div class="row single">
             <div>
-              <label for="dates">Dates</label>
+              <label>Dates</label>
               <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
             </div>
           </div>
 
-          <!-- Notes (full width) -->
+          <!-- Notes spans full width to avoid dead space -->
           <div class="row single">
             <div>
-              <label for="notes">Notes</label>
-              <textarea id="notes" rows="8" placeholder="Preferences, budget, route, remarks…"></textarea>
+              <label>Notes</label>
+              <textarea id="notes" rows="6" placeholder="Preferences, budget, route, remarks…"></textarea>
             </div>
           </div>
 
-          <!-- Start date separated from buttons -->
+          <!-- Start date clearly separated from actions -->
           <div class="row single">
             <div>
-              <label for="startDate">Start date (defaults to today)</label>
+              <label>Start date (defaults to today)</label>
               <input id="startDate" type="date" />
             </div>
           </div>
 
-          <!-- Actions: sticky and separate -->
-          <div class="form-actions sticky-footer">
+          <div class="form-actions is-end">
             <button type="button" class="ghost" id="resetForm">Clear</button>
             <button class="primary" type="button" id="saveCustomer">Save Customer</button>
           </div>
@@ -692,18 +606,16 @@ body.light { color-scheme: light; }
             </div>
 
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
-            <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
 
-            <!-- FIXED: helper spans full width under controls -->
+            <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
             <div class="ovr">
-              <label for="ovrDate" class="visually-hidden">Override date</label>
               <input type="date" id="ovrDate" />
-              <select id="ovrType" aria-label="Override type">
+              <select id="ovrType">
                 <option value="work">Mark as Working</option>
                 <option value="off">Mark as Off</option>
               </select>
               <button id="addOverride">Add</button>
-              <div class="tiny help">These override weekday rules for the exact date.</div>
+              <div class="help tiny">These override weekday rules for the exact date.</div>
             </div>
 
             <ul id="overrideList" class="ovr-list"></ul>
@@ -784,7 +696,7 @@ body.light { color-scheme: light; }
     copyTextToClipboard(text, what);
   });
 
-  // Close + reset the New Task UI (no-op if not present)
+  // Close + reset any legacy task UIs (defensive)
   function closeNewTaskUI(){
     const panel =
       document.getElementById('newTaskPanel') ||
@@ -853,9 +765,6 @@ body.light { color-scheme: light; }
     modal.id = 'addModal';
     modal.className = 'modal';
     modal.style.display = 'none';
-    modal.setAttribute('role','dialog');
-    modal.setAttribute('aria-modal','true');
-    modal.setAttribute('aria-labelledby','addEditTitle');
     document.body.appendChild(modal);
     modal.appendChild(card);
     // scrim click closes
@@ -1492,7 +1401,7 @@ body.light { color-scheme: light; }
     const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     $('#calTitle').textContent = `${MONTH_ABBR[month]} ${year}`;
     grid.innerHTML = '';
-    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; h && (hd.textContent=h); grid.appendChild(hd); });
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd); });
     const first = new Date(year, month, 1);
     const startIdx = (first.getDay()+6)%7; const daysInMonth = new Date(year, month+1, 0).getDate();
     for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
@@ -1558,7 +1467,6 @@ body.light { color-scheme: light; }
     s.moveOffDays = !!$('#moveOffDays').checked;
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
-    toast('Calendar settings saved');
   }
   $('#calSettingsBtn').addEventListener('click', ()=>{
     const el=$('#calSettings'); const open=el.style.display!=='none';
@@ -1650,12 +1558,11 @@ body.light { color-scheme: light; }
         }
         toast('Customer updated');
       }
-      // Clear the parse box after saving
       $('#leadBlob').value = '';
       $('#clientForm').reset();
       $('#clientId').value = '';
       save();
-      closeAddModal(); // close modal after successful save
+      closeAddModal();
     }catch(e){
       console.error(e);
       alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
