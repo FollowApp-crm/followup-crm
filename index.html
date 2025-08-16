@@ -6,19 +6,24 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-/* ===== Lead paste block (textarea; side actions removed) ===== */
-.lead-block{
-  display:block;
-  margin-bottom:10px;
-}
+/* ===== Lead paste block (textarea + side buttons) ===== */
+.lead-block{ display:block; margin-bottom:10px; }
 .lead-actions{ display:none; }
-@media (max-width:760px){
-  .lead-block{ display:block; }
-}
+@media (max-width:760px){ .lead-block{ display:block; } }
 
 /* Bottom-right action buttons on the form */
 .form-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; }
 .form-actions.is-end{ align-self:end; }
+
+/* Sticky footer for modal actions */
+.sticky-footer{
+  position: sticky; bottom: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0), var(--panel) 50%);
+  padding-top:10px; margin-top:8px;
+}
+body.light .sticky-footer{
+  background: linear-gradient(180deg, rgba(255,255,255,0), var(--panel) 50%);
+}
 
 /* =================== TOKENS =================== */
 :root{
@@ -67,7 +72,6 @@ header{
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
 }
-/* smaller header */
 header .wrap{ padding-top:8px; padding-bottom:8px; }
 body.light header{
   background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.78) 70%, rgba(255,255,255,0));
@@ -130,7 +134,7 @@ body.modal-open{ overflow:hidden; }
 .add-btn:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 .add-btn:active{ transform:translateY(0); }
 
-/* Modal container + small popup */
+/* Modal container */
 .modal{
   position:fixed; inset:0; display:none;
   align-items:center; justify-content:center;
@@ -141,8 +145,8 @@ body.modal-open{ overflow:hidden; }
 .modal.open{ display:flex; }
 .modal .card{
   width:min(740px, 100%);
-  max-height:84vh;             /* small-ish; no page scroll required */
-  overflow:auto;               /* scroll inside if ever needed */
+  max-height:84vh;
+  overflow:auto;               /* scroll inside if needed */
   animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
@@ -155,7 +159,6 @@ body.modal-open{ overflow:hidden; }
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
-/* keep chips on one line + room for a tiny icon */
 .pill{
   display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff; white-space:nowrap;
 }
@@ -260,7 +263,7 @@ body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
 /* =================== CALENDAR =================== */
-#calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:6px }
+#calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
 .cal-head{ font-weight:700; font-size:12px; opacity:.8; padding:4px 2px; text-align:center }
 .cal-cell{ border:1px solid var(--line); border-radius:8px; padding:8px; min-height:74px; background:var(--surface); cursor:pointer }
 .cal-cell .d{ font-weight:700; font-size:12px; opacity:.9 }
@@ -307,14 +310,16 @@ body.light #calSettings{ background:#fff }
 
 .switch-row{ display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
 
+/* FIXED: overrides row */
 .ovr{
   margin-top:14px;
   display:grid;
-  grid-template-columns: 180px 1fr 100px auto;
+  grid-template-columns: 180px 1fr 120px;
   gap:10px; align-items:center;
 }
 #calSettings .ovr input, #calSettings .ovr select{ height:34px; }
 #calSettings .ovr button{ height:34px; padding:0 12px; }
+.ovr .help{ grid-column:1 / -1; font-size:12px; opacity:.8; }
 
 /* override list smaller */
 .ovr-list{ margin-top:10px; padding-left:0; list-style:none }
@@ -377,17 +382,20 @@ body.light{
 *::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
 *::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
 *::-webkit-scrollbar-corner{ background: transparent; }
-.customers-scroll::-webkit-scrollbar-track{
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--sb-radius);
-}
-/* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }        /* default app theme */
-body.light { color-scheme: light; } /* override in light mode */
+
+/* Theme declarations so native controls match */
+body { color-scheme: dark; }
+body.light { color-scheme: light; }
+
 /* Checkbox polish */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
+}
+
+/* a11y helper */
+.visually-hidden{
+  position:absolute !important; height:1px; width:1px; overflow:hidden;
+  clip:rect(1px,1px,1px,1px); white-space:nowrap;
 }
 </style>
 </head>
@@ -408,7 +416,7 @@ body.light { color-scheme: light; } /* override in light mode */
     <!-- Add/Edit card (moved into modal at runtime) -->
     <section class="card" id="addCard">
       <div class="hd">
-        <strong>Add / Edit Customer</strong>
+        <strong id="addEditTitle">Add / Edit Customer</strong>
         <span class="badge">Local only</span>
         <div class="space"></div>
         <button id="closeAdd" class="btn-icon" title="Close">✖</button>
@@ -425,21 +433,22 @@ body.light { color-scheme: light; } /* override in light mode */
           <input type="hidden" id="clientId" />
           <div class="row">
             <div>
-              <label>Name</label>
-              <input id="name" required placeholder="John Appleseed" />
+              <label for="name">Name</label>
+              <input id="name" required placeholder="John Appleseed" autocomplete="name" />
             </div>
             <div>
-              <label>Email</label>
-              <input id="email" type="email" placeholder="john@company.com" />
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="john@company.com" autocomplete="email" />
             </div>
           </div>
+
           <div class="row">
             <div>
-              <label>Phone</label>
-              <input id="phone" placeholder="+1 555 123 4567" />
+              <label for="phone">Phone</label>
+              <input id="phone" placeholder="+1 555 123 4567" autocomplete="tel" />
             </div>
             <div>
-              <label>Status</label>
+              <label for="status">Status</label>
               <select id="status">
                 <option value="unreached">Unreached</option>
                 <option value="reached">Reached</option>
@@ -450,11 +459,11 @@ body.light { color-scheme: light; } /* override in light mode */
           <!-- Trip/customer details -->
           <div class="row">
             <div>
-              <label>Route</label>
+              <label for="route">Route</label>
               <input id="route" placeholder="JFK-LHR-AMS" />
             </div>
             <div>
-              <label>Pax</label>
+              <label for="pax">Pax</label>
               <input id="pax" inputmode="numeric" pattern="\d*" placeholder="2" />
             </div>
           </div>
@@ -462,38 +471,39 @@ body.light { color-scheme: light; } /* override in light mode */
           <!-- Lead ID -->
           <div class="row single">
             <div>
-              <label>Lead ID</label>
+              <label for="leadId">Lead ID</label>
               <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
             </div>
           </div>
 
           <div class="row single">
             <div>
-              <label>Dates</label>
+              <label for="dates">Dates</label>
               <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
             </div>
           </div>
 
-          <div class="row">
-            <!-- Left: Notes -->
+          <!-- Notes (full width) -->
+          <div class="row single">
             <div>
-              <label>Notes</label>
+              <label for="notes">Notes</label>
               <textarea id="notes" rows="8" placeholder="Preferences, budget, route, remarks…"></textarea>
-            </div>
-
-            <!-- Right: compact actions -->
-            <div class="slab" style="display:flex; flex-direction:column; gap:10px; align-self:start;">
-              <div>
-                <label>Start date (defaults to today)</label>
-                <input id="startDate" type="date" />
-              </div>
-              <div class="form-actions is-end" style="justify-content:flex-end;">
-                <button type="button" class="ghost" id="resetForm">Clear</button>
-                <button class="primary" type="button" id="saveCustomer">Save Customer</button>
-              </div>
             </div>
           </div>
 
+          <!-- Start date separated from buttons -->
+          <div class="row single">
+            <div>
+              <label for="startDate">Start date (defaults to today)</label>
+              <input id="startDate" type="date" />
+            </div>
+          </div>
+
+          <!-- Actions: sticky and separate -->
+          <div class="form-actions sticky-footer">
+            <button type="button" class="ghost" id="resetForm">Clear</button>
+            <button class="primary" type="button" id="saveCustomer">Save Customer</button>
+          </div>
         </form>
       </div>
     </section>
@@ -683,15 +693,19 @@ body.light { color-scheme: light; } /* override in light mode */
 
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
             <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
+
+            <!-- FIXED: helper spans full width under controls -->
             <div class="ovr">
+              <label for="ovrDate" class="visually-hidden">Override date</label>
               <input type="date" id="ovrDate" />
-              <select id="ovrType">
+              <select id="ovrType" aria-label="Override type">
                 <option value="work">Mark as Working</option>
                 <option value="off">Mark as Off</option>
               </select>
               <button id="addOverride">Add</button>
-              <div class="tiny">These override weekday rules for the exact date.</div>
+              <div class="tiny help">These override weekday rules for the exact date.</div>
             </div>
+
             <ul id="overrideList" class="ovr-list"></ul>
           </div>
 
@@ -770,7 +784,7 @@ body.light { color-scheme: light; } /* override in light mode */
     copyTextToClipboard(text, what);
   });
 
-  // Close + reset the New Task UI
+  // Close + reset the New Task UI (no-op if not present)
   function closeNewTaskUI(){
     const panel =
       document.getElementById('newTaskPanel') ||
@@ -839,6 +853,9 @@ body.light { color-scheme: light; } /* override in light mode */
     modal.id = 'addModal';
     modal.className = 'modal';
     modal.style.display = 'none';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    modal.setAttribute('aria-labelledby','addEditTitle');
     document.body.appendChild(modal);
     modal.appendChild(card);
     // scrim click closes
@@ -855,8 +872,7 @@ body.light { color-scheme: light; } /* override in light mode */
       clients: [],
       tasks: [],
       settings: {
-        // Mon–Fri working; weekend off
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -1241,8 +1257,7 @@ body.light { color-scheme: light; } /* override in light mode */
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        const href = `sms:${c.phone.replace(/[^\d+]/g,'')}`;
-        contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
@@ -1340,28 +1355,9 @@ body.light { color-scheme: light; } /* override in light mode */
   $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
   $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
 
-  $('#viewToday').addEventListener('click', ()=>{
-    currentAgendaDate=today();
-    renderAgenda=()=>buildAgenda(currentAgendaDate);
-    setAgendaMode('today');
-    $('#agendaDate').value='';
-    renderAgenda();
-  });
-
-  $('#viewWeek').addEventListener('click', ()=>{
-    const from=today();
-    const to=addDays(today(), 6); // 7 days inclusive
-    renderAgenda=()=>buildAgendaRange(from,to);
-    setAgendaMode('week');
-    $('#agendaDate').value='';
-    renderAgenda();
-  });
-
-  $('#agendaDate').addEventListener('change', ()=>{
-    const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today();
-    currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate);
-    setAgendaMode(null); renderAgenda();
-  });
+  $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
+  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
+  $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
   $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
   setSortButtons();
@@ -1496,7 +1492,7 @@ body.light { color-scheme: light; } /* override in light mode */
     const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     $('#calTitle').textContent = `${MONTH_ABBR[month]} ${year}`;
     grid.innerHTML = '';
-    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; hd.textContent=h; grid.appendChild(hd); });
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(h=>{ const hd=document.createElement('div'); hd.className='cal-head'; h && (hd.textContent=h); grid.appendChild(hd); });
     const first = new Date(year, month, 1);
     const startIdx = (first.getDay()+6)%7; const daysInMonth = new Date(year, month+1, 0).getDate();
     for(let i=0;i<startIdx;i++){ grid.appendChild(document.createElement('div')); }
@@ -1562,6 +1558,7 @@ body.light { color-scheme: light; } /* override in light mode */
     s.moveOffDays = !!$('#moveOffDays').checked;
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
+    toast('Calendar settings saved');
   }
   $('#calSettingsBtn').addEventListener('click', ()=>{
     const el=$('#calSettings'); const open=el.style.display!=='none';
@@ -1626,8 +1623,6 @@ body.light { color-scheme: light; } /* override in light mode */
     };
     return { client, exists };
   }
-  // Guard missing button to avoid errors if it's not present
-  document.getElementById('clearLead')?.addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
