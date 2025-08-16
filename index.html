@@ -415,7 +415,7 @@ body.light { color-scheme: light; } /* override in light mode */
         <div class="lead-block highlight">
           <div>
             <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
-            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
+<textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…" autofocus></textarea>
           </div>
         </div>
 
@@ -721,6 +721,13 @@ body.light { color-scheme: light; } /* override in light mode */
       toast('Parsed from paste. Review & save.');
     });
   });
+// Press Enter (without Shift) in the paste box to save the customer
+leadBlobEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('saveCustomer')?.click();
+  }
+});
 
   function flashAgendaDate(){
     const el = document.getElementById('agendaDate');
@@ -825,7 +832,7 @@ body.light { color-scheme: light; } /* override in light mode */
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
     document.body.classList.add('modal-open');
-    setTimeout(()=>{ try{ document.getElementById('name').focus(); }catch(_){} }, 50);
+    setTimeout(()=>{ try{ document.getElementById('leadBlob').focus(); }catch(_){} }, 50);
   }
   function initAddModal(){
     const card = document.getElementById('addCard');
