@@ -6,12 +6,30 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-/* ===== Lead paste block ===== */
+/* ===== Lead paste block (textarea + side buttons) ===== */
 .lead-block{
-  display:block;
-  margin-bottom:12px;
+  display:grid;
+  grid-template-columns: 1fr auto; /* textarea | side column (only Clear) */
+  gap:10px;
+  align-items:start;
+  margin-bottom:10px;
 }
-.lead-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+.lead-actions{ display:flex; flex-direction:column; gap:8px; }
+.lead-actions > button{ height:34px; }
+
+/* Make the side button stay visible if the form grows tall */
+@media (min-width:761px){ .lead-actions{ position:sticky; top:70px; } }
+
+/* Mobile: stack */
+@media (max-width:760px){
+  .lead-block{ grid-template-columns:1fr; }
+  .lead-actions{ position:static; flex-direction:row; flex-wrap:wrap; }
+  .lead-actions > button{ width:auto; }
+}
+
+/* Bottom-right action buttons on the form */
+.form-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+.form-actions.is-end{ align-self:end; }
 
 /* =================== TOKENS =================== */
 :root{
@@ -55,82 +73,32 @@ a:hover{ text-decoration:underline }
 /* =================== HEADER =================== */
 header{
   position:sticky; top:0; z-index:5;
-  background:linear-gradient(180deg, rgba(15,17,23,.85), rgba(15,17,23,.65) 70%, rgba(15,17,23,0));
+  background:linear-gradient(180deg, rgba(15,17,23,.78), rgba(15,17,23,.58) 70%, rgba(15,17,23,0));
   border-bottom:1px solid var(--line);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
 }
-/* Light mode: keep the glassy blur like dark mode */
+/* smaller header */
+header .wrap{ padding-top:8px; padding-bottom:8px; }
 body.light header{
-  background: linear-gradient(
-      180deg,
-      rgba(255,255,255,.85),
-      rgba(255,255,255,.65) 70%,
-      rgba(255,255,255,0)
-  );
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: none; /* remove the flat divider shadow */
+  background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.78) 70%, rgba(255,255,255,0));
+  border-bottom:1px solid var(--line);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow:none;
 }
-
-/* === Compact sticky header (keeps glass blur, but much shorter) === */
-
-/* tighten the vertical padding */
-header .wrap{
-  padding-top: 6px;        /* was ~16px */
-  padding-bottom: 6px;     /* was ~16px */
-}
-
-/* slightly smaller title, zero margins */
-header h1{
-  font-size: 20px;         /* was 22px */
-  margin: 0;
-  line-height: 1.1;
-}
-
-/* subtitle smaller & tighter; hide on phones to save space */
-header .sub{
-  font-size: 12px;
-  line-height: 1.2;
-  margin-top: 2px;
-}
-@media (max-width: 760px){
-  header .sub{ display:none; }
-}
-
-/* keep the “glass” look but shorten the fade so it doesn’t feel tall */
-header{
-  background: linear-gradient(
-    180deg,
-    rgba(15,17,23,.85),
-    rgba(15,17,23,.55) 35%,
-    rgba(15,17,23,0) 100%
-  );
-}
-body.light header{
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,.85),
-    rgba(255,255,255,.55) 35%,
-    rgba(255,255,255,0) 100%
-  );
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: none;
-}
+h1{font-size:20px; margin:4px 0 0; font-weight:800; line-height:1.1}
+.sub{color:var(--muted); font-size:13px}
 
 /* =================== CARDS / CONTROLS =================== */
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
 .card .hd{padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
-.card .bd{padding:14px}
+.card .bd{padding:12px}
 
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 input,select,textarea,button{
-  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); padding:10px 12px; outline:none; height:44px
+  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); padding:9px 10px; outline:none; height:40px
 }
-textarea{height:auto; min-height:96px; resize:vertical}
+textarea{height:auto; min-height:72px; resize:vertical}
 input:focus,select:focus,textarea:focus{ border-color:#445; box-shadow:0 0 0 3px rgba(124,92,255,.15) }
 
 /* Light theme controls */
@@ -172,57 +140,74 @@ body.modal-open{ overflow:hidden; }
 }
 .add-btn:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 .add-btn:active{ transform:translateY(0); }
+
+/* Modal container + small popup */
 .modal{
   position:fixed; inset:0; display:none;
   align-items:center; justify-content:center;
-  padding:18px; background:rgba(0,0,0,.5);
-  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
-  z-index:9998;
-  overflow:auto;                 /* can scroll if user expands "More fields" */
+  padding:18px; background:rgba(0,0,0,.55);
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  z-index:9998; overflow:auto;
 }
 .modal.open{ display:flex; }
 .modal .card{
-  width:min(560px, 100%);
-  max-height:90dvh;             /* keep it on-screen */
-  overflow:auto;                 /* self-scroll only when needed */
+  width:min(740px, 100%);
+  max-height:84vh;             /* small-ish; no page scroll required */
+  overflow:auto;               /* scroll inside if ever needed */
   animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
 /* Hide the Add/Edit section until JS moves it into the modal */
 #addCard{ display:none; }
 
-/* compact form when inside modal */
-.modal .card .bd textarea#leadBlob{ min-height:72px }
-.modal .card .bd input,
-.modal .card .bd select,
-.modal .card .bd textarea{ height:38px; padding:8px 10px }
-.modal .card .bd textarea{ min-height:66px }
-
-/* Toolbar, pills, etc. */
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .space{flex:1}
-.toggle{height:36px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
+.toggle{height:34px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
-.pill{ display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff; white-space:nowrap; }
-.copy-btn{ margin-left:6px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--line); background:var(--panel); font-size:12px; line-height:1; cursor:pointer; padding:0; }
+/* keep chips on one line + room for a tiny icon */
+.pill{
+  display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); background:var(--chip); color:#bfc7ff; white-space:nowrap;
+}
+.copy-btn{
+  margin-left:6px; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;
+  border-radius:6px; border:1px solid var(--line); background:var(--panel);
+  font-size:12px; line-height:1; cursor:pointer; padding:0;
+}
 .copy-btn:active{ transform:translateY(1px); }
 body.light .copy-btn{ background:#fff; }
+.pill a{ white-space:nowrap; }
 
+body.light .badge{ background:#eef2fb; color:#55607a }
+body.light .pill{ background:#f1f4ff; color:#1e2758 }
+
+/* Btn danger */
 .btn-danger{
   background: var(--danger) !important; border-color: var(--danger-border) !important;
   color:#fff !important; box-shadow:none !important;
 }
+.btn-danger:hover{ filter:brightness(.95) }
+.btn-danger:active{ transform:translateY(1px) }
+.btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
 
-/* Segmented control, slabs, helpers */
-.seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
-.seg > button{ background: transparent !important; border:0; color: var(--ink); height:34px; padding:0 12px; border-radius:8px; }
+/* Segmented control (sort) */
+.seg{
+  display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden;
+}
+.seg > button{
+  background: transparent !important; border:0; color: var(--ink);
+  height:32px; padding:0 12px; border-radius:8px;
+}
 .seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
+body.light .seg{ background:#f1f4ff; border-color:var(--line) }
+body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
 
+/* Slab block (notes/manual rows) */
 .or-note{ margin: 6px 0 10px; text-align:center; font-size:12px; font-weight:700; letter-spacing:.06em; color: var(--muted); }
 .or-note::before,.or-note::after{ content:""; display:inline-block; width:24px; height:1px; background: var(--line); margin: 0 8px; vertical-align: middle; }
 
+/* Subtle highlight for the paste block */
 .lead-block.highlight{
   padding:10px; border:1px dashed var(--accent); border-radius:12px;
   background: linear-gradient(180deg, rgba(124,92,255,.09), rgba(124,92,255,.04)), var(--surface);
@@ -232,7 +217,7 @@ body.light .copy-btn{ background:#fff; }
 .flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 
 /* =================== LAYOUT HELPERS =================== */
-.row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
 .row.single{grid-template-columns:1fr}
 .right{display:flex; gap:8px; justify-content:flex-end}
 
@@ -278,6 +263,7 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .group-hd{ display:flex; align-items:center; gap:8px; margin:12px 0 6px }
 .group-hd::before, .group-hd::after{ content:""; flex:1; height:1px; background:var(--line) }
 .group-hd .label{ font-size:12px; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:var(--chip); color:#bfc7ff }
+body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 
 .tiny{font-size:11px; color:var(--muted)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px}
@@ -292,6 +278,10 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .cal-badge{ display:inline-block; margin-top:6px; font-size:11px; padding:2px 6px; border:1px solid var(--line); border-radius:999px; color:#cfd5ff }
 .cal-cell.offday{ background: linear-gradient(0deg, rgba(220,80,80,.08), rgba(220,80,80,.08)), var(--surface); border-color: #3a2b2f; }
 .cal-cell.offday .d { color: #e2b3b3; }
+body.light .cal-cell{ background:#fff; border-color:var(--line); }
+body.light .cal-badge{ color:#4250d4; background:#eef2ff; border-color:#cfd6f8; font-weight:600 }
+body.light .cal-cell.offday{ background: linear-gradient(0deg, rgba(255,120,120,.15), rgba(255,120,120,.15)), #fff; border-color:#ffd7d7; }
+body.light .cal-cell.offday .d{ color:#a23b3b; }
 
 .cal-hd{ display:flex; align-items:center; gap:10px }
 .cal-hd .space{ flex:1 }
@@ -302,12 +292,66 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   height:32px; padding:6px 12px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; line-height:1;
 }
 #calSettings{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface) }
-.wdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:16px; margin-top:8px }
-.wdays .cell{ border:1px dashed var(--line); border-radius:10px; padding:12px; display:flex; align-items:center; gap:8px; justify-content:center }
-.switch-row{ display:flex; align-items:center; gap:10px; margin-top:14px }
-.ovr{ margin-top:14px; display:grid; grid-template-columns: 200px 1fr 120px auto; gap:10px; align-items:center }
+body.light #calSettings{ background:#fff }
+
+/* Calendar settings layout */
+#calSettings{ max-width:100%; }
+.wdays{
+  display:grid;
+  grid-template-columns:repeat(7, minmax(0, 1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.wdays .cell{
+  border:1px dashed var(--line);
+  border-radius:12px;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:72px;
+}
+.wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
+.wdays .cell span{ font-size:12px; opacity:.95; }
+
+.switch-row{ display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+
+.ovr{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns: 180px 1fr 100px auto;
+  gap:10px; align-items:center;
+}
+#calSettings .ovr input, #calSettings .ovr select{ height:34px; }
+#calSettings .ovr button{ height:34px; padding:0 12px; }
+
+/* override list smaller */
 .ovr-list{ margin-top:10px; padding-left:0; list-style:none }
-.ovr-list li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface) }
+.ovr-list li{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; padding:6px 8px; border:1px solid var(--line); border-radius:10px; background:var(--surface);
+  font-size:14px;
+}
+.ovr-list li button{ height:32px; padding:0 10px; }
+body.light .ovr-list li{ background:#fff }
+
+/* =================== POPOVER (Add Custom Task) =================== */
+.popover{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px;
+}
+.pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.popover input, .popover select, .popover textarea{ width:100% }
+
+/* =================== TOAST =================== */
+#toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+.toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
+       background:var(--panel);color:var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.28);font-size:13px;
+       display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(-6px);transition:.18s ease-out}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-color:#2b9c6b} .toast.err{border-color:#b94444}
 
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
@@ -319,7 +363,7 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
   .actions{justify-content:flex-start}
-  header{ background:var(--panel); box-shadow:0 1px 0 var(--line); }
+  header{ box-shadow:none; }
   .ovr{ grid-template-columns:1fr; }
 }
 
@@ -344,44 +388,18 @@ body.light{
 *::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
 *::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
 *::-webkit-scrollbar-corner{ background: transparent; }
-
-/* Checkbox polish */
+.customers-scroll::-webkit-scrollbar-track{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--sb-radius);
+}
+/* === Fix: light-theme checkboxes appear dark === */
 body { color-scheme: dark; }        /* default app theme */
-body.light { color-scheme: light; }
-.agenda-item input[type="checkbox"], input[type="checkbox"]{ width: 18px; height: 18px; padding: 0; accent-color: var(--accent); }
-
-/* Spacing utilities used in markup */
-.mt12{margin-top:12px}
-.mt16{margin-top:16px}
-  /* === Calendar settings: robust layout (fix "Add" row overflow) === */
-#calSettings{ max-width:100%; }
-
-.wdays{
-  display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr)); /* shrink safely */
-  gap:12px;
+body.light { color-scheme: light; } /* override in light mode */
+/* Checkbox polish */
+.agenda-item input[type="checkbox"], input[type="checkbox"]{
+  width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
 }
-.wdays .cell{ min-width:0; }
-
-.ovr{
-  /* Stack fields vertically so nothing overflows */
-  display:grid;
-  grid-template-columns:1fr;
-  gap:10px;
-  align-items:center;
-}
-.ovr > *{ min-width:0; }                 /* prevent long text from widening the grid */
-.ovr .tiny{ grid-column:1 / -1; }        /* helper text on its own line */
-#overrideList{ margin-top:10px; }
-
-/* Optional: on very wide screens you can re-enable a tidy 4-col row */
-@media (min-width: 1000px){
-  .ovr{
-    grid-template-columns:minmax(160px,220px) 1fr minmax(110px,150px) auto;
-  }
-  .ovr .tiny{ grid-column:1 / -1; }
-}
-
 </style>
 </head>
 <body>
@@ -409,15 +427,14 @@ body.light { color-scheme: light; }
       <div class="bd">
         <div class="lead-block highlight">
           <div>
-            <label>Paste from Leads CRM (auto-fills fields)</label>
-            <textarea id="leadBlob" rows="5" placeholder="Paste the whole blob here…"></textarea>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
-          <div class="lead-actions">
+          <div class="lead-actions" aria-label="Paste tools">
             <button type="button" id="clearLead" class="ghost">Clear</button>
           </div>
         </div>
 
-        <!-- Quick fields (always visible, no scroll needed) -->
         <form id="clientForm" novalidate>
           <input type="hidden" id="clientId" />
           <div class="row">
@@ -444,52 +461,49 @@ body.light { color-scheme: light; }
             </div>
           </div>
 
-          <!-- Collapsible "More fields" to keep popup small -->
-          <div class="row single" style="margin-top:6px">
-            <button type="button" id="advToggle" class="ghost" style="justify-self:start; height:32px">▸ More fields</button>
-          </div>
-
-          <div id="advFields" style="display:none">
-            <div class="row">
-              <div>
-                <label>Route</label>
-                <input id="route" placeholder="JFK-LHR-AMS" />
-              </div>
-              <div>
-                <label>Pax</label>
-                <input id="pax" inputmode="numeric" pattern="\d*" placeholder="2" />
-              </div>
+          <!-- Trip/customer details -->
+          <div class="row">
+            <div>
+              <label>Route</label>
+              <input id="route" placeholder="JFK-LHR-AMS" />
             </div>
-
-            <div class="row">
-              <div>
-                <label>Lead ID</label>
-                <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
-              </div>
-              <div>
-                <label>Start date (default: today)</label>
-                <input id="startDate" type="date" />
-              </div>
-            </div>
-
-            <div class="row single">
-              <div>
-                <label>Dates</label>
-                <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
-              </div>
-            </div>
-
-            <div class="row single">
-              <div>
-                <label>Notes</label>
-                <textarea id="notes" rows="3" placeholder="Preferences, budget, route, remarks…"></textarea>
-              </div>
+            <div>
+              <label>Pax</label>
+              <input id="pax" inputmode="numeric" pattern="\d*" placeholder="2" />
             </div>
           </div>
 
-          <div class="right" style="margin-top:8px">
-            <button type="button" class="ghost" id="resetForm">Clear</button>
-            <button class="primary" type="button" id="saveCustomer">Save Customer</button>
+          <!-- Lead ID -->
+          <div class="row single">
+            <div>
+              <label>Lead ID</label>
+              <input id="leadId" inputmode="numeric" pattern="\d*" placeholder="55471" />
+            </div>
+          </div>
+
+          <div class="row single">
+            <div>
+              <label>Dates</label>
+              <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
+            </div>
+          </div>
+
+          <div class="row single">
+            <div class="full">
+              <label>Notes</label>
+              <textarea id="notes" rows="3" placeholder="Preferences, budget, route, remarks…"></textarea>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Start date (defaults to today)</label>
+              <input id="startDate" type="date" />
+            </div>
+            <div class="form-actions is-end">
+              <button type="button" class="ghost" id="resetForm">Clear</button>
+              <button class="primary" type="button" id="saveCustomer">Save Customer</button>
+            </div>
           </div>
         </form>
       </div>
@@ -558,6 +572,8 @@ body.light { color-scheme: light; }
             <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
             <button type="button" id="agendaFilterClear" title="Clear filter">Clear</button>
 
+            <button type="button" id="addTaskBtn" class="tiny" title="Create a custom task">+ Add task</button>
+
             <div class="space"></div>
             <div class="pill">Sort:</div>
             <div class="seg" role="group" aria-label="Sort tasks">
@@ -576,6 +592,65 @@ body.light { color-scheme: light; }
             <div class="badge">Today's Progress
               <span class="space"></span>
               <span id="progressPct" class="mono">0%</span>
+            </div>
+          </div>
+
+          <!-- Add Custom Task popover -->
+          <div id="customTaskPop" class="popover" style="display:none">
+            <div class="pop-head">
+              <strong>New task</strong>
+              <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Client</label>
+                <select id="ctClient"></select>
+              </div>
+              <div>
+                <label>Type</label>
+                <select id="ctType">
+                  <option value="call">call</option>
+                  <option value="callvm">callvm</option>
+                  <option value="sms">sms</option>
+                  <option value="email">email</option>
+                  <option value="custom">custom</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Title</label>
+                <input id="ctTitle" placeholder="Call / Email / Custom…" />
+              </div>
+              <div>
+                <label>Date</label>
+                <input id="ctDate" type="date" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Time (optional)</label>
+                <input id="ctTime" type="time" />
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
+                <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+                <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
+              </div>
+            </div>
+
+            <div class="row single">
+              <div>
+                <label>Notes (optional)</label>
+                <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
+              </div>
+            </div>
+
+            <div class="right" style="margin-top:8px">
+              <button type="button" id="ctCancel" class="ghost">Cancel</button>
+              <button type="button" id="ctSave" class="primary">Save task</button>
             </div>
           </div>
 
@@ -680,6 +755,52 @@ body.light { color-scheme: light; }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
+  // Copy helper + tiny copy buttons
+  function copyTextToClipboard(text, what='value'){
+    if(!text) return;
+    const done = () => toast(`Copied ${what}`, 'ok', 900);
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(()=>{
+          const ta=document.createElement('textarea');
+          ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+        });
+      }else{
+        const ta=document.createElement('textarea');
+        ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+      }
+    }catch(_){}
+  }
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-copy]');
+    if(!btn) return;
+    const text = btn.getAttribute('data-copy') || '';
+    const what = btn.getAttribute('data-what') || 'value';
+    copyTextToClipboard(text, what);
+  });
+
+  // Close + reset the New Task UI
+  function closeNewTaskUI(){
+    const panel =
+      document.getElementById('newTaskPanel') ||
+      document.getElementById('addTaskPopover') ||
+      document.getElementById('taskPopover') ||
+      document.getElementById('newTask') ||
+      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
+    if (panel){
+      panel.classList.remove('open','show');
+      panel.removeAttribute('data-open');
+      panel.style.display = 'none';
+    }
+    const form =
+      document.getElementById('newTaskForm') ||
+      document.getElementById('addTaskForm') ||
+      document.getElementById('taskForm');
+    form?.reset();
+  }
+
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
@@ -713,11 +834,8 @@ body.light { color-scheme: light; }
     if(!m || !card) return;
     if(asNew){
       document.getElementById('clientForm')?.reset();
-      $('#clientId').value='';
-      $('#leadBlob').value='';
-      // collapse advanced by default
-      $('#advFields').style.display='none';
-      $('#advToggle').textContent='▸ More fields';
+      const idEl = document.getElementById('clientId'); if(idEl) idEl.value='';
+      const lbEl = document.getElementById('leadBlob'); if(lbEl) lbEl.value='';
     }
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
@@ -727,13 +845,16 @@ body.light { color-scheme: light; }
   function initAddModal(){
     const card = document.getElementById('addCard');
     if(!card) return;
+    // Build overlay container and move the card into it
     let modal = document.createElement('div');
     modal.id = 'addModal';
     modal.className = 'modal';
     modal.style.display = 'none';
     document.body.appendChild(modal);
     modal.appendChild(card);
+    // scrim click closes
     modal.addEventListener('click', (e)=>{ if(e.target===modal) closeAddModal(); });
+    // Wire buttons + ESC
     document.getElementById('openAdd')?.addEventListener('click', ()=> openAddModal(true));
     document.getElementById('closeAdd')?.addEventListener('click', closeAddModal);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAddModal(); });
@@ -745,7 +866,7 @@ body.light { color-scheme: light; }
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -770,13 +891,9 @@ body.light { color-scheme: light; }
     const map=['mon','tue','wed','thu','fri','sat','sun'];
     return !!state.settings.workingDays[ map[weekdayIndex(dt)] ];
   }
-  function hasAnyWorkingDay(){
-    const wd = state.settings.workingDays || {};
-    return !!(wd.mon||wd.tue||wd.wed||wd.thu||wd.fri||wd.sat||wd.sun);
-  }
-  function nextWorkingDay(date){ let d=new Date(date); if (!hasAnyWorkingDay()) return d; for (let i=0;i<31 && !isWorkingDay(d); i++) d = addDays(d,1); return d; }
+  function nextWorkingDay(date){ let d=new Date(date); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
-  function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays || !hasAnyWorkingDay()) return dt; let d=new Date(dt); for (let i=0;i<31 && !isWorkingDay(d); i++) d=addDays(d,1); return d; }
+  function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
   /* ========= Lead Parser ========= */
   function parseLeadBlob(text){
@@ -917,6 +1034,7 @@ body.light { color-scheme: light; }
   function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
   function deleteTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); save(); }
 
+  // Full regeneration per settings/override change
   function regenerateAutoOpenTasksFromAnchors(){
     const from = fmt(today());
     state.tasks = state.tasks.filter(t => !(t.source==='auto' && t.status!=='done' && t.date >= from));
@@ -1026,9 +1144,6 @@ body.light { color-scheme: light; }
       $('#pax').value   = c.pax   || '';
       $('#leadId').value = c.leadId || '';
       $('#notes').value = c.notes || '';
-      // collapse advanced by default
-      $('#advFields').style.display='none';
-      $('#advToggle').textContent='▸ More fields';
       openAddModal(false);
       return;
     }
@@ -1112,11 +1227,23 @@ body.light { color-scheme: light; }
   }
   function matchesFilter(t){ return !agendaFilter || clientNameLower(t).includes(agendaFilter); }
 
+  function detailsChipsFor(t){
+    const c = t.clientId ? clientById(t.clientId) : null;
+    if(!c) return '';
+    const chips = [
+      c.route ? `<span class="pill">Route:&nbsp;${escapeHtml(c.route)}</span>` : '',
+      c.dates ? `<span class="pill">Dates:&nbsp;${escapeHtml(c.dates)}</span>` : '',
+      c.pax   ? `<span class="pill">Pax:&nbsp;${escapeHtml(String(c.pax))}</span>` : '',
+      c.leadId? `<span class="pill">Lead:&nbsp;${escapeHtml(String(c.leadId))}</span>` : ''
+    ].filter(Boolean);
+    return chips.join(' ');
+  }
+
   function renderTask(t){
     const div = document.createElement('div');
     div.className = 'agenda-item'+(t.status==='done'?' done':'');
     const icon = { call:'📞', callvm:'📞🗣️', voicemail:'🗣️', sms:'💬', email:'✉️', custom:'📝' }[t.type] || '•';
-    const client = t.clientName || '';
+    const client = clientDisplayName(t);
     let contactHtml = '';
     if(t.clientId){
       const c = clientById(t.clientId) || {};
@@ -1130,18 +1257,39 @@ body.light { color-scheme: light; }
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
       }
     }
+    const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
+    const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
+    const chips = detailsChipsFor(t);
+
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
       <div>
         <div><strong>${icon} ${escapeHtml(t.title)}</strong>
           ${client?`<span class="pill">${escapeHtml(client)}</span>`:''}
           ${contactHtml}
+          ${chips}
         </div>
-        <div class="tiny">${escapeHtml(t.label||'')}</div>
+        <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
+        ${notesHtml}
       </div>
       <div class="tiny mono">${t.date} <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button></div>`;
     div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
     return div;
+  }
+
+  function renderGroupedByClient(container, items){
+    let current = '\u0000';
+    for(const t of items){
+      const name = clientDisplayName(t) || 'Unknown';
+      if(name !== current){
+        current = name;
+        const gh = document.createElement('div');
+        gh.className = 'group-hd';
+        gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>`;
+        container.appendChild(gh);
+      }
+      container.appendChild(renderTask(t));
+    }
   }
 
   function buildAgenda(date){
@@ -1150,7 +1298,8 @@ body.light { color-scheme: light; }
     const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
     cont.innerHTML = '';
     if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
-    items.forEach(t=>cont.appendChild(renderTask(t)));
+    if (sortMode === 'client') renderGroupedByClient(cont, items);
+    else items.forEach(t=>cont.appendChild(renderTask(t)));
     updateProgress();
   }
 
@@ -1163,6 +1312,7 @@ body.light { color-scheme: light; }
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
       if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
+      else if (sortMode === 'client') renderGroupedByClient(cont, items);
       else items.forEach(t=>cont.appendChild(renderTask(t)));
     }
     updateProgress();
@@ -1200,7 +1350,7 @@ body.light { color-scheme: light; }
   $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
 
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),6); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
+  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
   $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
@@ -1400,10 +1550,6 @@ body.light { color-scheme: light; }
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
-    if (!hasAnyWorkingDay()){
-      alert('Select at least one working day. Defaulting to Monday.');
-      s.workingDays.mon = true;
-    }
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
@@ -1470,18 +1616,8 @@ body.light { color-scheme: light; }
     };
     return { client, exists };
   }
-  // removed "Paste & Edit" button – auto-parses on paste
-  $('#clearLead')?.addEventListener('click', ()=> { $('#leadBlob').value=''; });
-
-  $('#advToggle')?.addEventListener('click', ()=>{
-    const box = $('#advFields');
-    const isHidden = getComputedStyle(box).display==='none';
-    box.style.display = isHidden ? 'block' : 'none';
-    $('#advToggle').textContent = isHidden ? '▾ Hide fields' : '▸ More fields';
-  });
-
+  $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
-
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
@@ -1508,11 +1644,12 @@ body.light { color-scheme: light; }
         }
         toast('Customer updated');
       }
+      // Clear the parse box after saving
       $('#leadBlob').value = '';
       $('#clientForm').reset();
       $('#clientId').value = '';
       save();
-      closeAddModal();
+      closeAddModal(); // close modal after successful save
     }catch(e){
       console.error(e);
       alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
@@ -1536,7 +1673,7 @@ body.light { color-scheme: light; }
   }
   function openCustomTaskPopover(){
     buildClientOptionsForPopover();
-    const pop = document.getElementById('customTaskPop'); if(!pop) return;
+    const pop = $('#customTaskPop'); if(!pop) return;
     const isHidden = getComputedStyle(pop).display === 'none';
     if (isHidden){
       $('#ctType').value = $('#ctType').value || 'call';
@@ -1586,10 +1723,21 @@ body.light { color-scheme: light; }
     toast('Custom task added');
     closeCustomTaskPopover();
   }
-  // Popover markup exists later in the file (Agenda card)
-  document.addEventListener('click', (e)=>{
-    if(e.target?.id==='addTaskBtn') openCustomTaskPopover();
+  $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
+  $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);
+  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover);
+  $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
+  $('#ctType')?.addEventListener('change', ()=>{
+    const cur = ($('#ctTitle').value||'').trim();
+    const titleDefaults = ['Call','Call + Voicemail','SMS','Email'];
+    if (!cur || titleDefaults.includes(cur)) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
   });
+  $('#ctTime')?.addEventListener('input', ()=>{
+    const has = !!$('#ctTime').value;
+    $('#ctNotify').disabled = !has;
+    if (!has){ $('#ctNotify').checked = false; }
+  });
+  $('#ctNotify')?.addEventListener('change', ()=>{ if ($('#ctNotify').checked) $('#ctImportant').checked = true; });
 
   /* ========= Wipe All ========= */
   $('#wipeAll').addEventListener('click', () => {
@@ -1608,10 +1756,6 @@ body.light { color-scheme: light; }
   /* ========= Bootstrap ========= */
   function bootstrap(){ initAddModal(); refresh(); buildCalendar(); }
   bootstrap();
-
-  /* === Wire up customers search/filter to re-render === */
-  $('#search').addEventListener('input', refresh);
-  $('#statusFilter').addEventListener('change', refresh);
 
 })();
 </script>
