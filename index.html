@@ -6,25 +6,14 @@
 <title>Follow-Up CRM — Standalone</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
-/* ===== Lead paste block (textarea + side buttons) ===== */
+/* ===== Lead paste block (textarea; side actions removed) ===== */
 .lead-block{
-  display:grid;
-  grid-template-columns: 1fr auto; /* textarea | side column (only Clear) */
-  gap:10px;
-  align-items:start;
+  display:block;
   margin-bottom:10px;
 }
-.lead-actions{ display:flex; flex-direction:column; gap:8px; }
-.lead-actions > button{ height:34px; }
-
-/* Make the side button stay visible if the form grows tall */
-@media (min-width:761px){ .lead-actions{ position:sticky; top:70px; } }
-
-/* Mobile: stack */
+.lead-actions{ display:none; }
 @media (max-width:760px){
-  .lead-block{ grid-template-columns:1fr; }
-  .lead-actions{ position:static; flex-direction:row; flex-wrap:wrap; }
-  .lead-actions > button{ width:auto; }
+  .lead-block{ display:block; }
 }
 
 /* Bottom-right action buttons on the form */
@@ -271,7 +260,7 @@ body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
 /* =================== CALENDAR =================== */
-#calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
+#calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:6px }
 .cal-head{ font-weight:700; font-size:12px; opacity:.8; padding:4px 2px; text-align:center }
 .cal-cell{ border:1px solid var(--line); border-radius:8px; padding:8px; min-height:74px; background:var(--surface); cursor:pointer }
 .cal-cell .d{ font-weight:700; font-size:12px; opacity:.9 }
@@ -430,9 +419,6 @@ body.light { color-scheme: light; } /* override in light mode */
             <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
             <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
-          <div class="lead-actions" aria-label="Paste tools">
-            <button type="button" id="clearLead" class="ghost">Clear</button>
-          </div>
         </div>
 
         <form id="clientForm" novalidate>
@@ -488,23 +474,26 @@ body.light { color-scheme: light; } /* override in light mode */
             </div>
           </div>
 
-          <div class="row single">
-            <div class="full">
+          <div class="row">
+            <!-- Left: Notes -->
+            <div>
               <label>Notes</label>
-              <textarea id="notes" rows="3" placeholder="Preferences, budget, route, remarks…"></textarea>
+              <textarea id="notes" rows="8" placeholder="Preferences, budget, route, remarks…"></textarea>
+            </div>
+
+            <!-- Right: compact actions -->
+            <div class="slab" style="display:flex; flex-direction:column; gap:10px; align-self:start;">
+              <div>
+                <label>Start date (defaults to today)</label>
+                <input id="startDate" type="date" />
+              </div>
+              <div class="form-actions is-end" style="justify-content:flex-end;">
+                <button type="button" class="ghost" id="resetForm">Clear</button>
+                <button class="primary" type="button" id="saveCustomer">Save Customer</button>
+              </div>
             </div>
           </div>
 
-          <div class="row">
-            <div>
-              <label>Start date (defaults to today)</label>
-              <input id="startDate" type="date" />
-            </div>
-            <div class="form-actions is-end">
-              <button type="button" class="ghost" id="resetForm">Clear</button>
-              <button class="primary" type="button" id="saveCustomer">Save Customer</button>
-            </div>
-          </div>
         </form>
       </div>
     </section>
@@ -866,7 +855,8 @@ body.light { color-scheme: light; } /* override in light mode */
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
+        // Mon–Fri working; weekend off
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:true, sat:false, sun:false },
         moveOffDays: true,
         overrides: {}
       }
@@ -1251,7 +1241,8 @@ body.light { color-scheme: light; } /* override in light mode */
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        const href = `sms:${c.phone.replace(/[^\d+]/g,'')}`;
+        contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
@@ -1349,9 +1340,28 @@ body.light { color-scheme: light; } /* override in light mode */
   $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
   $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
 
-  $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
+  $('#viewToday').addEventListener('click', ()=>{
+    currentAgendaDate=today();
+    renderAgenda=()=>buildAgenda(currentAgendaDate);
+    setAgendaMode('today');
+    $('#agendaDate').value='';
+    renderAgenda();
+  });
+
+  $('#viewWeek').addEventListener('click', ()=>{
+    const from=today();
+    const to=addDays(today(), 6); // 7 days inclusive
+    renderAgenda=()=>buildAgendaRange(from,to);
+    setAgendaMode('week');
+    $('#agendaDate').value='';
+    renderAgenda();
+  });
+
+  $('#agendaDate').addEventListener('change', ()=>{
+    const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today();
+    currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate);
+    setAgendaMode(null); renderAgenda();
+  });
   $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
   setSortButtons();
@@ -1616,7 +1626,8 @@ body.light { color-scheme: light; } /* override in light mode */
     };
     return { client, exists };
   }
-  $('#clearLead').addEventListener('click', ()=> { $('#leadBlob').value=''; });
+  // Guard missing button to avoid errors if it's not present
+  document.getElementById('clearLead')?.addEventListener('click', ()=> { $('#leadBlob').value=''; });
   $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
