@@ -74,6 +74,52 @@ body.light header{
   box-shadow: none; /* remove the flat divider shadow */
 }
 
+/* === Compact sticky header (keeps glass blur, but much shorter) === */
+
+/* tighten the vertical padding */
+header .wrap{
+  padding-top: 6px;        /* was ~16px */
+  padding-bottom: 6px;     /* was ~16px */
+}
+
+/* slightly smaller title, zero margins */
+header h1{
+  font-size: 20px;         /* was 22px */
+  margin: 0;
+  line-height: 1.1;
+}
+
+/* subtitle smaller & tighter; hide on phones to save space */
+header .sub{
+  font-size: 12px;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+@media (max-width: 760px){
+  header .sub{ display:none; }
+}
+
+/* keep the “glass” look but shorten the fade so it doesn’t feel tall */
+header{
+  background: linear-gradient(
+    180deg,
+    rgba(15,17,23,.85),
+    rgba(15,17,23,.55) 35%,
+    rgba(15,17,23,0) 100%
+  );
+}
+body.light header{
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.85),
+    rgba(255,255,255,.55) 35%,
+    rgba(255,255,255,0) 100%
+  );
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: none;
+}
 
 /* =================== CARDS / CONTROLS =================== */
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
