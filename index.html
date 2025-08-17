@@ -141,8 +141,8 @@ body.modal-open{ overflow:hidden; }
 .modal.open{ display:flex; }
 .modal .card{
   width:min(920px, 100%);
-  max-height:88vh;
-  overflow:auto;
+  max-height:88vh;             /* taller so actions are visible */
+  overflow:auto;               /* scroll inside if needed */
   animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
@@ -150,12 +150,12 @@ body.modal-open{ overflow:hidden; }
 #addCard{ display:none; }
 
 /* Sticky footer for the Add/Edit form */
-#addCard .bd{ padding-bottom:74px; }
+#addCard .bd{ padding-bottom:74px; } /* room for sticky footer */
 .form-footer{
   position:sticky; bottom:0; left:0; right:0;
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 12px;
-  margin:12px -12px -12px;
+  margin:12px -12px -12px;        /* bleed to card edges */
   background:linear-gradient(180deg, rgba(0,0,0,0), var(--panel) 30%);
   border-top:1px solid var(--line);
   z-index:1;
@@ -186,7 +186,7 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger */
+/* Btn danger — soft “card-like” look, a bit bolder */
 .btn-danger{
   background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
   border:1.5px solid #a55c5c !important;
@@ -196,6 +196,7 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(1.03) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
+/* Make the specific “Wipe All” a rounded card chip */
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
 /* Segmented control (sort) */
@@ -224,7 +225,7 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
   gap:16px; align-items:start;
 }
 
-/* Compact calendar right rail */
+/* Compact calendar look (small right rail) */
 #calendarCard .bd{ padding:12px; }
 #calendarGrid{ gap:4px; }
 .cal-cell{ min-height:56px; padding:6px; }
@@ -267,11 +268,13 @@ body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 .progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
-/* Notify editor row (inline, horizontal) */
-.notify-edit{ margin:6px 0 2px 34px; }
-.notify-inline{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.notify-inline input[type="time"]{ height:32px; }
-.notify-inline .btn-icon{ height:32px; width:auto; padding:0 10px; }
+/* === Inline notify row (bell editor) — horizontal controls ✨ === */
+.notify-row{
+  display:flex; align-items:center; gap:10px; margin:6px 0 0 34px;
+  padding:8px; border:1px dashed var(--line); border-radius:10px; background:var(--surface);
+}
+.notify-row input[type="time"]{ height:32px; }
+.notify-row button{ height:32px; }
 
 /* =================== CALENDAR =================== */
 #calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
@@ -319,7 +322,7 @@ body.light #calSettings{ background:#fff }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; }
 
-/* >>> Date-specific overrides row <<< */
+/* >>> Date-specific overrides row (flex instead of grid) <<< */
 .ovr{
   margin-top:14px;
   display:flex;
@@ -342,13 +345,21 @@ body.light #calSettings{ background:#fff }
 .ovr-list li button{ height:32px; padding:0 10px; }
 body.light .ovr-list li{ background:#fff }
 
-/* =================== POPOVER (Add Custom Task) =================== */
+/* =================== POPOVER (Add Custom Task) — turned into modal ✨ =================== */
 .popover{
   background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
   box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px;
 }
-.pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.popover input, .popover select, .popover textarea{ width:100% }
+#customTaskPop{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.55); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  z-index:9999; padding:18px;
+}
+#customTaskPop .sheet{
+  width:min(560px,92vw);
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
 
 /* =================== TOAST =================== */
 #toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
@@ -361,7 +372,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr !important;}
+  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -370,6 +381,7 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
+  /* Customers header layout */
   .card .hd > input#search{ flex:1 1 200px; min-width:0; }
   .card .hd > select#statusFilter{ flex:0 0 auto; }
 }
@@ -401,8 +413,8 @@ body.light{
   border-radius: var(--sb-radius);
 }
 /* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }
-body.light { color-scheme: light; }
+body { color-scheme: dark; }        /* default app theme */
+body.light { color-scheme: light; } /* override in light mode */
 /* Checkbox polish */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
@@ -574,13 +586,14 @@ body.light { color-scheme: light; }
             <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
             <button type="button" id="agendaFilterClear" title="Clear filter">Clear</button>
 
-            <button type="button" id="addTaskBtn" class="tiny" title="Create a custom task">+ Add task</button>
+            <!-- ✨ Fancy + modal trigger -->
+            <button type="button" id="addTaskBtn" class="btn-icon add-btn" title="Add task">＋</button>
 
             <div class="space"></div>
             <div class="pill">Sort:</div>
             <div class="seg" role="group" aria-label="Sort tasks">
-              <button type="button" id="sortClient"  aria-pressed="false">By client</button>
-              <button type="button" id="sortType"    class="primary" aria-pressed="true">By task</button>
+              <button type="button" id="sortClient" class="primary" aria-pressed="true">By client</button>
+              <button type="button" id="sortType" aria-pressed="false">By task</button>
             </div>
 
             <div class="space"></div>
@@ -597,55 +610,64 @@ body.light { color-scheme: light; }
             </div>
           </div>
 
-          <!-- Add Custom Task popover -->
+          <!-- Add Custom Task modal (sheet inside overlay) ✨ -->
           <div id="customTaskPop" class="popover" style="display:none">
-            <div class="pop-head">
-              <strong>New task</strong>
-              <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
-            </div>
+            <div class="sheet">
+              <div class="pop-head">
+                <strong>New task</strong>
+                <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
+              </div>
 
-            <div class="row">
-              <div>
-                <label>Client</label>
-                <select id="ctClient"></select>
+              <div class="row">
+                <div>
+                  <label>Client</label>
+                  <select id="ctClient"></select>
+                </div>
+                <div>
+                  <label>Type</label>
+                  <select id="ctType">
+                    <option value="call">call</option>
+                    <option value="callvm">callvm</option>
+                    <option value="sms">sms</option>
+                    <option value="email">email</option>
+                    <option value="custom">custom</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label>Type</label>
-                <select id="ctType">
-                  <option value="call">call</option>
-                  <option value="callvm">callvm</option>
-                  <option value="sms">sms</option>
-                  <option value="email">email</option>
-                  <option value="custom">custom</option>
-                </select>
-              </div>
-            </div>
 
-            <div class="row">
-              <div>
-                <label>Title</label>
-                <input id="ctTitle" placeholder="Call / Email / Custom…" />
+              <div class="row">
+                <div>
+                  <label>Title</label>
+                  <input id="ctTitle" placeholder="Call / Email / Custom…" />
+                </div>
+                <div>
+                  <label>Date</label>
+                  <input id="ctDate" type="date" />
+                </div>
               </div>
-              <div>
-                <label>Date</label>
-                <input id="ctDate" type="date" />
-              </div>
-            </div>
 
-            <div class="row">
-              <div>
-                <label>Time (optional)</label>
-                <input id="ctTime" type="time" />
+              <div class="row">
+                <div>
+                  <label>Time (optional)</label>
+                  <input id="ctTime" type="time" />
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
+                  <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
+                </div>
               </div>
-              <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
-                <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
-                <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
-              </div>
-            </div>
 
-            <div class="right" style="margin-top:8px">
-              <button type="button" id="ctCancel" class="ghost">Clear</button>
-              <button type="button" id="ctSave" class="primary">Save task</button>
+              <div class="row single">
+                <div>
+                  <label>Notes (optional)</label>
+                  <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
+                </div>
+              </div>
+
+              <div class="right" style="margin-top:8px">
+                <button type="button" id="ctCancel" class="ghost">Cancel</button>
+                <button type="button" id="ctSave" class="primary">Save task</button>
+              </div>
             </div>
           </div>
 
@@ -690,6 +712,7 @@ body.light { color-scheme: light; }
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
             <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
 
+            <!-- FLEX row: date + select + add -->
             <div class="ovr">
               <input type="date" id="ovrDate" />
               <select id="ovrType">
@@ -723,7 +746,7 @@ body.light { color-scheme: light; }
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
-  // Instant parse on paste into the lead blob
+  // Instant parse on paste into the lead blob + Enter-to-save ✨
   const leadBlobEl = document.getElementById('leadBlob');
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
@@ -788,6 +811,26 @@ body.light { color-scheme: light; }
     copyTextToClipboard(text, what);
   });
 
+  // Close + reset the New Task UI (legacy safeguard)
+  function closeNewTaskUI(){
+    const panel =
+      document.getElementById('newTaskPanel') ||
+      document.getElementById('addTaskPopover') ||
+      document.getElementById('taskPopover') ||
+      document.getElementById('newTask') ||
+      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
+    if (panel){
+      panel.classList.remove('open','show');
+      panel.removeAttribute('data-open');
+      panel.style.display = 'none';
+    }
+    const form =
+      document.getElementById('newTaskForm') ||
+      document.getElementById('addTaskForm') ||
+      document.getElementById('taskForm');
+    form?.reset();
+  }
+
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
@@ -851,8 +894,8 @@ body.light { color-scheme: light; }
       clients: [],
       tasks: [],
       settings: {
-        // default non-working Fri/Sat
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
+        // ✨ Default non-working: Fri & Sat off
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -927,7 +970,7 @@ body.light { color-scheme: light; }
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID
+    // Lead ID (4–9 digits not part of phone/date/pax)
     let leadId = '';
     try{
       const phoneDigits = (phone || '').replace(/\D/g,'');
@@ -941,7 +984,14 @@ body.light { color-scheme: light; }
       }
     }catch(_){}
 
-    return { name, email, phone, route, dates, pax, leadId, notes:'' };
+    // ✨ Start date from the SECOND ISO date in the blob
+    let startDate = '';
+    try{
+      const ymds = Array.from(whole.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
+      startDate = ymds[1] || ymds[0] || '';
+    }catch(_){}
+
+    return { name, email, phone, route, dates, pax, leadId, notes:'', startDateFromBlob:startDate };
   }
 
   /* ========= Contact link helpers ========= */
@@ -958,35 +1008,40 @@ body.light { color-scheme: light; }
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  /* ========= RingCentral deep link ========= */
+  // ✨ RingCentral deep links for SMS
+  function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function toE164(raw){
     if(!raw) return '';
     let d = String(raw).replace(/[^\d+]/g,'');
     if(d.startsWith('+')) return d;
-    if(d.length===10) return '+1'+d;
-    if(d.length>0 && d[0]!=='+' ) return '+'+d;
+    if(d.length===10) return '+1'+d; // heuristic for US
+    if(d[0] !== '+') return '+'+d;
     return d;
   }
   function openRingCentralSMS(rawPhone){
     const e164 = toE164(rawPhone);
-    if(!e164){ return; }
-    const desktop1 = `rcapp://r/web/phone/sms?number=${encodeURIComponent(e164)}`;
-    const desktop2 = `rcapp://r/phone/sms?number=${encodeURIComponent(e164)}`;
-    const legacy   = `ringcentral://sms?number=${encodeURIComponent(e164)}`;
-    const web      = `https://app.ringcentral.com/message/new?type=sms&to=${encodeURIComponent(e164)}`;
+    if(!e164) return;
 
-    // Try desktop scheme, then fall back to web
-    let opened = false;
-    const tryOpen = (url) => {
+    const desktopPrimary = `rcapp://r/sms?type=new&number=${encodeURIComponent(e164)}`;
+    const desktopNoNum   = `rcapp://r/sms?type=new`;
+    const mobilePrimary  = `rcmobile://sms?number=${encodeURIComponent(e164)}`;
+    const web1           = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(e164)}`;
+    const web2           = `https://app.ringcentral.com/message/new?type=sms&to=${encodeURIComponent(e164)}`;
+
+    const primary   = isMobile() ? mobilePrimary : desktopPrimary;
+    const fallbacks = isMobile() ? [web1, web2] : [desktopNoNum, web1, web2];
+
+    let jumped = false;
+    const tryOpen = (url, sameTab=true) => {
       try {
-        const w = window.open(url, '_self');
-        opened = true;
-        return w;
+        if(sameTab){ window.location.href = url; } else { window.open(url, '_blank'); }
+        jumped = true;
       } catch(_) {}
     };
-    tryOpen(desktop1) || tryOpen(desktop2) || tryOpen(legacy);
-    // Fallback shortly after to web
-    setTimeout(()=>{ if(!opened) window.open(web, '_blank'); }, 150);
+
+    tryOpen(primary, true);
+    setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), true); }, 200);
+    setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), false); }, 600);
   }
 
   /* ========= Scheduling ========= */
@@ -1224,8 +1279,9 @@ body.light { color-scheme: light; }
 
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
+  // ✨ Default sort is "client"
+  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // 'type' | 'client'
   let agendaFilter = '';
-  let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1256,26 +1312,14 @@ body.light { color-scheme: light; }
     return chips.join(' ');
   }
 
-  function openNotifyEditorFor(t, hostDiv){
-    // Close any other open editors
-    $$('.notify-edit').forEach(n=>n.remove());
-    const wrap = document.createElement('div');
-    wrap.className = 'notify-edit';
-    wrap.innerHTML = `
-      <div class="notify-inline tiny">
-        <span>Notify @</span>
-        <input type="time" value="${t.notifyTime||''}" id="nt_${t.id}">
-        <button class="btn-icon" data-nsave="${t.id}">Save</button>
-        <button class="btn-icon" data-nclear="${t.id}">Clear</button>
-      </div>`;
-    hostDiv.after(wrap);
-  }
-
   function renderTask(t){
     const div = document.createElement('div');
     div.className = 'agenda-item'+(t.status==='done'?' done':'');
+
     const icon = { call:'📞', callvm:'📞🗣️', voicemail:'🗣️', sms:'💬', email:'✉️', custom:'📝' }[t.type] || '•';
     const client = clientDisplayName(t);
+
+    // Contact pill per task type (SMS uses RC deep link) ✨
     let contactHtml = '';
     if(t.clientId){
       const c = clientById(t.clientId) || {};
@@ -1283,15 +1327,19 @@ body.light { color-scheme: light; }
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        // Use data attribute to open RC SMS
+        const e164 = c.phone;
+        contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(e164)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
       }
     }
+
     const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
     const chips = detailsChipsFor(t);
+    const timeBadged = t.notifyTime ? ` &nbsp; ⏰ <span class="mono">${t.notifyTime}</span>` : '';
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
@@ -1304,13 +1352,48 @@ body.light { color-scheme: light; }
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
-      <div class="tiny mono">${t.date}
+      <div class="tiny mono">
+        ${t.date}${timeBadged}
         <button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>
-        ${t.notifyTime?`<span class="mono"> ⏰ ${t.notifyTime}</span>`:''}
         <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button>
       </div>`;
+
+    // checkbox
     div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
+
     return div;
+  }
+
+  // Inline notify editor (bell) ✨
+  function openNotifyEditor(taskId, host){
+    const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
+    const already = host.querySelector('.notify-row'); if(already){ already.remove(); return; }
+    const row = document.createElement('div');
+    row.className = 'notify-row';
+    row.innerHTML = `
+      <span>Notify @</span>
+      <input type="time" value="${t.notifyTime||''}" data-notify-time>
+      <button data-save-notify="${t.id}" class="primary">Save</button>
+      <button data-clear-notify="${t.id}">Clear</button>
+    `;
+    host.appendChild(row);
+    const input = row.querySelector('input[type="time"]');
+    input.focus();
+    input.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); saveNotifyTime(t.id, input.value); row.remove(); }
+      if(e.key==='Escape'){ e.preventDefault(); row.remove(); }
+    });
+  }
+  function saveNotifyTime(id, hhmm){
+    const t = state.tasks.find(x=>x.id===id); if(!t) return;
+    if(!hhmm){ delete t.notifyTime; delete t.notifyAt; t.important=false; save(); return; }
+    t.notifyTime = hhmm; t.important = true;
+    t.notifyAt = combineYmdTimeLocal(t.date, hhmm).toISOString();
+    save();
+  }
+  function clearNotifyTime(id){
+    const t = state.tasks.find(x=>x.id===id); if(!t) return;
+    delete t.notifyTime; delete t.notifyAt; t.important=false; save();
   }
 
   function renderGroupedByClient(container, items){
@@ -1324,8 +1407,7 @@ body.light { color-scheme: light; }
         gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>`;
         container.appendChild(gh);
       }
-      const node = renderTask(t);
-      container.appendChild(node);
+      container.appendChild(renderTask(t));
     }
   }
 
@@ -1365,7 +1447,7 @@ body.light { color-scheme: light; }
     $('#progressBar').style.width = pct+'%';
   }
 
-  // Agenda click handlers: delete, bell, RingCentral SMS
+  // Agenda action clicks (delete, bell, RC sms) ✨
   $('#agenda').addEventListener('click', (e)=>{
     const del = e.target.closest('[data-del]');
     if(del){
@@ -1376,42 +1458,33 @@ body.light { color-scheme: light; }
     const bell = e.target.closest('[data-bell]');
     if(bell){
       const id = bell.getAttribute('data-bell');
-      const t = state.tasks.find(x=>x.id===id);
-      if(!t) return;
-      openNotifyEditorFor(t, bell.closest('.agenda-item'));
+      const host = bell.closest('.agenda-item');
+      openNotifyEditor(id, host);
       return;
     }
-    const sms = e.target.closest('a[data-rcsms]');
-    if(sms){
+    const rc = e.target.closest('[data-rcsms]');
+    if(rc){
       e.preventDefault();
-      openRingCentralSMS(sms.getAttribute('data-rcsms'));
+      const num = rc.getAttribute('data-rcsms') || '';
+      openRingCentralSMS(num);
       return;
     }
-  });
-
-  // Save/Clear inside notify inline editor
-  document.addEventListener('click', (e)=>{
-    const sv = e.target.closest('[data-nsave]');
-    const cl = e.target.closest('[data-nclear]');
-    if(!sv && !cl) return;
-    const id = (sv?sv.getAttribute('data-nsave'):cl.getAttribute('data-nclear'));
-    const t = state.tasks.find(x=>x.id===id);
-    if(!t) return;
-    if(sv){
-      const val = $('#nt_'+id)?.value || '';
-      if(!val){ t.important=false; delete t.notifyTime; delete t.notifyAt; }
-      else{
-        t.notifyTime = val;
-        t.notifyAt = combineYmdTimeLocal(t.date, val).toISOString();
-        t.important = true;
-      }
-      toast('Notify time saved');
-    }else if(cl){
-      t.important=false; delete t.notifyTime; delete t.notifyAt;
-      toast('Notify time cleared');
+    const saveBtn = e.target.closest('[data-save-notify]');
+    if(saveBtn){
+      const id = saveBtn.getAttribute('data-save-notify');
+      const host = saveBtn.closest('.notify-row');
+      const time = host.querySelector('input[type="time"]').value;
+      saveNotifyTime(id, time);
+      host.remove();
+      return;
     }
-    save();
-    $$('.notify-edit').forEach(n=>n.remove());
+    const clrBtn = e.target.closest('[data-clear-notify]');
+    if(clrBtn){
+      const id = clrBtn.getAttribute('data-clear-notify');
+      clearNotifyTime(id);
+      clrBtn.closest('.notify-row')?.remove();
+      return;
+    }
   });
 
   // Agenda controls
@@ -1663,6 +1736,8 @@ body.light { color-scheme: light; }
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
+    // ✨ start date from blob (second ISO date)
+    set('#startDate', parsed.startDateFromBlob);
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
@@ -1735,34 +1810,34 @@ body.light { color-scheme: light; }
     }
   });
 
-  /* ===== Add Custom Task popover ===== */
+  /* ===== Add Custom Task modal ===== */
   function titleDefaultFor(type){ return ({call:'Call', callvm:'Call + Voicemail', sms:'SMS', email:'Email'}[type] || ''); }
   function buildClientOptionsForPopover(){
     const sel = $('#ctClient'); if(!sel) return;
     const keep = sel.value;
     sel.innerHTML = '';
+    // ✨ Default = None / no client
+    sel.insertAdjacentHTML('beforeend', `<option value="" selected>None — no client</option>`);
     const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
-    // default: None
-    sel.insertAdjacentHTML('beforeend', `<option value="" selected>— None — (no client)</option>`);
     opts.forEach(c=>{
       const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
       sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
     });
-    if (keep!=null) sel.value = keep;
+    if (keep) sel.value = keep;
   }
   function openCustomTaskPopover(){
     buildClientOptionsForPopover();
-    const pop = $('#customTaskPop'); if(!pop) return;
-    const isHidden = getComputedStyle(pop).display === 'none';
-    if (isHidden){
+    const pop = document.getElementById('customTaskPop'); if(!pop) return;
+
+    if (getComputedStyle(pop).display === 'none'){
       $('#ctType').value = $('#ctType').value || 'call';
       const agendaYmd = fmt(currentAgendaDate || today());
       if (!$('#ctDate').value) $('#ctDate').value = agendaYmd;
       if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
       $('#ctNotify').disabled = !$('#ctTime').value;
-      pop.style.display = 'block';
 
-      // Esc closes, Enter saves (except textarea)
+      pop.style.display = 'flex';   // overlay
+      // ✨ Keyboard: Esc closes, Enter saves (except in Notes)
       pop._keydown = (e)=>{
         if(e.key==='Escape'){ e.preventDefault(); closeCustomTaskPopover(); }
         if(e.key==='Enter' && !e.shiftKey && e.target.id!=='ctNotes'){
@@ -1770,6 +1845,9 @@ body.light { color-scheme: light; }
         }
       };
       document.addEventListener('keydown', pop._keydown);
+      // Click backdrop to close
+      pop._backdrop = (e)=>{ if(e.target===pop) closeCustomTaskPopover(); };
+      pop.addEventListener('click', pop._backdrop);
     } else {
       closeCustomTaskPopover();
     }
@@ -1785,12 +1863,15 @@ body.light { color-scheme: light; }
   function closeCustomTaskPopover(){
     clearCustomTaskForm();
     const pop = document.getElementById('customTaskPop');
-    if (pop && pop._keydown){ document.removeEventListener('keydown', pop._keydown); pop._keydown=null; }
-    if (pop) pop.style.display = 'none';
+    if(!pop) return;
+    if(pop._keydown){ document.removeEventListener('keydown', pop._keydown); pop._keydown=null; }
+    if(pop._backdrop){ pop.removeEventListener('click', pop._backdrop); pop._backdrop=null; }
+    pop.style.display = 'none';
   }
   function saveCustomTaskFromPopover(){
-    const clientId = $('#ctClient').value;
+    const clientId = $('#ctClient').value || '';
     const c = clientId ? clientById(clientId) : null;
+
     const type  = $('#ctType').value || 'custom';
     let title   = ($('#ctTitle').value||'').trim();
     if (!title) title = titleDefaultFor(type) || 'Custom';
@@ -1800,7 +1881,12 @@ body.light { color-scheme: light; }
     const notify = !!$('#ctNotify').checked && !!time;
     const important = notify ? true : !!$('#ctImportant').checked;
 
-    const t = { clientId: c ? c.id : null, clientName: c ? c.name : '', date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important };
+    const t = {
+      clientId: c?.id || null,
+      clientName: c?.name || '',
+      date, type, title,
+      label: 'Custom', source: 'custom', status: 'open', notes, important
+    };
     if (time){
       t.notifyTime = time;
       if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
@@ -1813,7 +1899,7 @@ body.light { color-scheme: light; }
   }
   $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
   $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);
-  $('#ctCancel')?.addEventListener('click', ()=>{ clearCustomTaskForm(); });
+  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover);
   $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
   $('#ctType')?.addEventListener('change', ()=>{
     const cur = ($('#ctTitle').value||'').trim();
