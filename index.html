@@ -409,6 +409,13 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 .reminder-popover.open{ display:block; }
 .reminder-popover .btns{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
 .reminder-popover input[type="time"]{ height:34px; }
+
+/* 🧩 BULK add preview */
+#bulkArea{ margin-top:10px; }
+.bulk-row{ border:1px dashed var(--line); border-radius:10px; padding:10px; margin-top:8px; background:var(--surface); }
+.bulk-row .meta{ color:var(--muted); font-size:11px; }
+.bulk-row .controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+.bulk-row textarea{ height:60px; min-height:60px; }
 </style>
 </head>
 <body>
@@ -734,12 +741,94 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
+  /* 🧩 BULK helpers */
+  let bulkStaging = []; // array of parsed customers awaiting save
+
+  function splitMultiCustomers(text){
+    const norm = (text||'').replace(/\r/g,'\n');
+    const re = /(^|\n)\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d+\s+new\b/gi;
+    const idxs = [];
+    let m;
+    while((m = re.exec(norm))) idxs.push(m.index + (m[1] ? m[1].length : 0));
+    if(!idxs.length) return [text];
+    const parts = [];
+    for(let i=0;i<idxs.length;i++){
+      const start = idxs[i];
+      const end = (i+1<idxs.length) ? idxs[i+1] : norm.length;
+      parts.push(norm.slice(start, end).trim());
+    }
+    return parts.filter(p=>p.trim());
+  }
+  function ensureBulkArea(){
+    let el = document.getElementById('bulkArea');
+    if(el) return el;
+    const host = document.querySelector('.lead-block');
+    el = document.createElement('div');
+    el.id = 'bulkArea';
+    el.className = 'slab';
+    host.insertAdjacentElement('afterend', el);
+    return el;
+  }
+  function clearBulkUI(){
+    bulkStaging = [];
+    const el = document.getElementById('bulkArea');
+    if(el) el.remove();
+  }
+  function showBulkPreview(items){
+    const host = ensureBulkArea();
+    let html = `<div class="tiny"><b>Bulk paste:</b> parsed ${items.length} customers. Set status/notes then click <b>Save Customer</b> to add all. <button id="bulkCancel" class="ghost" style="float:right">Cancel</button></div>`;
+    items.forEach((p,i)=>{
+      const safe = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      html += `
+        <div class="bulk-row">
+          <div><strong>${safe(p.name||'(No name)')}</strong>
+            ${p.route?`<span class="pill">Route:&nbsp;${safe(p.route)}</span>`:''}
+            ${p.dates?`<span class="pill">Dates:&nbsp;${safe(p.dates)}</span>`:''}
+            ${p.pax?`<span class="pill">Pax:&nbsp;${safe(p.pax)}</span>`:''}
+          </div>
+          <div class="meta">
+            ${(p.leadId?`Lead ${safe(p.leadId)} • `:'')}${p.email?safe(p.email):''}${p.email&&p.phone?' • ':''}${p.phone?safe(p.phone):''}
+          </div>
+          <div class="controls">
+            <label>Status
+              <select id="bulk_status_${i}">
+                <option value="unreached" selected>Unreached</option>
+                <option value="reached">Reached</option>
+              </select>
+            </label>
+            <label style="flex:1; min-width:200px">Notes
+              <textarea id="bulk_notes_${i}" rows="2" placeholder="Optional notes…"></textarea>
+            </label>
+          </div>
+        </div>`;
+    });
+    host.innerHTML = html;
+    document.getElementById('bulkCancel')?.addEventListener('click', clearBulkUI);
+  }
+  function detectAndPreviewBulkFromBlobText(text){
+    const parts = splitMultiCustomers(text||'');
+    if(parts.length<=1) return false;
+    const parsed = parts.map(p => parseLeadBlob(p));
+    // keep only reasonably filled entries
+    bulkStaging = parsed.filter(x => (x.name||x.email||x.phone||x.route));
+    if(bulkStaging.length){
+      showBulkPreview(bulkStaging);
+      return true;
+    }
+    return false;
+  }
+
   // Instant parse on paste into the lead blob
   const leadBlobEl = document.getElementById('leadBlob');
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
       if (!has) return;
+      /* 🔀 if multi detected, show preview; else fill form as before */
+      if(detectAndPreviewBulkFromBlobText(has)){
+        toast(`Parsed ${bulkStaging.length} customers. Review & save.`);
+        return;
+      }
       parseBlob({ onlyFillEmpty: false });
       toast('Parsed from paste. Review & save.');
     });
@@ -750,6 +839,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const has = (leadBlobEl.value || '').trim();
       if(!has) return;
       e.preventDefault();
+      // If a bulk preview exists or multi detected, don't auto-save
+      if(bulkStaging.length || detectAndPreviewBulkFromBlobText(has)){
+        toast('Bulk detected. Review & press Save Customer.');
+        return;
+      }
       parseBlob({ onlyFillEmpty:true });
       document.getElementById('saveCustomer').click();
     }
@@ -787,7 +881,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       }else{
         const ta=document.createElement('textarea');
         ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.execCommand('copy'); document.body.removeChild(ta); done();
       }
     }catch(_){}
   }
@@ -1628,7 +1722,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
-    s.moveOffDays = !!$('#moveOffDays').checked;
+    s.moveOffDays = !!$('#moveOffDays');
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
@@ -1695,9 +1789,45 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     };
     return { client, exists };
   }
-  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
+  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; clearBulkUI(); });
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
+      /* 🧩 BULK SAVE: if preview exists, add them all */
+      if (bulkStaging.length){
+        const added = [];
+        const todayY = fmt(today());
+        bulkStaging.forEach((p, i)=>{
+          const status = (document.getElementById(`bulk_status_${i}`)?.value || 'unreached');
+          const notes  = (document.getElementById(`bulk_notes_${i}`)?.value || '').trim();
+          const client = {
+            id: uid(),
+            name: (p.name||'').trim() || 'Customer',
+            email: (p.email||'').trim(),
+            phone: (p.phone||'').trim(),
+            status,
+            startDate: todayY,
+            reachedStart: status==='reached' ? todayY : null,
+            route: (p.route||'').trim(),
+            dates: (p.dates||'').trim(),
+            pax:   (p.pax||'').trim(),
+            leadId:(p.leadId||'').trim(),
+            notes
+          };
+          state.clients.push(client);
+          if(status==='unreached') scheduleUnreached(client); else scheduleReached(client);
+          added.push(client);
+        });
+        toast(`Added ${added.length} customer(s)`);
+        $('#leadBlob').value = '';
+        $('#clientForm').reset();
+        $('#clientId').value = '';
+        clearBulkUI();
+        save();
+        closeModal('addModal','addCard');
+        return;
+      }
+
+      // Single mode (original behavior)
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
@@ -1806,7 +1936,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     }
     /* ✂️ NEW: Esc closes Add Customer modal too */
     const addOpen = $('#addModal')?.classList.contains('open');
-    if (addOpen && e.key==='Escape'){ e.preventDefault(); closeModal('addModal','addCard'); }
+    if (addOpen && e.key==='Escape'){ e.preventDefault(); clearBulkUI(); closeModal('addModal','addCard'); }
     /* Close reminder popover on Esc */
     if (e.key==='Escape'){ closeReminderPopover(); }
   });
@@ -1847,8 +1977,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     makeModalFromCard('addCard','addModal');
     makeModalFromCard('taskCard','taskModal');
     // wire Add customer triggers
-    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
-    $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
+    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; clearBulkUI(); openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
+    $('#closeAdd')?.addEventListener('click', ()=> { clearBulkUI(); closeModal('addModal','addCard'); });
     refresh(); buildCalendar();
   }
   bootstrap();
