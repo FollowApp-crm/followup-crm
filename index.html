@@ -79,7 +79,7 @@ h1{font-size:20px; margin:4px 0 0; font-weight:800; line-height:1.1}
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
 .card .hd{
   padding:12px 14px; border-bottom:1px solid var(--line);
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;  /* wraps on small screens */
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
 }
 .card .bd{padding:12px}
 
@@ -118,8 +118,7 @@ button.ghost{ background:transparent }
 .btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:10px; background:var(--chip); border:1px solid var(--line)}
 body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
 
-/* === Add Customer modal + fancy "+" === */
-body.modal-open{ overflow:hidden; }
+/* === Fancy add "+" === */
 .add-btn{
   width:34px; height:34px; border-radius:999px;
   background:linear-gradient(180deg,var(--accent),#6a4ff0);
@@ -130,7 +129,8 @@ body.modal-open{ overflow:hidden; }
 .add-btn:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 .add-btn:active{ transform:translateY(0); }
 
-/* Modal container + small popup */
+/* Modal container */
+body.modal-open{ overflow:hidden; }
 .modal{
   position:fixed; inset:0; display:none;
   align-items:center; justify-content:center;
@@ -141,21 +141,19 @@ body.modal-open{ overflow:hidden; }
 .modal.open{ display:flex; }
 .modal .card{
   width:min(920px, 100%);
-  max-height:88vh;             /* taller so actions are visible */
-  overflow:auto;               /* scroll inside if needed */
+  max-height:88vh;
+  overflow:auto;
   animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
-/* Hide the Add/Edit section until JS moves it into the modal */
-#addCard{ display:none; }
 
-/* Sticky footer for the Add/Edit form */
-#addCard .bd{ padding-bottom:74px; } /* room for sticky footer */
+/* Add/Edit form sticky footer */
+#addCard .bd{ padding-bottom:74px; }
 .form-footer{
   position:sticky; bottom:0; left:0; right:0;
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 12px;
-  margin:12px -12px -12px;        /* bleed to card edges */
+  margin:12px -12px -12px;
   background:linear-gradient(180deg, rgba(0,0,0,0), var(--panel) 30%);
   border-top:1px solid var(--line);
   z-index:1;
@@ -186,7 +184,7 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger — soft “card-like” look, a bit bolder */
+/* Btn danger chip */
 .btn-danger{
   background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
   border:1.5px solid #a55c5c !important;
@@ -196,7 +194,6 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(1.03) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
-/* Make the specific “Wipe All” a rounded card chip */
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
 /* Segmented control (sort) */
@@ -225,13 +222,13 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
   gap:16px; align-items:start;
 }
 
-/* Compact calendar look (small right rail) */
+/* Compact calendar look */
 #calendarCard .bd{ padding:12px; }
 #calendarGrid{ gap:4px; }
 .cal-cell{ min-height:56px; padding:6px; }
 .cal-badge{ margin-top:4px; font-size:10.5px; }
 
-/* Make ONLY the Agenda + Calendar row wider than the page wrap (desktop) */
+/* Wider row than wrap on desktop */
 @media (min-width:1001px){
   .row.agenda-layout{
     --agenda-bleed: clamp(80px, 6vw, 180px);
@@ -314,7 +311,7 @@ body.light #calSettings{ background:#fff }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; }
 
-/* >>> Date-specific overrides row (flex instead of grid) <<< */
+/* Overrides row */
 .ovr{
   margin-top:14px;
   display:flex;
@@ -337,14 +334,6 @@ body.light #calSettings{ background:#fff }
 .ovr-list li button{ height:32px; padding:0 10px; }
 body.light .ovr-list li{ background:#fff }
 
-/* =================== POPOVER (Add Custom Task) =================== */
-.popover{
-  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
-  box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px;
-}
-.pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.popover input, .popover select, .popover textarea{ width:100% }
-
 /* =================== TOAST =================== */
 #toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
 .toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
@@ -356,7 +345,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
+  .row{grid-template-columns:1fr !important;}
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -365,7 +354,6 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
-  /* Customers header layout */
   .card .hd > input#search{ flex:1 1 200px; min-width:0; }
   .card .hd > select#statusFilter{ flex:0 0 auto; }
 }
@@ -397,8 +385,8 @@ body.light{
   border-radius: var(--sb-radius);
 }
 /* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }        /* default app theme */
-body.light { color-scheme: light; } /* override in light mode */
+body { color-scheme: dark; }
+body.light { color-scheme: light; }
 /* Checkbox polish */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
@@ -490,20 +478,80 @@ body.light { color-scheme: light; } /* override in light mode */
             </div>
           </div>
 
-          <!-- Start date is now separate from actions -->
+          <!-- Start date -->
           <div class="row single">
             <div>
-              <label>Start date (defaults to today)</label>
+              <label>Start date (defaults to today or auto from blob)</label>
               <input id="startDate" type="date" />
             </div>
           </div>
 
-          <!-- Sticky footer actions -->
           <div class="form-footer">
             <button type="button" class="ghost" id="resetForm">Clear</button>
             <button class="primary" type="button" id="saveCustomer">Save Customer</button>
           </div>
         </form>
+      </div>
+    </section>
+
+    <!-- Add Task (NEW) — modal card moved into its own modal -->
+    <section class="card" id="taskCard" style="display:none">
+      <div class="hd">
+        <strong>Add Task</strong>
+        <div class="space"></div>
+        <button id="ctClose" class="btn-icon" title="Close">✖</button>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label>Client</label>
+            <select id="ctClient"></select>
+          </div>
+          <div>
+            <label>Type</label>
+            <select id="ctType">
+              <option value="call">call</option>
+              <option value="callvm">callvm</option>
+              <option value="sms">sms</option>
+              <option value="email">email</option>
+              <option value="custom">custom</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Title</label>
+            <input id="ctTitle" placeholder="Call / Email / Custom…" />
+          </div>
+          <div>
+            <label>Date</label>
+            <input id="ctDate" type="date" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Time (optional)</label>
+            <input id="ctTime" type="time" />
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
+            <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+            <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
+          </div>
+        </div>
+
+        <div class="row single">
+          <div>
+            <label>Notes (optional)</label>
+            <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button type="button" id="ctCancel" class="ghost">Cancel</button>
+          <button type="button" id="ctSave" class="primary">Save task</button>
+        </div>
       </div>
     </section>
 
@@ -561,7 +609,10 @@ body.light { color-scheme: light; } /* override in light mode */
     <div class="row agenda-layout">
       <!-- Agenda -->
       <section class="card" id="actionsCard">
-        <div class="hd"><strong>Agenda</strong></div>
+        <div class="hd">
+          <strong>Agenda</strong>
+          <button id="openTask" class="btn-icon add-btn" title="Add task" aria-label="Add task">＋</button>
+        </div>
         <div class="bd">
           <div class="toolbar">
             <button type="button" id="viewToday" class="primary">Today</button>
@@ -570,13 +621,11 @@ body.light { color-scheme: light; } /* override in light mode */
             <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
             <button type="button" id="agendaFilterClear" title="Clear filter">Clear</button>
 
-            <button type="button" id="addTaskBtn" class="tiny" title="Create a custom task">+ Add task</button>
-
             <div class="space"></div>
             <div class="pill">Sort:</div>
             <div class="seg" role="group" aria-label="Sort tasks">
-              <button type="button" id="sortClient"  aria-pressed="false">By client</button>
-              <button type="button" id="sortType"    class="primary" aria-pressed="true">By task</button>
+              <button type="button" id="sortClient"  class="primary" aria-pressed="true">By client</button>
+              <button type="button" id="sortType"    aria-pressed="false">By task</button>
             </div>
 
             <div class="space"></div>
@@ -590,65 +639,6 @@ body.light { color-scheme: light; } /* override in light mode */
             <div class="badge">Today's Progress
               <span class="space"></span>
               <span id="progressPct" class="mono">0%</span>
-            </div>
-          </div>
-
-          <!-- Add Custom Task popover -->
-          <div id="customTaskPop" class="popover" style="display:none">
-            <div class="pop-head">
-              <strong>New task</strong>
-              <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Client</label>
-                <select id="ctClient"></select>
-              </div>
-              <div>
-                <label>Type</label>
-                <select id="ctType">
-                  <option value="call">call</option>
-                  <option value="callvm">callvm</option>
-                  <option value="sms">sms</option>
-                  <option value="email">email</option>
-                  <option value="custom">custom</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Title</label>
-                <input id="ctTitle" placeholder="Call / Email / Custom…" />
-              </div>
-              <div>
-                <label>Date</label>
-                <input id="ctDate" type="date" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Time (optional)</label>
-                <input id="ctTime" type="time" />
-              </div>
-              <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
-                <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
-                <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
-              </div>
-            </div>
-
-            <div class="row single">
-              <div>
-                <label>Notes (optional)</label>
-                <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
-              </div>
-            </div>
-
-            <div class="right" style="margin-top:8px">
-              <button type="button" id="ctCancel" class="ghost">Cancel</button>
-              <button type="button" id="ctSave" class="primary">Save task</button>
             </div>
           </div>
 
@@ -693,7 +683,6 @@ body.light { color-scheme: light; } /* override in light mode */
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
             <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
 
-            <!-- FLEX row: date + select + add -->
             <div class="ovr">
               <input type="date" id="ovrDate" />
               <select id="ovrType">
@@ -792,26 +781,6 @@ body.light { color-scheme: light; } /* override in light mode */
     copyTextToClipboard(text, what);
   });
 
-  // Close + reset the New Task UI
-  function closeNewTaskUI(){
-    const panel =
-      document.getElementById('newTaskPanel') ||
-      document.getElementById('addTaskPopover') ||
-      document.getElementById('taskPopover') ||
-      document.getElementById('newTask') ||
-      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
-    if (panel){
-      panel.classList.remove('open','show');
-      panel.removeAttribute('data-open');
-      panel.style.display = 'none';
-    }
-    const form =
-      document.getElementById('newTaskForm') ||
-      document.getElementById('addTaskForm') ||
-      document.getElementById('taskForm');
-    form?.reset();
-  }
-
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
@@ -851,7 +820,6 @@ body.light { color-scheme: light; } /* override in light mode */
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
     document.body.classList.add('modal-open');
-    // Focus the paste blob by default (requested)
     setTimeout(()=>{ try{ const el=document.getElementById('leadBlob'); el.focus(); el.select?.(); }catch(_){} }, 50);
   }
   function initAddModal(){
@@ -869,13 +837,46 @@ body.light { color-scheme: light; } /* override in light mode */
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAddModal(); });
   }
 
+  /* ========= Add Task modal ========= */
+  function closeTaskModal(){
+    const m = $('#taskModal'); const card = $('#taskCard');
+    if(m){ m.classList.remove('open'); m.style.display='none'; }
+    if(card){ card.style.display='none'; }
+    document.body.classList.remove('modal-open');
+  }
+  function openTaskModal(){
+    const m = $('#taskModal'); const card = $('#taskCard');
+    if(!m || !card) return;
+    buildClientOptionsForPopover();
+    const agendaYmd = fmt(currentAgendaDate || today());
+    $('#ctDate').value = $('#ctDate').value || agendaYmd;
+    $('#ctType').value = $('#ctType').value || 'call';
+    if (!($('#ctTitle').value||'').trim()) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
+    $('#ctNotify').disabled = !$('#ctTime').value;
+    card.style.display='block';
+    m.style.display='flex'; m.classList.add('open');
+    document.body.classList.add('modal-open');
+    setTimeout(()=>{ try{ $('#ctClient').focus(); }catch(_){} }, 30);
+  }
+  function initTaskModal(){
+    const card = $('#taskCard'); if(!card) return;
+    let modal = document.createElement('div');
+    modal.id = 'taskModal'; modal.className='modal'; modal.style.display='none';
+    document.body.appendChild(modal); modal.appendChild(card);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeTaskModal(); });
+    $('#openTask')?.addEventListener('click', openTaskModal);
+    $('#ctClose')?.addEventListener('click', closeTaskModal);
+    $('#ctCancel')?.addEventListener('click', closeTaskModal);
+  }
+
   /* ========= State ========= */
   function defaults(){
     return {
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
+        // ⬇️ Defaults: Friday & Saturday OFF
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -905,6 +906,10 @@ body.light { color-scheme: light; } /* override in light mode */
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
   /* ========= Lead Parser ========= */
+  function extractSecondIsoDate(txt){
+    const m = Array.from((txt||'').matchAll(/\b(\d{4}-\d{2}-\d{2})\b/g)).map(x=>x[1]);
+    return (m && m.length>=2) ? m[1] : '';
+  }
   function parseLeadBlob(text){
     const raw = (text||'').replace(/\r/g,'\n');
     const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
@@ -964,7 +969,10 @@ body.light { color-scheme: light; } /* override in light mode */
       }
     }catch(_){}
 
-    return { name, email, phone, route, dates, pax, leadId, notes:'' };
+    // ⬅️ NEW: Day 1 anchor from the 2nd ISO date in blob
+    const startDate = extractSecondIsoDate(whole);
+
+    return { name, email, phone, route, dates, pax, leadId, notes:'', startDate };
   }
 
   /* ========= Contact link helpers ========= */
@@ -980,6 +988,27 @@ body.light { color-scheme: light; } /* override in light mode */
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
+
+  // ⬅️ NEW: RingCentral SMS deep-link (Windows app first, then mobile, then sms:)
+  function openRingCentralSms(num){
+    const digits = (num||'').replace(/[^\d+]/g,'');
+    const tryOpen = (uri) => {
+      const i = document.createElement('iframe'); i.style.display='none'; i.src=uri;
+      document.body.appendChild(i); setTimeout(()=>{ try{ document.body.removeChild(i); }catch(_){ } }, 900);
+    };
+    try{
+      const ua = navigator.userAgent || '';
+      if (/Windows/i.test(ua)) tryOpen(`rcapp://sms?number=${digits}`);
+      tryOpen(`rcmobile://sms?number=${digits}`);
+      setTimeout(()=>{ window.location.href = `sms:${digits}`; }, 50);
+    }catch(_){ window.location.href = `sms:${digits}`; }
+  }
+  document.addEventListener('click', (e)=>{
+    const a = e.target.closest('a[data-rcsms]');
+    if(!a) return;
+    e.preventDefault();
+    openRingCentralSms(a.getAttribute('data-rcsms')||'');
+  });
 
   /* ========= Scheduling ========= */
   const ACTIONS_UNREACHED = d => ({ calls:2, voicemail:1, sms:1, emails: d===1?2:1 });
@@ -1217,7 +1246,8 @@ body.light { color-scheme: light; } /* override in light mode */
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
+  // ⬇️ Default sort = By client
+  let sortMode = localStorage.getItem(SORT_KEY) || 'client';
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1260,7 +1290,8 @@ body.light { color-scheme: light; } /* override in light mode */
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        contactHtml = `<span class="pill"><a class="mono" href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        const clean = (c.phone||'').replace(/[^\d+]/g,'');
+        contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${clean}" title="Open in RingCentral">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
@@ -1269,6 +1300,9 @@ body.light { color-scheme: light; } /* override in light mode */
     const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
     const chips = detailsChipsFor(t);
+
+    // ⬇️ Per-task bell UI next to bin (shows saved HH:MM if present)
+    const bell = `<button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>${t.notifyTime?` <span class="tiny mono">⏰ ${t.notifyTime}</span>`:''}`;
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
@@ -1281,10 +1315,64 @@ body.light { color-scheme: light; } /* override in light mode */
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
-      <div class="tiny mono">${t.date} <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button></div>`;
+      <div class="tiny mono">${t.date} ${bell} <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button></div>`;
     div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
     return div;
   }
+
+  // Inline bell time picker (mini)
+  $('#agenda').addEventListener('click', (e)=>{
+    // Delete
+    const del = e.target.closest('[data-del]');
+    if(del){ const id = del.getAttribute('data-del'); if(confirm('Delete this task?')) deleteTask(id); return; }
+
+    // Bell open
+    const bell = e.target.closest('[data-bell]');
+    if(bell){
+      const id = bell.getAttribute('data-bell');
+      const host = bell.closest('.agenda-item');
+      if(!host) return;
+      // remove any other pickers
+      $$('#agenda [data-bellbox]').forEach(n=>n.remove());
+      const t = state.tasks.find(x=>x.id===id);
+      const wrap = document.createElement('div');
+      wrap.className='tiny';
+      wrap.setAttribute('data-bellbox','');
+      wrap.style.marginTop='6px';
+      wrap.innerHTML = `
+        <span class="pill">Notify @</span>
+        <input type="time" id="bellTime_${id}" value="${t?.notifyTime||''}" style="height:28px">
+        <button class="tiny" data-bell-save="${id}">Save</button>
+        <button class="tiny" data-bell-clear="${id}">Clear</button>`;
+      host.appendChild(wrap);
+      const input = wrap.querySelector('input'); try{ input?.focus(); }catch(_){}
+      return;
+    }
+
+    // Bell save
+    const saveBtn = e.target.closest('[data-bell-save]');
+    if(saveBtn){
+      const id = saveBtn.getAttribute('data-bell-save');
+      const t = state.tasks.find(x=>x.id===id); if(!t) return;
+      const val = document.getElementById(`bellTime_${id}`)?.value || '';
+      if(!/^\d{2}:\d{2}$/.test(val)){ alert('Pick a time (HH:MM)'); return; }
+      t.notifyTime = val;
+      t.notifyAt = combineYmdTimeLocal(t.date, val).toISOString();
+      t.important = true;
+      save(); toast('Notification set'); $$('#agenda [data-bellbox]').forEach(n=>n.remove());
+      return;
+    }
+
+    // Bell clear
+    const clrBtn = e.target.closest('[data-bell-clear]');
+    if(clrBtn){
+      const id = clrBtn.getAttribute('data-bell-clear');
+      const t = state.tasks.find(x=>x.id===id); if(!t) return;
+      delete t.notifyTime; delete t.notifyAt; t.important = false;
+      save(); toast('Notification cleared'); $$('#agenda [data-bellbox]').forEach(n=>n.remove());
+      return;
+    }
+  });
 
   function renderGroupedByClient(container, items){
     let current = '\u0000';
@@ -1336,12 +1424,6 @@ body.light { color-scheme: light; } /* override in light mode */
     $('#progressPct').textContent = pct+'%';
     $('#progressBar').style.width = pct+'%';
   }
-
-  $('#agenda').addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-del]'); if(!btn) return;
-    const id = btn.getAttribute('data-del');
-    if(confirm('Delete this task?')) deleteTask(id);
-  });
 
   // Agenda controls
   let renderAgenda = ()=> buildAgenda(currentAgendaDate);
@@ -1592,6 +1674,8 @@ body.light { color-scheme: light; } /* override in light mode */
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
+    // NEW: auto-apply start date from blob’s 2nd ISO date
+    set('#startDate', parsed.startDate);
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
@@ -1664,7 +1748,7 @@ body.light { color-scheme: light; } /* override in light mode */
     }
   });
 
-  /* ===== Add Custom Task popover ===== */
+  /* ===== Add Task (modal) ===== */
   function titleDefaultFor(type){ return ({call:'Call', callvm:'Call + Voicemail', sms:'SMS', email:'Email'}[type] || ''); }
   function buildClientOptionsForPopover(){
     const sel = $('#ctClient'); if(!sel) return;
@@ -1678,21 +1762,6 @@ body.light { color-scheme: light; } /* override in light mode */
     });
     if (opts.length && keep) sel.value = keep;
   }
-  function openCustomTaskPopover(){
-    buildClientOptionsForPopover();
-    const pop = $('#customTaskPop'); if(!pop) return;
-    const isHidden = getComputedStyle(pop).display === 'none';
-    if (isHidden){
-      $('#ctType').value = $('#ctType').value || 'call';
-      const agendaYmd = fmt(currentAgendaDate || today());
-      if (!$('#ctDate').value) $('#ctDate').value = agendaYmd;
-      if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
-      $('#ctNotify').disabled = !$('#ctTime').value;
-      pop.style.display = 'block';
-    } else {
-      pop.style.display = 'none';
-    }
-  }
   function clearCustomTaskForm(){
     ['ctClient','ctType','ctTitle','ctDate','ctTime','ctNotes'].forEach(id=>{
       const el = $('#'+id); if(!el) return;
@@ -1701,12 +1770,7 @@ body.light { color-scheme: light; } /* override in light mode */
     $('#ctImportant').checked = false;
     $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
   }
-  function closeCustomTaskPopover(){
-    clearCustomTaskForm();
-    const pop = document.getElementById('customTaskPop');
-    if (pop) pop.style.display = 'none';
-  }
-  function saveCustomTaskFromPopover(){
+  function saveCustomTask(){
     const clientId = $('#ctClient').value;
     if(!clientId) return alert('Pick a client');
     const c = clientById(clientId); if(!c) return alert('Unknown client');
@@ -1728,12 +1792,10 @@ body.light { color-scheme: light; } /* override in light mode */
     addTask(t);
     save();
     toast('Custom task added');
-    closeCustomTaskPopover();
+    clearCustomTaskForm();
+    closeTaskModal();
   }
-  $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
-  $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);
-  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover);
-  $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
+  $('#ctSave')?.addEventListener('click', saveCustomTask);
   $('#ctType')?.addEventListener('change', ()=>{
     const cur = ($('#ctTitle').value||'').trim();
     const titleDefaults = ['Call','Call + Voicemail','SMS','Email'];
@@ -1761,7 +1823,12 @@ body.light { color-scheme: light; } /* override in light mode */
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
-  function bootstrap(){ initAddModal(); refresh(); buildCalendar(); }
+  function bootstrap(){
+    initAddModal();
+    initTaskModal();
+    refresh();
+    buildCalendar();
+  }
   bootstrap();
 
 })();
