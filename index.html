@@ -4,8 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Follow-Up CRM — Standalone</title>
-<!-- Checkmark favicon -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+<!-- ✅ Checkmark favicon -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
 <style>
 /* ===== Lead paste block (textarea + side buttons) ===== */
 .lead-block{ display:block; margin-bottom:10px; }
@@ -62,8 +64,6 @@ header{
   border-bottom:1px solid var(--line);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
-  overflow:hidden;           /* iOS artifact fix */
-  contain:paint;             /* iOS artifact fix */
 }
 header .wrap{ padding-top:8px; padding-bottom:8px; }
 body.light header{
@@ -77,7 +77,10 @@ h1{font-size:20px; margin:4px 0 0; font-weight:800; line-height:1.1}
 
 /* =================== CARDS / CONTROLS =================== */
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
-.card .hd{padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
+.card .hd{
+  padding:12px 14px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;  /* wraps on small screens */
+}
 .card .bd{padding:12px}
 
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
@@ -161,12 +164,9 @@ body.modal-open{ overflow:hidden; }
 /* Toolbar & pills */
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .space{flex:1}
-/* More polished theme toggle (looks good on iOS) */
 .toggle{
-  height:34px; padding:6px 14px; border-radius:999px; font-size:13px;
-  border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130);
-  color:var(--ink); display:inline-flex; align-items:center; justify-content:center;
-  gap:8px; font-weight:600; line-height:1;
+  height:38px; padding:6px 12px; border-radius:999px; font-size:14px; border:1px solid #2b3346;
+  background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink); display:inline-flex; align-items:center; gap:8px;
 }
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
@@ -186,14 +186,18 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger */
+/* Btn danger — soft “card-like” look, a bit bolder */
 .btn-danger{
-  background: var(--danger) !important; border-color: var(--danger-border) !important;
-  color:#fff !important; box-shadow:none !important;
+  background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
+  border:1.5px solid #a55c5c !important;
+  color:#ffbcbc !important;
+  box-shadow: inset 0 0 0 1px rgba(220,120,120,.15), 0 6px 20px rgba(220,80,80,.18) !important;
 }
-.btn-danger:hover{ filter:brightness(.95) }
+.btn-danger:hover{ filter:brightness(1.03) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
+/* Make the specific “Wipe All” a rounded card chip */
+#wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
 /* Segmented control (sort) */
 .seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
@@ -352,7 +356,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -361,14 +365,9 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
-
-  /* Header controls wrap nicely */
-  .card .hd{ flex-wrap: wrap; }
-  #search{ flex:1 1 180px; min-width:140px }
-  #statusFilter{ flex:0 0 auto; max-width:140px; margin-left:6px }
-
-  /* Stack Agenda over Calendar on phones */
-  .agenda-layout{ grid-template-columns:1fr; }
+  /* Customers header layout */
+  .card .hd > input#search{ flex:1 1 200px; min-width:0; }
+  .card .hd > select#statusFilter{ flex:0 0 auto; }
 }
 
 /* =================== SCROLLBARS =================== */
@@ -404,28 +403,6 @@ body.light { color-scheme: light; } /* override in light mode */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
 }
-
-/* === Wipe All button: pastel, bolder aesthetic === */
-#wipeAll{
-  height:38px; padding:8px 14px; border-radius:14px;
-  background:linear-gradient(180deg, rgba(255,80,80,.10), rgba(255,80,80,.06));
-  border:2px solid rgba(255,120,120,.55);
-  color:#e8b3b3; font-weight:700;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,120,120,.25),
-    0 6px 18px rgba(217,74,74,.15);
-}
-#wipeAll:hover{
-  background:linear-gradient(180deg, rgba(255,80,80,.16), rgba(255,80,80,.10));
-}
-body.light #wipeAll{
-  color:#a23b3b;
-  background:linear-gradient(180deg, #ffe9e9, #ffeef0);
-  border-color:#ffc9c9;
-  box-shadow:
-    inset 0 0 0 1px #ffdcdc,
-    0 6px 18px rgba(217,74,74,.12);
-}
 </style>
 </head>
 <body>
@@ -454,7 +431,7 @@ body.light #wipeAll{
         <div class="lead-block highlight">
           <div>
             <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
-            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…" autofocus></textarea>
+            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
         </div>
 
@@ -751,7 +728,7 @@ body.light #wipeAll{
   const SORT_KEY  = 'followup_crm_sort';
 
   // Instant parse on paste into the lead blob
-  const leadBlobEl = $('#leadBlob');
+  const leadBlobEl = document.getElementById('leadBlob');
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
@@ -760,14 +737,14 @@ body.light #wipeAll{
       toast('Parsed from paste. Review & save.');
     });
   });
-  // Press Enter in the paste box to parse + save (Shift+Enter = newline)
+  // ⏎ to save directly from the blob box (no Shift)
   leadBlobEl.addEventListener('keydown', (e)=>{
-    if (e.key === 'Enter' && !e.shiftKey){
+    if(e.key === 'Enter' && !e.shiftKey){
+      const has = (leadBlobEl.value || '').trim();
+      if(!has) return;
       e.preventDefault();
-      if ((leadBlobEl.value || '').trim()){
-        parseBlob({ onlyFillEmpty:false });
-      }
-      document.getElementById('saveCustomer')?.click();
+      parseBlob({ onlyFillEmpty:true });
+      document.getElementById('saveCustomer').click();
     }
   });
 
@@ -847,7 +824,7 @@ body.light #wipeAll{
   }
 
   /* ========= Theme ========= */
-  function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = t==='light' ? '🌙 Dark' : '☀️ Light'; }
+  function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = (t==='light' ? '🌙 Dark' : '☀️ Light'); }
   applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
   $('#themeToggle').addEventListener('click', ()=>{
     const next = document.body.classList.contains('light') ? 'dark' : 'light';
@@ -874,13 +851,8 @@ body.light #wipeAll{
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
     document.body.classList.add('modal-open');
-    setTimeout(()=>{        // focus the paste blob by default
-      try{
-        const lbEl = document.getElementById('leadBlob');
-        lbEl.focus();
-        lbEl.select();
-      }catch(_){}
-    }, 60);
+    // Focus the paste blob by default (requested)
+    setTimeout(()=>{ try{ const el=document.getElementById('leadBlob'); el.focus(); el.select?.(); }catch(_){} }, 50);
   }
   function initAddModal(){
     const card = document.getElementById('addCard');
@@ -920,7 +892,6 @@ body.light #wipeAll{
   function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
 
   /* ========= Working days logic ========= */
-  function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; } // (duplicate kept local)
   function weekdayIndex(dt){ const js=dt.getDay(); return (js+6)%7; } // Mon=0
   function isWorkingDay(dt){
     const ymd = fmt(dt);
