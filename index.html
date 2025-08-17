@@ -141,8 +141,8 @@ body.modal-open{ overflow:hidden; }
 .modal.open{ display:flex; }
 .modal .card{
   width:min(920px, 100%);
-  max-height:88vh;             /* taller so actions are visible */
-  overflow:auto;               /* scroll inside if needed */
+  max-height:88vh;
+  overflow:auto;
   animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
@@ -150,12 +150,12 @@ body.modal-open{ overflow:hidden; }
 #addCard{ display:none; }
 
 /* Sticky footer for the Add/Edit form */
-#addCard .bd{ padding-bottom:74px; } /* room for sticky footer */
+#addCard .bd{ padding-bottom:74px; }
 .form-footer{
   position:sticky; bottom:0; left:0; right:0;
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
   padding:10px 12px;
-  margin:12px -12px -12px;        /* bleed to card edges */
+  margin:12px -12px -12px;
   background:linear-gradient(180deg, rgba(0,0,0,0), var(--panel) 30%);
   border-top:1px solid var(--line);
   z-index:1;
@@ -186,7 +186,7 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger — soft “card-like” look, a bit bolder */
+/* Btn danger */
 .btn-danger{
   background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
   border:1.5px solid #a55c5c !important;
@@ -196,7 +196,6 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(1.03) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
-/* Make the specific “Wipe All” a rounded card chip */
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
 /* Segmented control (sort) */
@@ -225,7 +224,7 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
   gap:16px; align-items:start;
 }
 
-/* Compact calendar look (small right rail) */
+/* Compact calendar right rail */
 #calendarCard .bd{ padding:12px; }
 #calendarGrid{ gap:4px; }
 .cal-cell{ min-height:56px; padding:6px; }
@@ -268,9 +267,11 @@ body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 .progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
-/* Inline notification editor (horizontal) */
-.notify-edit{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px }
-.notify-edit input[type="time"]{ width:110px }
+/* Notify editor row (inline, horizontal) */
+.notify-edit{ margin:6px 0 2px 34px; }
+.notify-inline{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.notify-inline input[type="time"]{ height:32px; }
+.notify-inline .btn-icon{ height:32px; width:auto; padding:0 10px; }
 
 /* =================== CALENDAR =================== */
 #calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
@@ -318,7 +319,7 @@ body.light #calSettings{ background:#fff }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; }
 
-/* >>> Date-specific overrides row (flex instead of grid) <<< */
+/* >>> Date-specific overrides row <<< */
 .ovr{
   margin-top:14px;
   display:flex;
@@ -345,7 +346,6 @@ body.light .ovr-list li{ background:#fff }
 .popover{
   background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px;
   box-shadow:0 20px 60px rgba(0,0,0,.35); margin-top:10px;
-  position:relative; z-index:9997;
 }
 .pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .popover input, .popover select, .popover textarea{ width:100% }
@@ -361,7 +361,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
+  .row{grid-template-columns:1fr !important;}
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -370,7 +370,6 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
-  /* Customers header layout */
   .card .hd > input#search{ flex:1 1 200px; min-width:0; }
   .card .hd > select#statusFilter{ flex:0 0 auto; }
 }
@@ -402,8 +401,8 @@ body.light{
   border-radius: var(--sb-radius);
 }
 /* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }        /* default app theme */
-body.light { color-scheme: light; } /* override in light mode */
+body { color-scheme: dark; }
+body.light { color-scheme: light; }
 /* Checkbox polish */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
@@ -644,15 +643,8 @@ body.light { color-scheme: light; } /* override in light mode */
               </div>
             </div>
 
-            <div class="row single">
-              <div>
-                <label>Notes (optional)</label>
-                <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
-              </div>
-            </div>
-
             <div class="right" style="margin-top:8px">
-              <button type="button" id="ctCancel" class="ghost">Cancel</button>
+              <button type="button" id="ctCancel" class="ghost">Clear</button>
               <button type="button" id="ctSave" class="primary">Save task</button>
             </div>
           </div>
@@ -698,7 +690,6 @@ body.light { color-scheme: light; } /* override in light mode */
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
             <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
 
-            <!-- FLEX row: date + select + add -->
             <div class="ovr">
               <input type="date" id="ovrDate" />
               <select id="ovrType">
@@ -797,26 +788,6 @@ body.light { color-scheme: light; } /* override in light mode */
     copyTextToClipboard(text, what);
   });
 
-  // Close + reset the New Task UI
-  function closeNewTaskUI(){
-    const panel =
-      document.getElementById('newTaskPanel') ||
-      document.getElementById('addTaskPopover') ||
-      document.getElementById('taskPopover') ||
-      document.getElementById('newTask') ||
-      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
-    if (panel){
-      panel.classList.remove('open','show');
-      panel.removeAttribute('data-open');
-      panel.style.display = 'none';
-    }
-    const form =
-      document.getElementById('newTaskForm') ||
-      document.getElementById('addTaskForm') ||
-      document.getElementById('taskForm');
-    form?.reset();
-  }
-
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
     const host = document.getElementById('toaster') || (()=>{ const d=document.createElement('div'); d.id='toaster'; document.body.appendChild(d); return d; })();
@@ -880,7 +851,8 @@ body.light { color-scheme: light; } /* override in light mode */
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true },
+        // default non-working Fri/Sat
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -955,7 +927,7 @@ body.light { color-scheme: light; } /* override in light mode */
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID (4–9 digits not part of phone/date/pax)
+    // Lead ID
     let leadId = '';
     try{
       const phoneDigits = (phone || '').replace(/\D/g,'');
@@ -985,33 +957,36 @@ body.light { color-scheme: light; } /* override in light mode */
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
-  function normalizePhoneE164(num){
-    const raw = (num||'').trim();
-    const digits = raw.replace(/\D/g,'');
-    if(raw.startsWith('+')) return raw;
-    if(digits.length===10) return '+1'+digits; // US default
-    return '+'+digits;
+
+  /* ========= RingCentral deep link ========= */
+  function toE164(raw){
+    if(!raw) return '';
+    let d = String(raw).replace(/[^\d+]/g,'');
+    if(d.startsWith('+')) return d;
+    if(d.length===10) return '+1'+d;
+    if(d.length>0 && d[0]!=='+' ) return '+'+d;
+    return d;
   }
-  function openRingCentralSms(num){
-    const n = encodeURIComponent(normalizePhoneE164(num));
-    const candidates = [
-      `rcapp://r/compose?type=SMS&number=${n}`,
-      `rcapp://r/sms?number=${n}`,
-      `ringcentral://sms?number=${n}`,
-      `https://app.ringcentral.com/message/compose?type=SMS&number=${n}`
-    ];
-    let i=0;
-    (function tryNext(){
-      if(i>=candidates.length) return;
-      const u = candidates[i++];
-      if(/^https?:/i.test(u)){ window.open(u, '_blank'); }
-      else{
-        const ifr=document.createElement('iframe');
-        ifr.style.display='none'; ifr.src=u;
-        document.body.appendChild(ifr);
-        setTimeout(()=>{ try{ document.body.removeChild(ifr); }catch(_){}; tryNext(); }, 500);
-      }
-    })();
+  function openRingCentralSMS(rawPhone){
+    const e164 = toE164(rawPhone);
+    if(!e164){ return; }
+    const desktop1 = `rcapp://r/web/phone/sms?number=${encodeURIComponent(e164)}`;
+    const desktop2 = `rcapp://r/phone/sms?number=${encodeURIComponent(e164)}`;
+    const legacy   = `ringcentral://sms?number=${encodeURIComponent(e164)}`;
+    const web      = `https://app.ringcentral.com/message/new?type=sms&to=${encodeURIComponent(e164)}`;
+
+    // Try desktop scheme, then fall back to web
+    let opened = false;
+    const tryOpen = (url) => {
+      try {
+        const w = window.open(url, '_self');
+        opened = true;
+        return w;
+      } catch(_) {}
+    };
+    tryOpen(desktop1) || tryOpen(desktop2) || tryOpen(legacy);
+    // Fallback shortly after to web
+    setTimeout(()=>{ if(!opened) window.open(web, '_blank'); }, 150);
   }
 
   /* ========= Scheduling ========= */
@@ -1250,7 +1225,7 @@ body.light { color-scheme: light; } /* override in light mode */
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // default to By client
+  let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1281,6 +1256,21 @@ body.light { color-scheme: light; } /* override in light mode */
     return chips.join(' ');
   }
 
+  function openNotifyEditorFor(t, hostDiv){
+    // Close any other open editors
+    $$('.notify-edit').forEach(n=>n.remove());
+    const wrap = document.createElement('div');
+    wrap.className = 'notify-edit';
+    wrap.innerHTML = `
+      <div class="notify-inline tiny">
+        <span>Notify @</span>
+        <input type="time" value="${t.notifyTime||''}" id="nt_${t.id}">
+        <button class="btn-icon" data-nsave="${t.id}">Save</button>
+        <button class="btn-icon" data-nclear="${t.id}">Clear</button>
+      </div>`;
+    hostDiv.after(wrap);
+  }
+
   function renderTask(t){
     const div = document.createElement('div');
     div.className = 'agenda-item'+(t.status==='done'?' done':'');
@@ -1293,9 +1283,7 @@ body.light { color-scheme: light; } /* override in light mode */
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        const cleanDisp = escapeHtml(c.phone);
-        const clean = normalizePhoneE164(c.phone);
-        contactHtml = `<span class="pill"><a class="mono" href="#" data-sms="${clean}">${cleanDisp}</a><button class="copy-btn" data-copy="${cleanDisp}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(c.phone)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
@@ -1316,24 +1304,11 @@ body.light { color-scheme: light; } /* override in light mode */
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
-      <div class="tiny mono">
-        ${t.date}
-        <button class="btn-icon" data-bell="${t.id}" title="Set notification">🔔</button>
-        ${t.notifyTime ? `<span>${t.notifyTime}</span>` : ``}
+      <div class="tiny mono">${t.date}
+        <button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>
+        ${t.notifyTime?`<span class="mono"> ⏰ ${t.notifyTime}</span>`:''}
         <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button>
       </div>`;
-    // inline notify editor
-    const edit = document.createElement('div');
-    edit.className = 'notify-edit';
-    edit.id = `ne_${t.id}`;
-    edit.style.display = 'none';
-    edit.innerHTML = `
-      <span class="tiny">Notify @</span>
-      <input type="time" id="nt_${t.id}" value="${t.notifyTime||''}">
-      <button class="tiny" data-savebell="${t.id}">Save</button>
-      <button class="tiny" data-clearbell="${t.id}">Clear</button>
-    `;
-    div.appendChild(edit);
     div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
     return div;
   }
@@ -1349,7 +1324,8 @@ body.light { color-scheme: light; } /* override in light mode */
         gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>`;
         container.appendChild(gh);
       }
-      container.appendChild(renderTask(t));
+      const node = renderTask(t);
+      container.appendChild(node);
     }
   }
 
@@ -1389,41 +1365,53 @@ body.light { color-scheme: light; } /* override in light mode */
     $('#progressBar').style.width = pct+'%';
   }
 
-  // Delegated agenda clicks (delete + sms + bell editor)
+  // Agenda click handlers: delete, bell, RingCentral SMS
   $('#agenda').addEventListener('click', (e)=>{
-    const smsA = e.target.closest('a[data-sms]');
-    if(smsA){ e.preventDefault(); openRingCentralSms(smsA.getAttribute('data-sms')); return; }
-    const bell = e.target.closest('[data-bell]');
-    if(bell){
-      const id = bell.getAttribute('data-bell');
-      const panel = document.getElementById('ne_'+id);
-      if(panel){ panel.style.display = (panel.style.display==='none'?'flex':'none'); }
-      return;
-    }
-    const saveB = e.target.closest('[data-savebell]');
-    if(saveB){
-      const id = saveB.getAttribute('data-savebell');
-      const t = state.tasks.find(x=>x.id===id); if(!t) return;
-      const time = (document.getElementById('nt_'+id)?.value || '').trim();
-      if(!time){ alert('Pick a time'); return; }
-      t.notifyTime = time; t.important = true;
-      t.notifyAt = combineYmdTimeLocal(t.date, time).toISOString();
-      save(); toast('Notification saved');
-      return;
-    }
-    const clearB = e.target.closest('[data-clearbell]');
-    if(clearB){
-      const id = clearB.getAttribute('data-clearbell');
-      const t = state.tasks.find(x=>x.id===id); if(!t) return;
-      delete t.notifyTime; delete t.notifyAt; t.important = false;
-      save(); toast('Notification cleared');
-      return;
-    }
     const del = e.target.closest('[data-del]');
     if(del){
       const id = del.getAttribute('data-del');
       if(confirm('Delete this task?')) deleteTask(id);
+      return;
     }
+    const bell = e.target.closest('[data-bell]');
+    if(bell){
+      const id = bell.getAttribute('data-bell');
+      const t = state.tasks.find(x=>x.id===id);
+      if(!t) return;
+      openNotifyEditorFor(t, bell.closest('.agenda-item'));
+      return;
+    }
+    const sms = e.target.closest('a[data-rcsms]');
+    if(sms){
+      e.preventDefault();
+      openRingCentralSMS(sms.getAttribute('data-rcsms'));
+      return;
+    }
+  });
+
+  // Save/Clear inside notify inline editor
+  document.addEventListener('click', (e)=>{
+    const sv = e.target.closest('[data-nsave]');
+    const cl = e.target.closest('[data-nclear]');
+    if(!sv && !cl) return;
+    const id = (sv?sv.getAttribute('data-nsave'):cl.getAttribute('data-nclear'));
+    const t = state.tasks.find(x=>x.id===id);
+    if(!t) return;
+    if(sv){
+      const val = $('#nt_'+id)?.value || '';
+      if(!val){ t.important=false; delete t.notifyTime; delete t.notifyAt; }
+      else{
+        t.notifyTime = val;
+        t.notifyAt = combineYmdTimeLocal(t.date, val).toISOString();
+        t.important = true;
+      }
+      toast('Notify time saved');
+    }else if(cl){
+      t.important=false; delete t.notifyTime; delete t.notifyAt;
+      toast('Notify time cleared');
+    }
+    save();
+    $$('.notify-edit').forEach(n=>n.remove());
   });
 
   // Agenda controls
@@ -1753,13 +1741,14 @@ body.light { color-scheme: light; } /* override in light mode */
     const sel = $('#ctClient'); if(!sel) return;
     const keep = sel.value;
     sel.innerHTML = '';
-    sel.insertAdjacentHTML('beforeend', `<option value="" selected>— None — (no client)</option>`);
     const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
+    // default: None
+    sel.insertAdjacentHTML('beforeend', `<option value="" selected>— None — (no client)</option>`);
     opts.forEach(c=>{
       const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
       sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
     });
-    if (opts.length && keep) sel.value = keep;
+    if (keep!=null) sel.value = keep;
   }
   function openCustomTaskPopover(){
     buildClientOptionsForPopover();
@@ -1772,21 +1761,19 @@ body.light { color-scheme: light; } /* override in light mode */
       if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
       $('#ctNotify').disabled = !$('#ctTime').value;
       pop.style.display = 'block';
+
+      // Esc closes, Enter saves (except textarea)
+      pop._keydown = (e)=>{
+        if(e.key==='Escape'){ e.preventDefault(); closeCustomTaskPopover(); }
+        if(e.key==='Enter' && !e.shiftKey && e.target.id!=='ctNotes'){
+          e.preventDefault(); saveCustomTaskFromPopover();
+        }
+      };
+      document.addEventListener('keydown', pop._keydown);
     } else {
-      pop.style.display = 'none';
+      closeCustomTaskPopover();
     }
   }
-  // Esc closes, Enter saves
-  document.addEventListener('keydown', (e)=>{
-    const pop = $('#customTaskPop');
-    const open = pop && getComputedStyle(pop).display !== 'none';
-    if(!open) return;
-    if(e.key === 'Escape'){ e.preventDefault(); closeCustomTaskPopover(); }
-    if(e.key === 'Enter' && !e.shiftKey){
-      const tag = (document.activeElement && document.activeElement.tagName) || '';
-      if(tag !== 'TEXTAREA'){ e.preventDefault(); saveCustomTaskFromPopover(); }
-    }
-  });
   function clearCustomTaskForm(){
     ['ctClient','ctType','ctTitle','ctDate','ctTime','ctNotes'].forEach(id=>{
       const el = $('#'+id); if(!el) return;
@@ -1798,12 +1785,12 @@ body.light { color-scheme: light; } /* override in light mode */
   function closeCustomTaskPopover(){
     clearCustomTaskForm();
     const pop = document.getElementById('customTaskPop');
+    if (pop && pop._keydown){ document.removeEventListener('keydown', pop._keydown); pop._keydown=null; }
     if (pop) pop.style.display = 'none';
   }
   function saveCustomTaskFromPopover(){
-    const clientId = $('#ctClient').value; // may be empty for "None"
+    const clientId = $('#ctClient').value;
     const c = clientId ? clientById(clientId) : null;
-
     const type  = $('#ctType').value || 'custom';
     let title   = ($('#ctTitle').value||'').trim();
     if (!title) title = titleDefaultFor(type) || 'Custom';
@@ -1813,14 +1800,7 @@ body.light { color-scheme: light; } /* override in light mode */
     const notify = !!$('#ctNotify').checked && !!time;
     const important = notify ? true : !!$('#ctImportant').checked;
 
-    const t = {
-      clientId: c ? c.id : null,
-      clientName: c ? c.name : '',
-      date, type, title,
-      label: 'Custom', source: 'custom',
-      status: 'open', notes,
-      important
-    };
+    const t = { clientId: c ? c.id : null, clientName: c ? c.name : '', date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important };
     if (time){
       t.notifyTime = time;
       if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
@@ -1833,7 +1813,7 @@ body.light { color-scheme: light; } /* override in light mode */
   }
   $('#addTaskBtn')?.addEventListener('click', openCustomTaskPopover);
   $('#ctClose')?.addEventListener('click', closeCustomTaskPopover);
-  $('#ctCancel')?.addEventListener('click', closeCustomTaskPopover);
+  $('#ctCancel')?.addEventListener('click', ()=>{ clearCustomTaskForm(); });
   $('#ctSave')?.addEventListener('click', saveCustomTaskFromPopover);
   $('#ctType')?.addEventListener('change', ()=>{
     const cur = ($('#ctTitle').value||'').trim();
