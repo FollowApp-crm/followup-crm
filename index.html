@@ -399,6 +399,16 @@ body.light { color-scheme: light; } /* override in light mode */
 /* Bell button hover */
 button[data-bell].btn-icon { transition: filter .15s ease; }
 button[data-bell].btn-icon:hover { filter: brightness(1.1); }
+
+/* 🔔 Reminder popover (NEW) */
+.reminder-popover{
+  position:fixed; display:none; width:240px;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:10px; box-shadow:0 12px 30px rgba(0,0,0,.28); z-index:10000;
+}
+.reminder-popover.open{ display:block; }
+.reminder-popover .btns{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.reminder-popover input[type="time"]{ height:34px; }
 </style>
 </head>
 <body>
@@ -939,7 +949,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
-  function defaultSmsContent(c){ return `Hello${c?.name ? ' ' + c.name : ''} — following up.`; }
+  /* ✂️ CHANGED: only FIRST name in SMS template */
+  function defaultSmsContent(c){
+    const first = ((c?.name||'').trim().split(/\s+/)[0]||'').trim();
+    return `Hello${first ? ' ' + first : ''} — following up.`;
+  }
   function ringCentralSmsHref(number, content){
     const digits=(number||'').replace(/[^\d+]/g,'');
     const enc = encodeURIComponent(content || '');
@@ -1238,7 +1252,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const chips = detailsChipsFor(t);
 
     const bell = t.important ? '🔔' : '🔕';
-    const bellTitle = t.important ? 'Turn off reminder' : 'Turn on reminder';
+    const bellTitle = t.important ? 'Edit reminder' : 'Add reminder';
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
@@ -1311,6 +1325,81 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     $('#progressBar').style.width = pct+'%';
   }
 
+  /* ===== Reminder popover (NEW) ===== */
+  let _reminderAnchor = null;
+  function ensureReminderPopover(){
+    let el = document.getElementById('reminderPopover');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'reminderPopover';
+    el.className = 'reminder-popover';
+    el.innerHTML = `
+      <div class="tiny" style="margin-bottom:6px">Notify me at:</div>
+      <input id="rpTime" type="time" />
+      <div class="btns">
+        <button id="rpRemove" class="ghost">Remove</button>
+        <button id="rpSave" class="primary">Save</button>
+      </div>`;
+    document.body.appendChild(el);
+    // Wire actions
+    el.querySelector('#rpSave').addEventListener('click', ()=>{
+      const id = el.getAttribute('data-task-id');
+      const t = state.tasks.find(x=>x.id===id);
+      if(!t) return closeReminderPopover();
+      const hhmm = (document.getElementById('rpTime').value || '').trim();
+      if(!/^\d{2}:\d{2}$/.test(hhmm)){ alert('Pick a time'); return; }
+      t.important = true;
+      t.notifyTime = hhmm;
+      t.notifyAt = combineYmdTimeLocal(t.date, hhmm).toISOString();
+      save();
+      closeReminderPopover();
+    });
+    el.querySelector('#rpRemove').addEventListener('click', ()=>{
+      const id = el.getAttribute('data-task-id');
+      const t = state.tasks.find(x=>x.id===id);
+      if(!t) return closeReminderPopover();
+      t.important = false;
+      delete t.notifyTime;
+      delete t.notifyAt;
+      save();
+      closeReminderPopover();
+    });
+    return el;
+  }
+  function closeReminderPopover(){
+    const el = document.getElementById('reminderPopover');
+    if(!el) return;
+    el.classList.remove('open');
+    el.removeAttribute('data-task-id');
+    _reminderAnchor = null;
+  }
+  function openReminderPopover(anchor, taskId){
+    const el = ensureReminderPopover();
+    _reminderAnchor = anchor;
+    const t = state.tasks.find(x=>x.id===taskId);
+    el.setAttribute('data-task-id', taskId);
+    // Prefill current time if any
+    const inp = document.getElementById('rpTime');
+    inp.value = (t?.notifyTime || '');
+
+    // Position
+    const r = anchor.getBoundingClientRect();
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    let left = r.left;
+    if (left + 240 > vw - 8) left = Math.max(8, vw - 248);
+    const top = r.bottom + 6;
+    el.style.left = `${left}px`;
+    el.style.top  = `${top}px`;
+    el.classList.add('open');
+    setTimeout(()=> inp.focus(), 10);
+  }
+  document.addEventListener('click', (e)=>{
+    const el = document.getElementById('reminderPopover');
+    if(!el || !el.classList.contains('open')) return;
+    const inside = e.target.closest('#reminderPopover') || e.target.closest('[data-bell]');
+    if(!inside) closeReminderPopover();
+  });
+
   // Delete + bell
   $('#agenda').addEventListener('click', (e)=>{
     const del = e.target.closest('[data-del]');
@@ -1322,15 +1411,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const bell = e.target.closest('[data-bell]');
     if (bell) {
       const id = bell.getAttribute('data-bell');
-      const t = state.tasks.find(x => x.id === id);
-      if (!t) return;
-      t.important = !t.important;
-      if (t.important && t.date === fmt(today()) && !t.notifyTime) {
-        const now = new Date();
-        t.notifyTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-        t.notifyAt = now.toISOString();
-      }
-      save();
+      openReminderPopover(bell, id);
+      return;
     }
   });
 
@@ -1722,6 +1804,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const tag = (document.activeElement || {}).tagName?.toLowerCase();
       if (tag==='textarea' || tag==='input' || tag==='select'){ e.preventDefault(); saveTaskFromModal(); }
     }
+    /* ✂️ NEW: Esc closes Add Customer modal too */
+    const addOpen = $('#addModal')?.classList.contains('open');
+    if (addOpen && e.key==='Escape'){ e.preventDefault(); closeModal('addModal','addCard'); }
+    /* Close reminder popover on Esc */
+    if (e.key==='Escape'){ closeReminderPopover(); }
   });
   $('#ctNotes')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); saveTaskFromModal(); } });
   $('#ctType')?.addEventListener('change', ()=>{
