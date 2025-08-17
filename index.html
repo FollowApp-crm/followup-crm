@@ -1,15 +1,16 @@
-v <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Follow-Up CRM — Standalone</title>
+<!-- Checkmark favicon -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
 /* ===== Lead paste block (textarea + side buttons) ===== */
-  .lead-block{ display:block; margin-bottom:10px; }
-  .lead-actions{ display:none; }
-  @media (max-width:760px){ .lead-block{ display:block; } }
+.lead-block{ display:block; margin-bottom:10px; }
+.lead-actions{ display:none; }
+@media (max-width:760px){ .lead-block{ display:block; } }
 
 /* Bottom-right action buttons on the form */
 .form-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; }
@@ -61,6 +62,8 @@ header{
   border-bottom:1px solid var(--line);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding-top:env(safe-area-inset-top);
+  overflow:hidden;           /* iOS artifact fix */
+  contain:paint;             /* iOS artifact fix */
 }
 header .wrap{ padding-top:8px; padding-bottom:8px; }
 body.light header{
@@ -158,7 +161,13 @@ body.modal-open{ overflow:hidden; }
 /* Toolbar & pills */
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .space{flex:1}
-.toggle{height:34px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130); color:var(--ink)}
+/* More polished theme toggle (looks good on iOS) */
+.toggle{
+  height:34px; padding:6px 14px; border-radius:999px; font-size:13px;
+  border:1px solid #2b3346; background:linear-gradient(180deg,#2c2f44,#1b2130);
+  color:var(--ink); display:inline-flex; align-items:center; justify-content:center;
+  gap:8px; font-weight:600; line-height:1;
+}
 body.light .toggle{ background:#fff; border-color:#d9e1f1 }
 
 .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; font-size:12px; color:#b6bfd6}
@@ -185,40 +194,7 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(.95) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
-  
-/* Wipe All — soft danger card look (a bit bolder) */
-#wipeAll{
-  background: linear-gradient(180deg, rgba(217,74,74,.20), rgba(217,74,74,.12)) !important;
-  border-color: #b94a4a !important;
-  color: #ffd6d6 !important;
-  font-weight: 700;
-  border-radius: 14px;
-  height: 42px;
-  padding: 0 14px;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.03),
-    0 10px 26px rgba(217,74,74,.18);
-}
-#wipeAll:hover{
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.05),
-    0 12px 32px rgba(217,74,74,.28);
-}
-#wipeAll:active{ transform: translateY(0); }
-#wipeAll:focus{ box-shadow: 0 0 0 3px var(--danger-ring) !important; }
 
-/* Light theme tune */
-body.light #wipeAll{
-  background: linear-gradient(180deg, #ffe9ea, #ffe1e2) !important;
-  color: #b43b3b !important;
-  border-color: #f0b4b4 !important;
-  box-shadow:
-    inset 0 0 0 1px #ffe5e5,
-    0 10px 24px rgba(217,74,74,.18);
-}
-
-  
 /* Segmented control (sort) */
 .seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
 .seg > button{ background: transparent !important; border:0; color: var(--ink); height:32px; padding:0 12px; border-radius:8px; }
@@ -385,6 +361,14 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
+
+  /* Header controls wrap nicely */
+  .card .hd{ flex-wrap: wrap; }
+  #search{ flex:1 1 180px; min-width:140px }
+  #statusFilter{ flex:0 0 auto; max-width:140px; margin-left:6px }
+
+  /* Stack Agenda over Calendar on phones */
+  .agenda-layout{ grid-template-columns:1fr; }
 }
 
 /* =================== SCROLLBARS =================== */
@@ -420,6 +404,28 @@ body.light { color-scheme: light; } /* override in light mode */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
 }
+
+/* === Wipe All button: pastel, bolder aesthetic === */
+#wipeAll{
+  height:38px; padding:8px 14px; border-radius:14px;
+  background:linear-gradient(180deg, rgba(255,80,80,.10), rgba(255,80,80,.06));
+  border:2px solid rgba(255,120,120,.55);
+  color:#e8b3b3; font-weight:700;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,120,120,.25),
+    0 6px 18px rgba(217,74,74,.15);
+}
+#wipeAll:hover{
+  background:linear-gradient(180deg, rgba(255,80,80,.16), rgba(255,80,80,.10));
+}
+body.light #wipeAll{
+  color:#a23b3b;
+  background:linear-gradient(180deg, #ffe9e9, #ffeef0);
+  border-color:#ffc9c9;
+  box-shadow:
+    inset 0 0 0 1px #ffdcdc,
+    0 6px 18px rgba(217,74,74,.12);
+}
 </style>
 </head>
 <body>
@@ -448,7 +454,7 @@ body.light { color-scheme: light; } /* override in light mode */
         <div class="lead-block highlight">
           <div>
             <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
-<textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…" autofocus></textarea>
+            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…" autofocus></textarea>
           </div>
         </div>
 
@@ -754,13 +760,16 @@ body.light { color-scheme: light; } /* override in light mode */
       toast('Parsed from paste. Review & save.');
     });
   });
-// Press Enter (without Shift) in the paste box to save the customer
-leadBlobEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    document.getElementById('saveCustomer')?.click();
-  }
-});
+  // Press Enter in the paste box to parse + save (Shift+Enter = newline)
+  leadBlobEl.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      if ((leadBlobEl.value || '').trim()){
+        parseBlob({ onlyFillEmpty:false });
+      }
+      document.getElementById('saveCustomer')?.click();
+    }
+  });
 
   function flashAgendaDate(){
     const el = document.getElementById('agendaDate');
@@ -865,7 +874,13 @@ leadBlobEl.addEventListener('keydown', (e) => {
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
     document.body.classList.add('modal-open');
-    setTimeout(()=>{ try{ document.getElementById('leadBlob').focus(); }catch(_){} }, 50);
+    setTimeout(()=>{        // focus the paste blob by default
+      try{
+        const lbEl = document.getElementById('leadBlob');
+        lbEl.focus();
+        lbEl.select();
+      }catch(_){}
+    }, 60);
   }
   function initAddModal(){
     const card = document.getElementById('addCard');
