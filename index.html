@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Follow-Up CRM — Standalone</title>
 
-<!-- ✅ Checkmark favicon -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 
 <style>
@@ -79,7 +78,7 @@ h1{font-size:20px; margin:4px 0 0; font-weight:800; line-height:1.1}
 .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,.25);} 
 .card .hd{
   padding:12px 14px; border-bottom:1px solid var(--line);
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;  /* wraps on small screens */
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
 }
 .card .bd{padding:12px}
 
@@ -182,7 +181,7 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger — soft “card-like” look */
+/* Btn danger */
 .btn-danger{
   background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
   border:1.5px solid #a55c5c !important;
@@ -194,7 +193,7 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
-/* Segmented control (sort) */
+/* Segmented control */
 .seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
 .seg > button{ background: transparent !important; border:0; color: var(--ink); height:32px; padding:0 12px; border-radius:8px; }
 .seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
@@ -214,13 +213,13 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
 .row.single{grid-template-columns:1fr}
 .right{display:flex; gap:8px; justify-content:flex-end}
 
-/* === Agenda wider / Calendar narrower (desktop) === */
+/* Agenda wider / Calendar narrower */
 .row.agenda-layout{
-  grid-template-columns: minmax(0, 2.6fr) minmax(340px, 1fr); /* wider agenda, compact calendar */
+  grid-template-columns: minmax(0, 2.6fr) minmax(340px, 1fr);
   gap:16px; align-items:start;
 }
 
-/* Compact calendar look */
+/* Calendar compact look */
 #calendarCard .bd{ padding:12px; }
 #calendarGrid{ gap:4px; }
 .cal-cell{ min-height:56px; padding:6px; }
@@ -248,16 +247,18 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .tbl th{color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
-.actions{display:flex; gap:6px; justify-content:flex-end; align-items:center}
 
-/* 🔧 Column sizing & alignment fix */
-#clientsTbl th:nth-child(1), #clientsTbl td:nth-child(1){ width:26%; }
-#clientsTbl th:nth-child(2), #clientsTbl td:nth-child(2){ width:28%; }
-#clientsTbl th:nth-child(3), #clientsTbl td:nth-child(3){ width:12%; text-align:center; }
-#clientsTbl th:nth-child(4), #clientsTbl td:nth-child(4){ width:14%; text-align:center; }
-#clientsTbl th:nth-child(5), #clientsTbl td:nth-child(5){ width:20%; }
-#clientsTbl td.actions{ text-align:right; }
-#clientsTbl .actions{ justify-content:flex-end; }
+/* Actions cell — fixed, aligned, no wrapping */
+#clientsTbl .actions{ display:flex; gap:6px; justify-content:flex-end; align-items:center; flex-wrap:nowrap; }
+#clientsTbl .actions .btn-icon{ flex:0 0 32px; }
+#clientsTbl td.actions{ white-space:nowrap; }
+
+/* Lock widths with colgroup for consistent alignment */
+#clientsTbl col.col-name{ width:26%; }
+#clientsTbl col.col-contact{ width:32%; }
+#clientsTbl col.col-status{ width:12%; }
+#clientsTbl col.col-next{ width:14%; }
+#clientsTbl col.col-actions{ width:16%; }
 
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
@@ -298,34 +299,13 @@ body.light #calSettings{ background:#fff }
 
 /* Calendar settings layout */
 #calSettings{ max-width:100%; }
-.wdays{
-  display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr));
-  gap:10px;
-  margin-top:8px;
-}
-.wdays .cell{
-  border:1px dashed var(--line);
-  border-radius:12px;
-  padding:10px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  min-height:72px;
-}
+.wdays{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:10px; margin-top:8px; }
+.wdays .cell{ border:1px dashed var(--line); border-radius:12px; padding:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:72px; }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; }
 
-/* >>> Date-specific overrides row (flex instead of grid) <<< */
-.ovr{
-  margin-top:14px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
+/* Overrides row */
+.ovr{ margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 #calSettings .ovr input, #calSettings .ovr select{ height:34px; }
 #ovrDate{ min-width:170px; }
 #ovrType{ min-width:180px; }
@@ -357,7 +337,7 @@ body.light .button-chip{ background:#f1f4ff; }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
+  .row{grid-template-columns:1fr !important;}
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -392,24 +372,14 @@ body.light{
 *::-webkit-scrollbar-thumb:hover{  background: var(--sb-thumb-hover); }
 *::-webkit-scrollbar-thumb:active{ background: var(--sb-thumb-active); }
 *::-webkit-scrollbar-corner{ background: transparent; }
-.customers-scroll::-webkit-scrollbar-track{
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--sb-radius);
-}
-/* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }        /* default app theme */
-body.light { color-scheme: light; } /* override in light mode */
-/* Checkbox polish */
-.agenda-item input[type="checkbox"], input[type="checkbox"]{
-  width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
-}
 
-/* Bell button hover */
+/* Theme hints for form controls */
+body { color-scheme: dark; }
+body.light { color-scheme: light; }
+
+/* Bell button hover + little time chip */
 button[data-bell].btn-icon { transition: filter .15s ease; }
 button[data-bell].btn-icon:hover { filter: brightness(1.1); }
-
-/* 🔔 Reminder popover */
 .reminder-popover{
   position:fixed; display:none; width:240px;
   background:var(--panel); border:1px solid var(--line); border-radius:12px;
@@ -418,8 +388,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 .reminder-popover.open{ display:block; }
 .reminder-popover .btns{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
 .reminder-popover input[type="time"]{ height:34px; }
-
-/* Small time chip next to bell */
 .bell-time{
   display:inline-block; margin:0 6px 0 8px; padding:2px 6px;
   border:1px solid var(--line); border-radius:999px; font-size:11px;
@@ -564,7 +532,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
           </div>
         </div>
 
-        <!-- Notes above the Save/Time row (per request) -->
         <div class="row single">
           <div>
             <label>Notes (optional)</label>
@@ -572,7 +539,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
           </div>
         </div>
 
-        <!-- Time + Notify + Clear + Save in one row -->
         <div class="row single">
           <div class="inline-controls">
             <label class="button-chip">Notify @</label>
@@ -612,13 +578,20 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 
         <div class="mt16 customers-scroll" style="margin-top:12px; overflow-x:auto; max-height:50vh; overflow-y:auto;">
           <table class="tbl" id="clientsTbl">
+            <colgroup>
+              <col class="col-name" />
+              <col class="col-contact" />
+              <col class="col-status" />
+              <col class="col-next" />
+              <col class="col-actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Status</th>
                 <th>Next Action Date</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -743,7 +716,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 (function(){
   'use strict';
 
-  /* ========= Helpers ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const storeKey  = 'followup_crm_v21';
@@ -751,7 +723,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const SORT_KEY  = 'followup_crm_sort';
   const LEAD_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
 
-  // Instant parse on paste into the lead blob
+  // Parse on paste
   const leadBlobEl = document.getElementById('leadBlob');
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
@@ -761,7 +733,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       toast('Parsed from paste. Review & save.');
     });
   });
-  // ⏎ to save directly from the blob box (no Shift)
   leadBlobEl.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter' && !e.shiftKey){
       const has = (leadBlobEl.value || '').trim();
@@ -772,49 +743,12 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     }
   });
 
-  function flashAgendaDate(){
-    const el = document.getElementById('agendaDate');
-    if(!el) return;
-    el.classList.remove('glow');
-    void el.offsetWidth;
-    el.classList.add('glow');
-    clearTimeout(flashAgendaDate._t);
-    flashAgendaDate._t = setTimeout(()=> el.classList.remove('glow'), 950);
-  }
-
   function uid(){ return 'id'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
   function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
   function addDays(date, n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
   function fmt(d){ if(!(d instanceof Date)) d=new Date(d); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
   function parseLocalYMD(ymd){ if(!ymd) return today(); const [y,m,d]=ymd.split('-').map(Number); const dt=new Date(y,(m||1)-1,d||1); dt.setHours(0,0,0,0); return dt; }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
-
-  // Copy helper
-  function copyTextToClipboard(text, what='value'){
-    if(!text) return;
-    const done = () => toast(`Copied ${what}`, 'ok', 900);
-    try{
-      if (navigator.clipboard?.writeText){
-        navigator.clipboard.writeText(text).then(done).catch(()=>{
-          const ta=document.createElement('textarea');
-          ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
-          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
-        });
-      }else{
-        const ta=document.createElement('textarea');
-        ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
-      }
-    }catch(_){}
-  }
-  document.addEventListener('click', e=>{
-    const btn = e.target.closest('[data-copy]');
-    if(!btn) return;
-    const text = btn.getAttribute('data-copy') || '';
-    const what = btn.getAttribute('data-what') || 'value';
-    copyTextToClipboard(text, what);
-  });
 
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
@@ -861,7 +795,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true }, /* Fri+Sat default OFF */
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true },
         moveOffDays: true,
         overrides: {}
       }
@@ -877,7 +811,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const state = load();
   function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
 
-  /* ========= Working days ========= */
+  /* ========= Working days helpers ========= */
   function weekdayIndex(dt){ const js=dt.getDay(); return (js+6)%7; } // Mon=0
   function isWorkingDay(dt){
     const ymd = fmt(dt);
@@ -924,7 +858,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
-    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?)";
     const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
     let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
     if(!dates){
@@ -936,15 +870,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID (4–9 digits not part of phone/date/pax)
+    // Lead ID (4–9 digits)
     let leadId = '';
     try{
-      const phoneDigits = (phone || '').replace(/\D/g,'');
-      const paxDigits   = (pax   || '').replace(/\D/g,'');
       const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
       for(const cand of idCandidates){
-        if (cand === paxDigits) continue;
-        if (phoneDigits && phoneDigits.includes(cand)) continue;
         if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
         leadId = cand; break;
       }
@@ -953,7 +883,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     return { name, email, phone, route, dates, pax, leadId, notes:'' };
   }
 
-  /* ========= Contact link helpers ========= */
+  /* ========= Contact links ========= */
   const CALL_LINK_MODE = 'tel';
   const EMAIL_MODE     = 'gmail';
   function phoneHref(num){
@@ -966,7 +896,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
-  /* Only FIRST name in SMS template */
   function defaultSmsContent(c){
     const first = ((c?.name||'').trim().split(/\s+/)[0]||'').trim();
     return `Hello${first ? ' ' + first : ''} — following up.`;
@@ -1039,7 +968,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
   function deleteTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); save(); }
 
-  // Full regeneration per settings/override change
   function regenerateAutoOpenTasksFromAnchors(){
     const from = fmt(today());
     state.tasks = state.tasks.filter(t => !(t.source==='auto' && t.status!=='done' && t.date >= from));
@@ -1067,14 +995,18 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
-        const leadChip = c.leadId
-          ? `<span class="pill">Lead:&nbsp;<a href="${LEAD_BASE + encodeURIComponent(String(c.leadId))}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>`
-          : '';
+
+        const leadInContact = c.leadId ? `
+          <div class="tiny mono" style="margin-top:4px">
+            <a href="${LEAD_BASE + encodeURIComponent(String(c.leadId))}" target="_blank" rel="noopener">Lead #${escapeHtml(String(c.leadId))}</a>
+            <button class="copy-btn" data-copy="${escapeHtml(String(c.leadId))}" data-what="lead id" title="Copy lead ID" aria-label="Copy lead ID">⧉</button>
+          </div>` : '';
 
         const contactHtml = `
            ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
            <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}
+          ${leadInContact}`;
 
         tr.innerHTML = `
           <td data-label="Name">
@@ -1087,7 +1019,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
           <td data-label="Status" style="text-align:center"><span class="badge">${c.status}</span></td>
           <td data-label="Next Action" style="text-align:center">${nextActionDateForClient(c.id)}</td>
           <td data-label="Actions" class="actions">
-            ${leadChip}
             <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
             <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
             <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
@@ -1219,7 +1150,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // default By client
+  let sortMode = localStorage.getItem(SORT_KEY) || 'client';
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1313,10 +1244,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     }
   }
 
+  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
   function buildAgenda(date){
     const f = fmt(date);
     const cont = $('#agenda');
-    const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
+    const items = state.tasks.filter(t=> t.date===f && (!agendaFilter || (t.clientName||'').toLowerCase().includes(agendaFilter))).sort(sortTasksForMode);
     cont.innerHTML = '';
     if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
     if (sortMode === 'client') renderGroupedByClient(cont, items);
@@ -1329,7 +1261,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const days = Math.ceil((to-from)/86400000)+1;
     for(let i=0;i<days;i++){
       const d = addDays(from,i), f = fmt(d);
-      const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
+      const items = state.tasks.filter(t=> t.date===f && (!agendaFilter || (t.clientName||'').toLowerCase().includes(agendaFilter))).sort(sortTasksForMode);
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
       if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
@@ -1350,6 +1282,12 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   }
 
   /* ===== Reminder popover ===== */
+  function combineYmdTimeLocal(ymd, hhmm){
+    const [y,m,d] = (ymd||'').split('-').map(Number);
+    let H=9, M=0;
+    if (hhmm && /^\d{2}:\d{2}$/.test(hhmm)) { [H,M] = hhmm.split(':').map(Number); }
+    return new Date(y, (m||1)-1, d||1, H, M, 0, 0);
+  }
   let _reminderAnchor = null;
   function ensureReminderPopover(){
     let el = document.getElementById('reminderPopover');
@@ -1365,7 +1303,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         <button id="rpSave" class="primary">Save</button>
       </div>`;
     document.body.appendChild(el);
-    // Wire actions
     el.querySelector('#rpSave').addEventListener('click', ()=>{
       const id = el.getAttribute('data-task-id');
       const t = state.tasks.find(x=>x.id===id);
@@ -1402,10 +1339,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     _reminderAnchor = anchor;
     const t = state.tasks.find(x=>x.id===taskId);
     el.setAttribute('data-task-id', taskId);
-    // Prefill current time if any
     const inp = document.getElementById('rpTime');
     inp.value = (t?.notifyTime || '');
-    // Position
     const r = anchor.getBoundingClientRect();
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     let left = r.left;
@@ -1440,7 +1375,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   });
 
   // Agenda controls
-  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
   function setSortButtons(){
     $('#sortClient').classList.toggle('primary',  sortMode === 'client');
     $('#sortType').classList.toggle('primary',    sortMode === 'type');
@@ -1457,11 +1391,10 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
   $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-  $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
-  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
-  setSortButtons();
+  $('#agendaFilter').addEventListener('input', ()=>{ agendaFilter = ($('#agendaFilter').value||'').toLowerCase(); renderAgenda(); buildCalendar(); });
+  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; agendaFilter=''; renderAgenda(); buildCalendar(); });
 
-  /* ========= Batch Emails for Unreached today ========= */
+  /* ========= Batch Emails ========= */
   function emailTemplateFor(t, client){
     if((t.label||'').startsWith('Unreached Day 1')) return {subject:'Welcome — next steps', body:`Hi ${client?.name||''},\n\nGreat to connect. Here’s the info we discussed…\n\nBest,\n`};
     return { subject:'Quick follow-up', body:`Hi ${client?.name||''},\n\nJust checking in on …\n\nBest,\n` };
@@ -1517,12 +1450,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     try { o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); } catch(e){}
     o[f] = Array.from(set);
     localStorage.setItem(NOTIFY_KEY, JSON.stringify(o));
-  }
-  function combineYmdTimeLocal(ymd, hhmm){
-    const [y,m,d] = (ymd||'').split('-').map(Number);
-    let H=9, M=0;
-    if (hhmm && /^\d{2}:\d{2}$/.test(hhmm)) { [H,M] = hhmm.split(':').map(Number); }
-    return new Date(y, (m||1)-1, d||1, H, M, 0, 0);
   }
   function notifyEligibleTodayImportant(now=new Date()){
     const f = fmtToday();
@@ -1605,7 +1532,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       cell.addEventListener('click', ()=>{
         $('#agendaDate').value = ymd;
         $('#agendaDate').dispatchEvent(new Event('change'));
-        flashAgendaDate();
         const target = document.getElementById('actionsCard');
         if (target?.scrollIntoView){ target.scrollIntoView({ behavior:'smooth', block:'start' }); }
         else { window.scrollTo({ top: $('#actionsCard').offsetTop - 70, behavior:'smooth' }); }
@@ -1788,10 +1714,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     $('#ctImportant').checked = false;
     $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
   }
-  function closeTaskModal(){
-    clearTaskForm();
-    closeModal('taskModal','taskCard');
-  }
+  function closeTaskModal(){ clearTaskForm(); closeModal('taskModal','taskCard'); }
   function saveTaskFromModal(){
     const clientId = $('#ctClient').value || null;
     const c = clientId ? clientById(clientId) : null;
@@ -1814,12 +1737,10 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     toast('Task added');
     closeTaskModal();
   }
-  // Modal events
   $('#openTask')?.addEventListener('click', openTaskModal);
   $('#ctSave')?.addEventListener('click', saveTaskFromModal);
   $('#ctClear')?.addEventListener('click', clearTaskForm);
   $('#ctClose')?.addEventListener('click', closeTaskModal);
-  // Esc closes, Enter saves (Notes: Enter saves; Shift+Enter = newline)
   document.addEventListener('keydown', (e)=>{
     const taskOpen = $('#taskModal')?.classList.contains('open');
     if (taskOpen && e.key==='Escape'){ e.preventDefault(); closeTaskModal(); }
@@ -1827,10 +1748,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const tag = (document.activeElement || {}).tagName?.toLowerCase();
       if (tag==='textarea' || tag==='input' || tag==='select'){ e.preventDefault(); saveTaskFromModal(); }
     }
-    /* Esc closes Add Customer modal too */
     const addOpen = $('#addModal')?.classList.contains('open');
     if (addOpen && e.key==='Escape'){ e.preventDefault(); closeModal('addModal','addCard'); }
-    /* Close reminder popover on Esc */
     if (e.key==='Escape'){ closeReminderPopover(); }
   });
   $('#ctNotes')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); saveTaskFromModal(); } });
@@ -1866,12 +1785,12 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 
   /* ========= Bootstrap ========= */
   function bootstrap(){
-    // mount modals
     makeModalFromCard('addCard','addModal');
     makeModalFromCard('taskCard','taskModal');
-    // wire Add customer triggers
     $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
     $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
+    setSortButtons();      /* ensure initial sort UI state */
+    setAgendaMode('today');
     refresh(); buildCalendar();
   }
   bootstrap();
