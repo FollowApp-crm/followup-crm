@@ -245,13 +245,18 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .tbl{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
 
 /* Head keeps its bottom border */
-.tbl th{padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:middle; color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
+.tbl th{
+  padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px;
+  vertical-align:middle; color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel);
+  z-index:2; /* keep above rows while scrolling */
+}
 
 /* Cells no longer draw their own bottoms; we draw one continuous separator per row */
 .tbl td{padding:10px; border-bottom:0; text-align:left; font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tbl tbody tr{ position:relative; }
 .tbl tbody tr::after{
   content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--line);
+  pointer-events: none; /* let clicks through */
 }
 /* keep note/manual expanded rows clean (no double lines) */
 .tbl tbody tr.note-row::after,
@@ -260,17 +265,21 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .note-preview:hover{text-decoration:underline}
 
-/* Actions cell — fixed, aligned, no wrapping */
-#clientsTbl .actions{ display:flex; gap:6px; justify-content:flex-end; align-items:center; flex-wrap:nowrap; }
-#clientsTbl .actions .btn-icon{ flex:0 0 32px; }
-#clientsTbl td.actions{ white-space:nowrap; }
+/* Actions column: give it room, center vertically, and don't clip icons */
+#clientsTbl td.actions{
+  text-align: right;
+  vertical-align: middle;
+  overflow: visible;          /* show the left-most (Notes) icon */
+  white-space: nowrap;
+}
+#clientsTbl td.actions .btn-icon{ margin-left: 6px; }
 
 /* Lock widths with colgroup for consistent alignment */
 #clientsTbl col.col-name{ width:26%; }
 #clientsTbl col.col-contact{ width:32%; }
 #clientsTbl col.col-status{ width:12%; }
 #clientsTbl col.col-next{ width:14%; }
-#clientsTbl col.col-actions{ width:16%; }
+#clientsTbl col.col-actions{ width:210px; } /* ~5 icons + padding */
 
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
@@ -405,6 +414,25 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   border:1px solid var(--line); border-radius:999px; font-size:11px;
   background:var(--chip);
 }
+
+/* ===== Bulk import ===== */
+.bulk { margin:10px 0; }
+.bulk-head{
+  font-size:12px; opacity:.8; display:grid;
+  grid-template-columns:24px 1.2fr 1.6fr 1fr 1fr .6fr .7fr;
+  gap:8px; padding:0 8px;
+}
+.bulk-list{ display:grid; gap:8px; max-height:360px; overflow:auto; margin-top:8px; }
+.bulk-item{
+  display:grid; grid-template-columns:24px 1.2fr 1.6fr 1fr 1fr .6fr .7fr;
+  align-items:center; gap:8px; padding:8px;
+  border:1px solid var(--line); background:var(--surface); border-radius:10px;
+}
+.bulk-item .mono{ font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width:760px){
+  .bulk-item, .bulk-head{ grid-template-columns:24px 1fr; }
+  .bulk-head{ display:none; }
+}
 </style>
 </head>
 <body>
@@ -432,9 +460,30 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       <div class="bd">
         <div class="lead-block highlight">
           <div>
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID). Paste multiple to bulk-import.</label>
             <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
+        </div>
+
+        <!-- Bulk import panel (auto-shown when multiple leads are detected) -->
+        <div id="bulkImport" class="bulk slab" style="display:none">
+          <div class="flex-row">
+            <strong>Parsed multiple leads</strong>
+            <span id="bulkCountPill" class="pill">0 selected</span>
+            <span class="space"></span>
+            <label>Status
+              <select id="bulkStatus" style="height:34px">
+                <option value="unreached">Unreached</option>
+                <option value="reached">Reached</option>
+              </select>
+            </label>
+            <button id="bulkAdd" class="primary">Add selected</button>
+            <button id="bulkCancel" class="ghost">Cancel</button>
+          </div>
+          <div class="bulk-head">
+            <div></div><div>Name</div><div>Email</div><div>Phone</div><div>Route</div><div>Pax</div><div>Lead ID</div>
+          </div>
+          <div id="bulkList" class="bulk-list"></div>
         </div>
 
         <form id="clientForm" novalidate>
@@ -743,14 +792,23 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const SORT_KEY  = 'followup_crm_sort';
   const LEAD_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
 
-  // Parse on paste
+  // ===== Bulk import state =====
+  const bulk = { items: [], selected: new Set() };
+
+  // Parse on paste (supports multi-lead)
   const leadBlobEl = document.getElementById('leadBlob');
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
       if (!has) return;
-      parseBlob({ onlyFillEmpty: false });
-      toast('Parsed from paste. Review & save.');
+      const many = parseMultipleLeads(has);
+      if (many.length > 1){
+        showBulkImport(many);
+        toast(`Parsed ${many.length} leads. Review & add.`);
+      } else {
+        parseBlob({ onlyFillEmpty: false });
+        toast('Parsed from paste. Review & save.');
+      }
     });
   });
   leadBlobEl.addEventListener('keydown', (e)=>{
@@ -758,6 +816,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const has = (leadBlobEl.value || '').trim();
       if(!has) return;
       e.preventDefault();
+      const many = parseMultipleLeads(has);
+      if (many.length > 1){
+        showBulkImport(many);
+        return;
+      }
       parseBlob({ onlyFillEmpty:true });
       document.getElementById('saveCustomer').click();
     }
@@ -903,6 +966,33 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     return { name, email, phone, route, dates, pax, leadId, notes:'' };
   }
 
+  // Split blob into multiple likely leads & parse each
+  function parseMultipleLeads(text){
+    const norm = (text||'').replace(/\r/g,'\n').trim();
+    if (!norm) return [];
+    // Primary split: each time a line starts with "new ..."
+    let parts = norm.split(/\n(?=new\b)/i);
+    // Fallback: big chunks separated by blank lines
+    if (parts.length <= 1) parts = norm.split(/\n{2,}/g);
+    // Expand nested "new" starts inside chunks
+    const exploded = [];
+    parts.forEach(p=> exploded.push(...p.split(/\n(?=new\b)/i)));
+    const trimmed = exploded.map(s=>s.trim()).filter(Boolean);
+
+    const seen = new Set();
+    const items = [];
+    for(const chunk of trimmed){
+      const p = parseLeadBlob(chunk);
+      const key = (p.email||'').toLowerCase() || p.phone || p.leadId || p.name;
+      const hasAny = (p.name||p.email||p.phone||p.leadId);
+      if (!hasAny) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(p);
+    }
+    return items;
+  }
+
   /* ========= Contact links ========= */
   const CALL_LINK_MODE = 'tel';
   const EMAIL_MODE     = 'gmail';
@@ -935,7 +1025,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     t.status = t.status || 'open';
     const exists = state.tasks.some(x =>
       x.clientId===t.clientId && x.date===t.date && x.type===t.type &&
-      (x.title||'')===(t.title||'') && (x.source||'')===(t.source||''));
+      (x.title||'')===(t.title||'') && (x.source||'')===(t.source||'')); 
     if(!exists) state.tasks.push(t);
   }
 
@@ -1070,18 +1160,45 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     row.appendChild(td); tr.after(row);
   }
 
+  // ===== Customers table click handler (with copy + any [data-act]) =====
   $('#clientsTbl').addEventListener('click', e=>{
-    const btn = e.target.closest('button[data-act]'); if(!btn) return;
-    const id = btn.getAttribute('data-id');
-    const act = btn.getAttribute('data-act');
-    const c = clientById(id);
+    // 1) Copy buttons anywhere inside the table
+    const copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn){
+      const text = copyBtn.getAttribute('data-copy') || '';
+      const what = copyBtn.getAttribute('data-what') || 'text';
+      const fallbackCopy = () => {
+        try{
+          const ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy'); ta.remove();
+          toast(`Copied ${what}`);
+        }catch(_){ alert('Copy failed'); }
+      };
+      if (navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(()=>toast(`Copied ${what}`)).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      return;
+    }
+
+    // 2) Handle any element with [data-act] (not just buttons)
+    const el  = e.target.closest('[data-act]');
+    if(!el) return;
+
+    const id  = el.getAttribute('data-id');
+    const act = el.getAttribute('data-act');
+    const c   = clientById(id);
 
     if(act==='note'){ toggleNotesRow(id); return; }
+
     if(act==='manual'){
       const open = document.querySelector(`.manual-row[data-for="${id}"]`);
       if(open){ $$('.manual-row').forEach(n=>n.remove()); return; }
       openManualRow(id); return;
     }
+
     if(act==='manual-apply'){
       const date = document.getElementById(`manualDate_${id}`)?.value || '';
       const shouldClear = document.getElementById(`manualClear_${id}`)?.checked ?? true;
@@ -1090,10 +1207,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       scheduleManualFU(c, date, shouldClear, notes, rmPrev);
       $$('.manual-row').forEach(n=>n.remove()); return;
     }
+
     if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
 
     if (act==='edit'){
-      if(!c){ return; }
+      if(!c) return;
       $('#clientId').value = c.id;
       $('#name').value  = c.name  || '';
       $('#email').value = c.email || '';
@@ -1114,15 +1232,14 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       c.status = c.status === 'unreached' ? 'reached' : 'unreached';
       if(c.status === 'reached'){
         c.reachedStart = fmt(today());
-        clearFutureTasksForClientFrom(c.id, today());
-        scheduleReached(c);
+        clearFutureTasksForClientFrom(c.id, today()); scheduleReached(c);
       }else{
         c.startDate = fmt(today());
-        clearFutureTasksForClientFrom(c.id, today());
-        scheduleUnreached(c);
+        clearFutureTasksForClientFrom(c.id, today()); scheduleUnreached(c);
       }
       save(); return;
     }
+
     if(act==='del'){
       if(confirm('Delete this customer and all their tasks?')){
         state.clients = state.clients.filter(x=>x.id!==id);
@@ -1130,6 +1247,27 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         save();
       }
       return;
+    }
+  });
+
+  // Optional global copy buttons (also works in Agenda)
+  document.addEventListener('click', (e)=>{
+    const copyBtn = e.target.closest('.copy-btn');
+    if (!copyBtn) return;
+    const text = copyBtn.getAttribute('data-copy') || '';
+    const what = copyBtn.getAttribute('data-what') || 'text';
+    const fallbackCopy = () => {
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); ta.remove();
+        toast(`Copied ${what}`);
+      }catch(_){ alert('Copy failed'); }
+    };
+    if (navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(()=>toast(`Copied ${what}`)).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
     }
   });
 
@@ -1544,9 +1682,19 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     function tick(){
       if (!notifSupported() || Notification.permission!=='granted') return;
       const due = notifyEligibleTodayImportant();
+      let changed = false;
       due.forEach(t => {
-        if (!notified.has(t.id)){ notifyTask(t); notified.add(t.id); }
+        if (!notified.has(t.id)){
+          notifyTask(t);
+          notified.add(t.id);
+          // Clear reminder once it fires: flip bell to 🔕 and remove time pill
+          t.important = false;
+          delete t.notifyTime;
+          delete t.notifyAt;
+          changed = true;
+        }
       });
+      if (changed) save();
       saveNotifiedSet(notified);
     }
     tick(); setInterval(tick, 60*1000); window.addEventListener('focus', tick);
@@ -1725,6 +1873,76 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     }
   });
 
+  /* ===== Bulk import UI ===== */
+  function showBulkImport(items){
+    bulk.items = items.slice();
+    bulk.selected = new Set(items.map((_,i)=>String(i)));
+    $('#bulkList').innerHTML = items.map((p, i)=>`
+      <div class="bulk-item">
+        <input type="checkbox" class="bulk-check" data-idx="${i}" checked>
+        <div class="mono"><strong>${escapeHtml(p.name||'-')}</strong></div>
+        <div class="mono">${escapeHtml(p.email||'-')}</div>
+        <div class="mono">${escapeHtml(p.phone||'-')}</div>
+        <div class="mono">${escapeHtml(p.route||'-')}</div>
+        <div class="mono">${escapeHtml(String(p.pax||'-'))}</div>
+        <div class="mono">${escapeHtml(String(p.leadId||'-'))}</div>
+      </div>
+    `).join('');
+    updateBulkPill();
+    $('#bulkImport').style.display = 'block';
+    $('#clientForm').style.display = 'none';
+    // Wire checkboxes
+    $$('.bulk-check').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const idx = cb.getAttribute('data-idx');
+        if (cb.checked) bulk.selected.add(idx); else bulk.selected.delete(idx);
+        updateBulkPill();
+      });
+    });
+  }
+  function hideBulkImport(){
+    $('#bulkImport').style.display = 'none';
+    $('#clientForm').style.display = '';
+    bulk.items = []; bulk.selected.clear();
+    $('#bulkList').innerHTML = '';
+    $('#bulkCountPill').textContent = '0 selected';
+  }
+  function updateBulkPill(){
+    const n = bulk.selected.size;
+    $('#bulkCountPill').textContent = `${n} selected`;
+  }
+  $('#bulkCancel').addEventListener('click', ()=>{
+    hideBulkImport();
+  });
+  $('#bulkAdd').addEventListener('click', ()=>{
+    const status = $('#bulkStatus').value || 'unreached';
+    const toAdd = Array.from(bulk.selected).map(idx => bulk.items[Number(idx)]);
+    if (!toAdd.length){ alert('Select at least one lead.'); return; }
+    toAdd.forEach(p=>{
+      const c = {
+        id: uid(),
+        name: (p.name||'').trim() || 'Lead',
+        email: (p.email||'').trim(),
+        phone: (p.phone||'').trim(),
+        status,
+        startDate: fmt(today()),
+        reachedStart: status==='reached' ? fmt(today()) : null,
+        route: (p.route||'').trim(),
+        dates: (p.dates||'').trim(),
+        pax:   (p.pax||'').trim(),
+        leadId: (p.leadId||'').trim(),
+        notes: (p.notes||'').trim()
+      };
+      state.clients.push(c);
+      if (status==='unreached') scheduleUnreached(c); else scheduleReached(c);
+    });
+    save();
+    toast(`Added ${toAdd.length} customer${toAdd.length>1?'s':''}`);
+    $('#leadBlob').value = '';
+    hideBulkImport();
+    closeModal('addModal','addCard');
+  });
+
   /* ===== Add Task modal ===== */
   function titleDefaultFor(type){ return ({call:'Call', callvm:'Call + Voicemail', sms:'SMS', email:'Email'}[type] || ''); }
   function buildClientOptionsForTaskModal(){
@@ -1797,6 +2015,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     if (addOpen && e.key==='Enter'){
       const ae = document.activeElement;
       if (ae && ae.id === 'notes' && e.shiftKey) return; // allow line break
+      // If bulk panel is open, don't auto-save a single customer
+      if ($('#bulkImport').style.display === 'block') return;
       e.preventDefault(); $('#saveCustomer').click();
     }
     if (e.key==='Escape'){ closeReminderPopover(); }
@@ -1840,8 +2060,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   function bootstrap(){
     makeModalFromCard('addCard','addModal');
     makeModalFromCard('taskCard','taskModal');
-    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
-    $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
+    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; hideBulkImport(); openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
+    $('#closeAdd')?.addEventListener('click', ()=> { hideBulkImport(); closeModal('addModal','addCard'); });
     setSortButtons();      /* ensure initial sort UI state */
     setShowButtons();
     setAgendaMode('today');
