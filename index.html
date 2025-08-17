@@ -243,9 +243,21 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 
 /* =================== TABLE (+ mobile cards) =================== */
 .tbl{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
-.tbl th,.tbl td{padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.tbl th{color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
-.note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
+
+/* Head keeps its bottom border */
+.tbl th{padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:middle; color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
+
+/* Cells no longer draw their own bottoms; we draw one continuous separator per row */
+.tbl td{padding:10px; border-bottom:0; text-align:left; font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tbl tbody tr{ position:relative; }
+.tbl tbody tr::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--line);
+}
+/* keep note/manual expanded rows clean (no double lines) */
+.tbl tbody tr.note-row::after,
+.tbl tbody tr.manual-row::after{ display:none; }
+
+.note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .note-preview:hover{text-decoration:underline}
 
 /* Actions cell — fixed, aligned, no wrapping */
@@ -340,7 +352,7 @@ body.light .button-chip{ background:#f1f4ff; }
   .row{grid-template-columns:1fr !important;}
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
-  .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
+  .tbl tr{display:block; background:var(--surface); border-radius:12px; margin:10px 0}
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
   .actions{justify-content:flex-start}
@@ -633,6 +645,14 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
             <div class="seg" role="group" aria-label="Sort tasks">
               <button type="button" id="sortClient"  class="primary" aria-pressed="true">By client</button>
               <button type="button" id="sortType"    aria-pressed="false">By task</button>
+            </div>
+
+            <div class="space"></div>
+            <div class="pill">Show:</div>
+            <div class="seg" role="group" aria-label="Show tasks">
+              <button type="button" id="showAll" class="primary" aria-pressed="true">All</button>
+              <button type="button" id="showOpen" aria-pressed="false">Incomplete</button>
+              <button type="button" id="showDone" aria-pressed="false">Complete</button>
             </div>
 
             <div class="space"></div>
@@ -1151,6 +1171,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   let currentAgendaDate = today();
   let agendaFilter = '';
   let sortMode = localStorage.getItem(SORT_KEY) || 'client';
+  let showMode = 'all'; // 'all' | 'open' | 'done'
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1168,6 +1189,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     return sortMode==='client' ? (byName || byType || byTitle) : (byType || byName || byTitle);
   }
   function matchesFilter(t){ return !agendaFilter || clientNameLower(t).includes(agendaFilter); }
+  function matchesShowMode(t){
+    if (showMode==='open') return t.status !== 'done';
+    if (showMode==='done') return t.status === 'done';
+    return true; // all
+  }
 
   function detailsChipsFor(t){
     const c = t.clientId ? clientById(t.clientId) : null;
@@ -1248,7 +1274,9 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   function buildAgenda(date){
     const f = fmt(date);
     const cont = $('#agenda');
-    const items = state.tasks.filter(t=> t.date===f && (!agendaFilter || (t.clientName||'').toLowerCase().includes(agendaFilter))).sort(sortTasksForMode);
+    const items = state.tasks
+      .filter(t=> t.date===f && matchesFilter(t) && matchesShowMode(t))
+      .sort(sortTasksForMode);
     cont.innerHTML = '';
     if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
     if (sortMode === 'client') renderGroupedByClient(cont, items);
@@ -1261,7 +1289,9 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const days = Math.ceil((to-from)/86400000)+1;
     for(let i=0;i<days;i++){
       const d = addDays(from,i), f = fmt(d);
-      const items = state.tasks.filter(t=> t.date===f && (!agendaFilter || (t.clientName||'').toLowerCase().includes(agendaFilter))).sort(sortTasksForMode);
+      const items = state.tasks
+        .filter(t=> t.date===f && matchesFilter(t) && matchesShowMode(t))
+        .sort(sortTasksForMode);
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
       if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
@@ -1385,8 +1415,20 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     $('#viewToday').classList.toggle('primary', mode === 'today');
     $('#viewWeek').classList.toggle('primary', mode === 'week');
   }
+  function setShowButtons(){
+    $('#showAll').classList.toggle('primary', showMode==='all');
+    $('#showOpen').classList.toggle('primary', showMode==='open');
+    $('#showDone').classList.toggle('primary', showMode==='done');
+    $('#showAll').setAttribute('aria-pressed', String(showMode==='all'));
+    $('#showOpen').setAttribute('aria-pressed', String(showMode==='open'));
+    $('#showDone').setAttribute('aria-pressed', String(showMode==='done'));
+  }
   $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
   $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
+
+  $('#showAll').addEventListener('click', ()=>{ showMode='all'; setShowButtons(); renderAgenda(); });
+  $('#showOpen').addEventListener('click', ()=>{ showMode='open'; setShowButtons(); renderAgenda(); });
+  $('#showDone').addEventListener('click', ()=>{ showMode='done'; setShowButtons(); renderAgenda(); });
 
   $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
   $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
@@ -1750,6 +1792,13 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     }
     const addOpen = $('#addModal')?.classList.contains('open');
     if (addOpen && e.key==='Escape'){ e.preventDefault(); closeModal('addModal','addCard'); }
+    /* ENTER saves customer from anywhere inside Add/Edit modal.
+       In Notes, Shift+Enter inserts a newline (we let it through). */
+    if (addOpen && e.key==='Enter'){
+      const ae = document.activeElement;
+      if (ae && ae.id === 'notes' && e.shiftKey) return; // allow line break
+      e.preventDefault(); $('#saveCustomer').click();
+    }
     if (e.key==='Escape'){ closeReminderPopover(); }
   });
   $('#ctNotes')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); saveTaskFromModal(); } });
@@ -1783,6 +1832,10 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   initNotificationsUI();
   startNotificationTicker();
 
+  /* ========= Live filters for customers ========= */
+  $('#search')?.addEventListener('input', refresh);
+  $('#statusFilter')?.addEventListener('change', refresh);
+
   /* ========= Bootstrap ========= */
   function bootstrap(){
     makeModalFromCard('addCard','addModal');
@@ -1790,6 +1843,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
     $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
     setSortButtons();      /* ensure initial sort UI state */
+    setShowButtons();
     setAgendaMode('today');
     refresh(); buildCalendar();
   }
