@@ -118,7 +118,7 @@ button.ghost{ background:transparent }
 .btn-icon{width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:10px; background:var(--chip); border:1px solid var(--line)}
 body.light .btn-icon{ background:#fff; border:1px solid var(--line) }
 
-/* === Add buttons (fancy "+") === */
+/* === Add Customer / Add Task modals + fancy "+" === */
 body.modal-open{ overflow:hidden; }
 .add-btn{
   width:34px; height:34px; border-radius:999px;
@@ -130,7 +130,6 @@ body.modal-open{ overflow:hidden; }
 .add-btn:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 .add-btn:active{ transform:translateY(0); }
 
-/* Modal container */
 .modal{
   position:fixed; inset:0; display:none;
   align-items:center; justify-content:center;
@@ -141,16 +140,13 @@ body.modal-open{ overflow:hidden; }
 .modal.open{ display:flex; }
 .modal .card{
   width:min(920px, 100%);
-  max-height:88vh;
-  overflow:auto;
-  animation:pop .16s ease-out;
+  max-height:88vh; overflow:auto; animation:pop .16s ease-out;
 }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.985) } to{ opacity:1; transform:none } }
-/* Hide the Add/Edit section until JS moves it into the modal */
 #addCard{ display:none; }
+#taskCard{ display:none; }
 
-/* Sticky footer for forms inside modals */
-#addCard .bd, #ctCard .bd{ padding-bottom:74px; }
+#addCard .bd{ padding-bottom:74px; }
 .form-footer{
   position:sticky; bottom:0; left:0; right:0;
   display:flex; gap:8px; justify-content:flex-end; align-items:center;
@@ -186,7 +182,7 @@ body.light .copy-btn{ background:#fff; }
 body.light .badge{ background:#eef2fb; color:#55607a }
 body.light .pill{ background:#f1f4ff; color:#1e2758 }
 
-/* Btn danger — soft “card-like” look, a bit bolder */
+/* Btn danger — soft “card-like” look */
 .btn-danger{
   background: linear-gradient(180deg, rgba(220,80,80,.12), rgba(220,80,80,.07)) !important;
   border:1.5px solid #a55c5c !important;
@@ -196,7 +192,6 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .btn-danger:hover{ filter:brightness(1.03) }
 .btn-danger:active{ transform:translateY(1px) }
 .btn-danger:focus{ box-shadow:0 0 0 3px var(--danger-ring) !important }
-/* Make the specific “Wipe All” a rounded card chip */
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
 /* Segmented control (sort) */
@@ -213,26 +208,25 @@ body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: ins
 }
 .slab{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px }
 .flex-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-.hstack{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 
 /* =================== LAYOUT HELPERS =================== */
 .row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
 .row.single{grid-template-columns:1fr}
 .right{display:flex; gap:8px; justify-content:flex-end}
 
-/* === Two-column Agenda + Calendar (desktop) === */
+/* === Agenda wider / Calendar narrower (desktop) === */
 .row.agenda-layout{
-  grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1.2fr);
+  grid-template-columns: minmax(0, 2.6fr) minmax(340px, 1fr); /* wider agenda, compact calendar */
   gap:16px; align-items:start;
 }
 
-/* Compact calendar look (small right rail) */
+/* Compact calendar look */
 #calendarCard .bd{ padding:12px; }
 #calendarGrid{ gap:4px; }
 .cal-cell{ min-height:56px; padding:6px; }
 .cal-badge{ margin-top:4px; font-size:10.5px; }
 
-/* Make ONLY the Agenda + Calendar row wider than the page wrap (desktop) */
+/* Page bleed for the Agenda + Calendar row (desktop) */
 @media (min-width:1001px){
   .row.agenda-layout{
     --agenda-bleed: clamp(80px, 6vw, 180px);
@@ -315,7 +309,7 @@ body.light #calSettings{ background:#fff }
 .wdays .cell input[type="checkbox"]{ width:24px; height:24px; accent-color:var(--accent); }
 .wdays .cell span{ font-size:12px; }
 
-/* Overrides row */
+/* >>> Date-specific overrides row (flex instead of grid) <<< */
 .ovr{
   margin-top:14px;
   display:flex;
@@ -338,6 +332,11 @@ body.light #calSettings{ background:#fff }
 .ovr-list li button{ height:32px; padding:0 10px; }
 body.light .ovr-list li{ background:#fff }
 
+/* =================== Add Task modal bits =================== */
+.inline-controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.button-chip{ height:40px; display:inline-flex; align-items:center; gap:6px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:var(--chip); }
+body.light .button-chip{ background:#f1f4ff; }
+
 /* =================== TOAST =================== */
 #toaster{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;z-index:9999}
 .toast{min-width:220px;max-width:380px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
@@ -349,7 +348,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .wrap{padding-top:12px;padding-bottom:12px}
-  .row{grid-template-columns:1fr !important;}
+  .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
   .kpi{grid-template-columns:repeat(2,1fr)}
   .tbl thead{display:none}
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
@@ -358,6 +357,7 @@ body.light .ovr-list li{ background:#fff }
   .actions{justify-content:flex-start}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
+  /* Customers header layout */
   .card .hd > input#search{ flex:1 1 200px; min-width:0; }
   .card .hd > select#statusFilter{ flex:0 0 auto; }
 }
@@ -389,19 +389,16 @@ body.light{
   border-radius: var(--sb-radius);
 }
 /* === Fix: light-theme checkboxes appear dark === */
-body { color-scheme: dark; }
-body.light { color-scheme: light; }
+body { color-scheme: dark; }        /* default app theme */
+body.light { color-scheme: light; } /* override in light mode */
 /* Checkbox polish */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
 }
 
-/* ===== Add Task modal polish ===== */
-#ctCard{ display:none; }
-.notify-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.notify-pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:var(--chip); font-size:12px; color:#bfc7ff }
-body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
-#ctTime{ width:120px; }
+/* Bell button hover */
+button[data-bell].btn-icon { transition: filter .15s ease; }
+button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 </style>
 </head>
 <body>
@@ -418,7 +415,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
 
   <main class="wrap grid">
 
-    <!-- Add/Edit card (moved into modal at runtime) -->
+    <!-- Add/Edit customer (moved into modal at runtime) -->
     <section class="card" id="addCard">
       <div class="hd">
         <strong>Add / Edit Customer</strong>
@@ -504,8 +501,8 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       </div>
     </section>
 
-    <!-- Add Custom Task (modal; moved into .modal) -->
-    <section class="card" id="ctCard">
+    <!-- Add Task (moved into modal at runtime) -->
+    <section class="card" id="taskCard">
       <div class="hd">
         <strong>Add Task</strong>
         <span class="badge">Local only</span>
@@ -541,25 +538,26 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Time (optional)</label>
-            <div class="hstack">
-              <span class="notify-pill">Notify @</span>
-              <input id="ctTime" type="time" />
-              <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctNotify" disabled> Enable</label>
-              <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
-              <span class="space"></span>
-              <button type="button" id="ctClear" class="ghost">Clear</button>
-              <button type="button" id="ctSave" class="primary">Save task</button>
-            </div>
-          </div>
-        </div>
-
+        <!-- Notes above the Save/Time row (per request) -->
         <div class="row single">
           <div>
             <label>Notes (optional)</label>
             <textarea id="ctNotes" rows="3" placeholder="Press Enter to save; Shift+Enter for newline."></textarea>
+          </div>
+        </div>
+
+        <!-- Time + Notify + Clear + Save in one row -->
+        <div class="row single">
+          <div class="inline-controls">
+            <label class="button-chip">Notify @</label>
+            <input id="ctTime" type="time" />
+            <button type="button" class="btn-icon" id="ctNow" title="Use current time">⏰</button>
+            <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctNotify" disabled> Enable</label>
+            <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+
+            <span class="space"></span>
+            <button type="button" id="ctClear" class="ghost">Clear</button>
+            <button type="button" id="ctSave" class="primary">Save task</button>
           </div>
         </div>
       </div>
@@ -621,7 +619,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       <section class="card" id="actionsCard">
         <div class="hd">
           <strong>Agenda</strong>
-          <button id="openCT" class="btn-icon add-btn" title="Add task" aria-label="Add task">＋</button>
+          <button id="openTask" class="btn-icon add-btn" title="Add task" aria-label="Add task">＋</button>
         </div>
         <div class="bd">
           <div class="toolbar">
@@ -634,8 +632,8 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
             <div class="space"></div>
             <div class="pill">Sort:</div>
             <div class="seg" role="group" aria-label="Sort tasks">
-              <button type="button" id="sortClient"  aria-pressed="false">By client</button>
-              <button type="button" id="sortType"    class="primary" aria-pressed="true">By task</button>
+              <button type="button" id="sortClient"  class="primary" aria-pressed="true">By client</button>
+              <button type="button" id="sortType"    aria-pressed="false">By task</button>
             </div>
 
             <div class="space"></div>
@@ -765,12 +763,12 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function truncate(s, n=90){ if(!s) return ''; return s.length>n ? s.slice(0,n-1)+'…' : s; }
 
-  // Copy helper + tiny copy buttons
+  // Copy helper
   function copyTextToClipboard(text, what='value'){
     if(!text) return;
     const done = () => toast(`Copied ${what}`, 'ok', 900);
     try{
-      if (navigator.clipboard && navigator.clipboard.writeText){
+      if (navigator.clipboard?.writeText){
         navigator.clipboard.writeText(text).then(done).catch(()=>{
           const ta=document.createElement('textarea');
           ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
@@ -810,41 +808,24 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     localStorage.setItem(THEME_KEY, next); applyTheme(next);
   });
 
-  /* ========= Add/Edit modal ========= */
-  function closeAddModal(){
-    const m = document.getElementById('addModal');
-    const card = document.getElementById('addCard');
-    if (m){ m.classList.remove('open'); m.style.display='none'; }
-    if (card){ card.style.display='none'; }
-    document.body.classList.remove('modal-open');
-  }
-  function openAddModal(asNew=false){
-    const m = document.getElementById('addModal');
-    const card = document.getElementById('addCard');
-    if(!m || !card) return;
-    if(asNew){
-      document.getElementById('clientForm')?.reset();
-      const idEl = document.getElementById('clientId'); if(idEl) idEl.value='';
-      const lbEl = document.getElementById('leadBlob'); if(lbEl) lbEl.value='';
-    }
-    card.style.display='block';
-    m.style.display='flex'; m.classList.add('open');
-    document.body.classList.add('modal-open');
-    setTimeout(()=>{ try{ const el=document.getElementById('leadBlob'); el.focus(); el.select?.(); }catch(_){} }, 50);
-  }
-  function initAddModal(){
-    const card = document.getElementById('addCard');
-    if(!card) return;
+  /* ========= Modals ========= */
+  function makeModalFromCard(cardId, modalId){
+    const card = document.getElementById(cardId);
     let modal = document.createElement('div');
-    modal.id = 'addModal';
-    modal.className = 'modal';
-    modal.style.display = 'none';
-    document.body.appendChild(modal);
-    modal.appendChild(card);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeAddModal(); });
-    document.getElementById('openAdd')?.addEventListener('click', ()=> openAddModal(true));
-    document.getElementById('closeAdd')?.addEventListener('click', closeAddModal);
-    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAddModal(); });
+    modal.id = modalId; modal.className = 'modal'; modal.style.display = 'none';
+    document.body.appendChild(modal); modal.appendChild(card);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) { modal.classList.remove('open'); modal.style.display='none'; document.body.classList.remove('modal-open'); }});
+    return modal;
+  }
+  function openModal(modalId, cardId){
+    const m = document.getElementById(modalId), c = document.getElementById(cardId);
+    if(!m || !c) return;
+    c.style.display='block'; m.style.display='flex'; m.classList.add('open'); document.body.classList.add('modal-open');
+  }
+  function closeModal(modalId, cardId){
+    const m = document.getElementById(modalId), c = document.getElementById(cardId);
+    if(!m || !c) return;
+    m.classList.remove('open'); m.style.display='none'; c.style.display='none'; document.body.classList.remove('modal-open');
   }
 
   /* ========= State ========= */
@@ -853,7 +834,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       clients: [],
       tasks: [],
       settings: {
-        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:true, sun:true },
+        workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true }, /* Fri+Sat default OFF */
         moveOffDays: true,
         overrides: {}
       }
@@ -869,7 +850,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
   const state = load();
   function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); refresh(); buildCalendar(); }
 
-  /* ========= Working days logic ========= */
+  /* ========= Working days ========= */
   function weekdayIndex(dt){ const js=dt.getDay(); return (js+6)%7; } // Mon=0
   function isWorkingDay(dt){
     const ymd = fmt(dt);
@@ -958,28 +939,11 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
-
-  /* RingCentral deep-link helpers (with content) */
-  function isMobileUA(){ return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent||''); }
-  const SMS_TEMPLATE =
-    'Hi {firstName}, quick follow-up about your {route} trip{dates}. When’s a good time to chat today?';
-  function firstNameOf(name){ return (name||'').trim().split(/\s+/)[0] || 'there'; }
-  function smsTemplate(client, task){
-    const ctx = {
-      firstName: firstNameOf(client?.name),
-      route: client?.route || 'travel',
-      dates: client?.dates ? ` on ${client.dates}` : ''
-    };
-    return SMS_TEMPLATE.replace(/\{(\w+)\}/g, (_,k)=> ctx[k] ?? '');
-  }
-  function ringCentralSmsHref(num, content){
-    const digits = (num||'').replace(/\D/g,'');
-    if(!digits) return '#';
-    if(isMobileUA()){
-      return `rcmobile://sms?number=${digits}`;
-    }
-    const base = `rcapp://r/sms?type=new&number=${digits}`;
-    return content ? `${base}&content=${encodeURIComponent(content)}` : base;
+  function defaultSmsContent(c){ return `Hello${c?.name ? ' ' + c.name : ''} — following up.`; }
+  function ringCentralSmsHref(number, content){
+    const digits=(number||'').replace(/[^\d+]/g,'');
+    const enc = encodeURIComponent(content || '');
+    return `rcapp://r/sms?type=new&number=${digits}&content=${enc}`;
   }
 
   /* ========= Scheduling ========= */
@@ -1098,7 +1062,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       });
     renderAgenda();
     updateProgress();
-    try{ buildClientOptionsForCT(); }catch(_){}
+    try{ buildClientOptionsForTaskModal(); }catch(_){}
   }
 
   function toggleNotesRow(id){
@@ -1154,7 +1118,8 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       $('#pax').value   = c.pax   || '';
       $('#leadId').value = c.leadId || '';
       $('#notes').value = c.notes || '';
-      openAddModal(false);
+      openModal('addModal','addCard');
+      setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30);
       return;
     }
 
@@ -1218,7 +1183,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  let sortMode = localStorage.getItem(SORT_KEY) || 'type';  // 'type' | 'client'
+  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // default By client
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -1261,9 +1226,8 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
-        const content = smsTemplate(c, t);
-        const href = ringCentralSmsHref(c.phone, content);
-        contactHtml = `<span class="pill"><a class="mono" href="${href}" title="Open SMS in RingCentral">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+        const href = ringCentralSmsHref(c.phone, defaultSmsContent(c));
+        contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
         const href = emailHref(c.email,'Follow-up','Hi …');
         contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
@@ -1272,6 +1236,9 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
     const chips = detailsChipsFor(t);
+
+    const bell = t.important ? '🔔' : '🔕';
+    const bellTitle = t.important ? 'Turn off reminder' : 'Turn on reminder';
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
@@ -1284,7 +1251,11 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
-      <div class="tiny mono">${t.date} <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button></div>`;
+      <div class="tiny mono">
+        ${t.date}
+        <button class="btn-icon" data-bell="${t.id}" title="${bellTitle}" aria-label="${bellTitle}">${bell}</button>
+        <button class="btn-icon" data-del="${t.id}" title="Delete task" aria-label="Delete task">🗑️</button>
+      </div>`;
     div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
     return div;
   }
@@ -1340,10 +1311,27 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     $('#progressBar').style.width = pct+'%';
   }
 
+  // Delete + bell
   $('#agenda').addEventListener('click', (e)=>{
-    const btn = e.target.closest('[data-del]'); if(!btn) return;
-    const id = btn.getAttribute('data-del');
-    if(confirm('Delete this task?')) deleteTask(id);
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      const id = del.getAttribute('data-del');
+      if (confirm('Delete this task?')) deleteTask(id);
+      return;
+    }
+    const bell = e.target.closest('[data-bell]');
+    if (bell) {
+      const id = bell.getAttribute('data-bell');
+      const t = state.tasks.find(x => x.id === id);
+      if (!t) return;
+      t.important = !t.important;
+      if (t.important && t.date === fmt(today()) && !t.notifyTime) {
+        const now = new Date();
+        t.notifyTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        t.notifyAt = now.toISOString();
+      }
+      save();
+    }
   });
 
   // Agenda controls
@@ -1451,7 +1439,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       else { btn.textContent = '🔔 Enable'; setNotifStatus('Not enabled'); }
     }
     refreshUI();
-    if (navigator.permissions && navigator.permissions.query){
+    if (navigator.permissions?.query){
       try{ navigator.permissions.query({name:'notifications'}).then(p=>{ p.onchange = refreshUI; }).catch(()=>{}); }catch(_){}
     }
     btn.addEventListener('click', async ()=>{
@@ -1514,11 +1502,8 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
         $('#agendaDate').dispatchEvent(new Event('change'));
         flashAgendaDate();
         const target = document.getElementById('actionsCard');
-        if (target && target.scrollIntoView){
-          target.scrollIntoView({ behavior:'smooth', block:'start' });
-        } else {
-          window.scrollTo({ top: $('#actionsCard').offsetTop - 70, behavior:'smooth' });
-        }
+        if (target?.scrollIntoView){ target.scrollIntoView({ behavior:'smooth', block:'start' }); }
+        else { window.scrollTo({ top: $('#actionsCard').offsetTop - 70, behavior:'smooth' }); }
       });
       grid.appendChild(cell);
     }
@@ -1659,7 +1644,7 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
       $('#clientForm').reset();
       $('#clientId').value = '';
       save();
-      closeAddModal();
+      closeModal('addModal','addCard');
     }catch(e){
       console.error(e);
       alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
@@ -1667,21 +1652,30 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     }
   });
 
-  /* ===== Add Custom Task (modal) ===== */
+  /* ===== Add Task modal ===== */
   function titleDefaultFor(type){ return ({call:'Call', callvm:'Call + Voicemail', sms:'SMS', email:'Email'}[type] || ''); }
-  function buildClientOptionsForCT(){
+  function buildClientOptionsForTaskModal(){
     const sel = $('#ctClient'); if(!sel) return;
     const keep = sel.value;
     sel.innerHTML = '';
-    sel.insertAdjacentHTML('beforeend', `<option value="" selected>— None — (default)</option>`);
+    sel.insertAdjacentHTML('beforeend', `<option value="">— None — (default)</option>`);
     const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
     opts.forEach(c=>{
       const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
       sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
     });
-    if (keep) sel.value = keep;
+    sel.value = keep || '';
   }
-  function clearCTForm(){
+  function openTaskModal(){
+    buildClientOptionsForTaskModal();
+    const agendaYmd = fmt(currentAgendaDate || today());
+    if (!$('#ctDate').value) $('#ctDate').value = agendaYmd;
+    if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value || 'call');
+    $('#ctNotify').disabled = !$('#ctTime').value;
+    openModal('taskModal','taskCard');
+    setTimeout(()=>{ try{ $('#ctTitle').focus(); }catch(_){} }, 30);
+  }
+  function clearTaskForm(){
     ['ctClient','ctType','ctTitle','ctDate','ctTime','ctNotes'].forEach(id=>{
       const el = $('#'+id); if(!el) return;
       if (id==='ctType') el.value='call'; else el.value='';
@@ -1689,7 +1683,11 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     $('#ctImportant').checked = false;
     $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
   }
-  function saveCustomTask(){
+  function closeTaskModal(){
+    clearTaskForm();
+    closeModal('taskModal','taskCard');
+  }
+  function saveTaskFromModal(){
     const clientId = $('#ctClient').value || null;
     const c = clientId ? clientById(clientId) : null;
     const type  = $('#ctType').value || 'custom';
@@ -1701,76 +1699,46 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
     const notify = !!$('#ctNotify').checked && !!time;
     const important = notify ? true : !!$('#ctImportant').checked;
 
-    const t = {
-      clientId: c ? c.id : null,
-      clientName: c ? c.name : '',
-      date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important
-    };
+    const t = { clientId: c?.id || null, clientName: c?.name || '', date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important };
     if (time){
       t.notifyTime = time;
       if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
     }
     addTask(t);
     save();
-    toast('Custom task added');
-    closeCTModal();
+    toast('Task added');
+    closeTaskModal();
   }
-
-  function openCTModal(){
-    buildClientOptionsForCT();
-    const m = document.getElementById('ctModal');
-    const card = document.getElementById('ctCard');
-    if(!m || !card) return;
-    clearCTForm();
-    $('#ctType').value = 'call';
-    $('#ctDate').value = fmt(currentAgendaDate || today());
-    $('#ctTitle').value = titleDefaultFor('call');
-
-    card.style.display='block';
-    m.style.display='flex'; m.classList.add('open');
-    document.body.classList.add('modal-open');
-    setTimeout(()=> $('#ctTitle')?.focus(), 20);
-  }
-  function closeCTModal(){
-    const m = document.getElementById('ctModal');
-    const card = document.getElementById('ctCard');
-    if (m){ m.classList.remove('open'); m.style.display='none'; }
-    if (card){ card.style.display='none'; }
-    document.body.classList.remove('modal-open');
-  }
-  function initCTModal(){
-    const card = document.getElementById('ctCard'); if(!card) return;
-    let modal = document.createElement('div');
-    modal.id = 'ctModal';
-    modal.className = 'modal';
-    modal.style.display = 'none';
-    document.body.appendChild(modal);
-    modal.appendChild(card);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeCTModal(); });
-    document.getElementById('openCT')?.addEventListener('click', openCTModal);
-    document.getElementById('ctClose')?.addEventListener('click', closeCTModal);
-    document.getElementById('ctClear')?.addEventListener('click', clearCTForm);
-    document.getElementById('ctSave')?.addEventListener('click', saveCustomTask);
-    // Keyboard: ESC closes, Enter saves (Notes: Enter = save; Shift+Enter = newline)
-    document.addEventListener('keydown', (e)=>{
-      const isOpen = modal.classList.contains('open');
-      if(!isOpen) return;
-      if(e.key==='Escape'){ e.preventDefault(); closeCTModal(); }
-      if(e.key==='Enter' && !e.shiftKey){
-        const target = e.target;
-        if(target && (target.id==='ctNotes' || target.closest('#ctCard'))){
-          e.preventDefault();
-          saveCustomTask();
-        }
-      }
-    });
-    $('#ctTime')?.addEventListener('input', ()=>{
-      const has = !!$('#ctTime').value;
-      $('#ctNotify').disabled = !has;
-      if (!has){ $('#ctNotify').checked = false; }
-    });
-    $('#ctNotify')?.addEventListener('change', ()=>{ if ($('#ctNotify').checked) $('#ctImportant').checked = true; });
-  }
+  // Modal events
+  $('#openTask')?.addEventListener('click', openTaskModal);
+  $('#ctSave')?.addEventListener('click', saveTaskFromModal);
+  $('#ctClear')?.addEventListener('click', clearTaskForm);
+  $('#ctClose')?.addEventListener('click', closeTaskModal);
+  // Esc closes, Enter saves (Notes: Enter saves; Shift+Enter = newline)
+  document.addEventListener('keydown', (e)=>{
+    const taskOpen = $('#taskModal')?.classList.contains('open');
+    if (taskOpen && e.key==='Escape'){ e.preventDefault(); closeTaskModal(); }
+    if (taskOpen && e.key==='Enter' && !e.shiftKey){
+      const tag = (document.activeElement || {}).tagName?.toLowerCase();
+      if (tag==='textarea' || tag==='input' || tag==='select'){ e.preventDefault(); saveTaskFromModal(); }
+    }
+  });
+  $('#ctNotes')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); saveTaskFromModal(); } });
+  $('#ctType')?.addEventListener('change', ()=>{
+    const cur = ($('#ctTitle').value||'').trim();
+    const titleDefaults = ['Call','Call + Voicemail','SMS','Email'];
+    if (!cur || titleDefaults.includes(cur)) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
+  });
+  $('#ctTime')?.addEventListener('input', ()=>{
+    const has = !!$('#ctTime').value;
+    $('#ctNotify').disabled = !has;
+    if (!has){ $('#ctNotify').checked = false; }
+  });
+  $('#ctNotify')?.addEventListener('change', ()=>{ if ($('#ctNotify').checked) $('#ctImportant').checked = true; });
+  $('#ctNow')?.addEventListener('click', ()=>{
+    const now=new Date(); const hh=String(now.getHours()).padStart(2,'0'); const mm=String(now.getMinutes()).padStart(2,'0');
+    $('#ctTime').value = `${hh}:${mm}`; $('#ctNotify').disabled=false;
+  });
 
   /* ========= Wipe All ========= */
   $('#wipeAll').addEventListener('click', () => {
@@ -1787,7 +1755,15 @@ body.light .notify-pill{ background:#f1f4ff; color:#1e2758 }
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
-  function bootstrap(){ initAddModal(); initCTModal(); refresh(); buildCalendar(); }
+  function bootstrap(){
+    // mount modals
+    makeModalFromCard('addCard','addModal');
+    makeModalFromCard('taskCard','taskModal');
+    // wire Add customer triggers
+    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
+    $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
+    refresh(); buildCalendar();
+  }
   bootstrap();
 
 })();
