@@ -400,7 +400,7 @@ body.light { color-scheme: light; } /* override in light mode */
 button[data-bell].btn-icon { transition: filter .15s ease; }
 button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 
-/* 🔔 Reminder popover (NEW) */
+/* 🔔 Reminder popover */
 .reminder-popover{
   position:fixed; display:none; width:240px;
   background:var(--panel); border:1px solid var(--line); border-radius:12px;
@@ -410,12 +410,12 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 .reminder-popover .btns{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
 .reminder-popover input[type="time"]{ height:34px; }
 
-/* 🧩 BULK add preview */
-#bulkArea{ margin-top:10px; }
-.bulk-row{ border:1px dashed var(--line); border-radius:10px; padding:10px; margin-top:8px; background:var(--surface); }
-.bulk-row .meta{ color:var(--muted); font-size:11px; }
-.bulk-row .controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:6px; }
-.bulk-row textarea{ height:60px; min-height:60px; }
+/* ===== Multi-paste preview ===== */
+#multiPreview{ display:none; margin-top:8px; }
+.multi-item{ border:1px solid var(--line); border-radius:10px; padding:10px; margin:8px 0; background:var(--surface); }
+.multi-top{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.multi-opts{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:6px; }
+.multi-opts input[type="text"]{ height:34px; }
 </style>
 </head>
 <body>
@@ -443,8 +443,18 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       <div class="bd">
         <div class="lead-block highlight">
           <div>
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
-            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID, Start Day)</label>
+            <textarea id="leadBlob" rows="6" placeholder="Paste one or many leads… (Enter = quick save for single; auto preview for multiple)"></textarea>
+          </div>
+
+          <!-- MULTI PREVIEW -->
+          <div id="multiPreview" class="slab">
+            <div class="tiny" style="margin-bottom:6px"><b>Parsed customers</b> — review status/notes. The standard form is hidden in multi-mode.</div>
+            <div id="multiList"></div>
+            <div class="right" style="margin-top:8px">
+              <button type="button" id="multiCancel">Cancel</button>
+              <button type="button" id="saveMulti" class="primary">Save all</button>
+            </div>
           </div>
         </div>
 
@@ -741,81 +751,13 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
 
-  /* 🧩 BULK helpers */
-  let bulkStaging = []; // array of parsed customers awaiting save
+  // Multi-mode flag
+  let multiMode = false;
+  let multiItems = [];
 
-  function splitMultiCustomers(text){
-    const norm = (text||'').replace(/\r/g,'\n');
-    const re = /(^|\n)\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d+\s+new\b/gi;
-    const idxs = [];
-    let m;
-    while((m = re.exec(norm))) idxs.push(m.index + (m[1] ? m[1].length : 0));
-    if(!idxs.length) return [text];
-    const parts = [];
-    for(let i=0;i<idxs.length;i++){
-      const start = idxs[i];
-      const end = (i+1<idxs.length) ? idxs[i+1] : norm.length;
-      parts.push(norm.slice(start, end).trim());
-    }
-    return parts.filter(p=>p.trim());
-  }
-  function ensureBulkArea(){
-    let el = document.getElementById('bulkArea');
-    if(el) return el;
-    const host = document.querySelector('.lead-block');
-    el = document.createElement('div');
-    el.id = 'bulkArea';
-    el.className = 'slab';
-    host.insertAdjacentElement('afterend', el);
-    return el;
-  }
-  function clearBulkUI(){
-    bulkStaging = [];
-    const el = document.getElementById('bulkArea');
-    if(el) el.remove();
-  }
-  function showBulkPreview(items){
-    const host = ensureBulkArea();
-    let html = `<div class="tiny"><b>Bulk paste:</b> parsed ${items.length} customers. Set status/notes then click <b>Save Customer</b> to add all. <button id="bulkCancel" class="ghost" style="float:right">Cancel</button></div>`;
-    items.forEach((p,i)=>{
-      const safe = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-      html += `
-        <div class="bulk-row">
-          <div><strong>${safe(p.name||'(No name)')}</strong>
-            ${p.route?`<span class="pill">Route:&nbsp;${safe(p.route)}</span>`:''}
-            ${p.dates?`<span class="pill">Dates:&nbsp;${safe(p.dates)}</span>`:''}
-            ${p.pax?`<span class="pill">Pax:&nbsp;${safe(p.pax)}</span>`:''}
-          </div>
-          <div class="meta">
-            ${(p.leadId?`Lead ${safe(p.leadId)} • `:'')}${p.email?safe(p.email):''}${p.email&&p.phone?' • ':''}${p.phone?safe(p.phone):''}
-          </div>
-          <div class="controls">
-            <label>Status
-              <select id="bulk_status_${i}">
-                <option value="unreached" selected>Unreached</option>
-                <option value="reached">Reached</option>
-              </select>
-            </label>
-            <label style="flex:1; min-width:200px">Notes
-              <textarea id="bulk_notes_${i}" rows="2" placeholder="Optional notes…"></textarea>
-            </label>
-          </div>
-        </div>`;
-    });
-    host.innerHTML = html;
-    document.getElementById('bulkCancel')?.addEventListener('click', clearBulkUI);
-  }
-  function detectAndPreviewBulkFromBlobText(text){
-    const parts = splitMultiCustomers(text||'');
-    if(parts.length<=1) return false;
-    const parsed = parts.map(p => parseLeadBlob(p));
-    // keep only reasonably filled entries
-    bulkStaging = parsed.filter(x => (x.name||x.email||x.phone||x.route));
-    if(bulkStaging.length){
-      showBulkPreview(bulkStaging);
-      return true;
-    }
-    return false;
+  function leadUrl(id){
+    const base = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
+    return base + encodeURIComponent(String(id||'').trim());
   }
 
   // Instant parse on paste into the lead blob
@@ -824,13 +766,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
       if (!has) return;
-      /* 🔀 if multi detected, show preview; else fill form as before */
-      if(detectAndPreviewBulkFromBlobText(has)){
-        toast(`Parsed ${bulkStaging.length} customers. Review & save.`);
-        return;
-      }
-      parseBlob({ onlyFillEmpty: false });
-      toast('Parsed from paste. Review & save.');
+      const res = parseBlob({ onlyFillEmpty: false });
+      if(res!=='MULTI'){ toast('Parsed from paste. Review & save.'); }
     });
   });
   // ⏎ to save directly from the blob box (no Shift)
@@ -839,12 +776,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const has = (leadBlobEl.value || '').trim();
       if(!has) return;
       e.preventDefault();
-      // If a bulk preview exists or multi detected, don't auto-save
-      if(bulkStaging.length || detectAndPreviewBulkFromBlobText(has)){
-        toast('Bulk detected. Review & press Save Customer.');
-        return;
-      }
-      parseBlob({ onlyFillEmpty:true });
+      const outcome = parseBlob({ onlyFillEmpty:true });
+      if(outcome==='MULTI'){ return; } // in multi mode, don't trigger single save
       document.getElementById('saveCustomer').click();
     }
   });
@@ -881,7 +814,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       }else{
         const ta=document.createElement('textarea');
         ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.execCommand('copy'); document.body.removeChild(ta); done();
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
       }
     }catch(_){}
   }
@@ -918,7 +851,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     let modal = document.createElement('div');
     modal.id = modalId; modal.className = 'modal'; modal.style.display = 'none';
     document.body.appendChild(modal); modal.appendChild(card);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) { modal.classList.remove('open'); modal.style.display='none'; document.body.classList.remove('modal-open'); }});
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) { modal.classList.remove('open'); modal.style.display='none'; document.body.classList.remove('modal-open'); resetMultiMode(); }});
     return modal;
   }
   function openModal(modalId, cardId){
@@ -930,6 +863,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const m = document.getElementById(modalId), c = document.getElementById(cardId);
     if(!m || !c) return;
     m.classList.remove('open'); m.style.display='none'; c.style.display='none'; document.body.classList.remove('modal-open');
+    resetMultiMode();
   }
 
   /* ========= State ========= */
@@ -967,13 +901,29 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= Lead Parser ========= */
+  /* ========= Lead Parsers ========= */
+
+  // Parse header (created, updated, leadId, name, RT/OJ)
+  function parseHeader(line){
+    const m = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{4,9})\s+new\s+([^\t\n]+?)\s+(RT|OJ)\s*$/);
+    if(!m) return null;
+    const created = m[1], updated = m[2], leadId = m[3], name = m[4].trim();
+    const startDate = (updated || '').slice(0,10);
+    return { created, updated, leadId, name, startDate };
+  }
+
+  // SINGLE blob parser (also understands the header format and fills startDate)
   function parseLeadBlob(text){
     const raw = (text||'').replace(/\r/g,'\n');
+    const lines = raw.split('\n').map(s=>s.replace(/\t+/g,'\t'));
+    // Try header on first non-empty line
+    let header = null;
+    for(const ln of lines){ if(ln.trim()){ header = parseHeader(ln.trim()); break; } }
     const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
 
     const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
 
+    // Remove ISO dates while finding phone
     let noDates = whole
       .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
       .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
@@ -987,9 +937,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       });
     const phone = phoneCandidates[0] || '';
 
-    let name = '';
-    const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
-    if(nm) name = nm[1].trim();
+    let name = header?.name || '';
+    if(!name){
+      const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
+      if(nm) name = nm[1].trim();
+    }
     if(!name && email){
       const local = email.split('@')[0];
       const parts = local.split(/[._-]+/);
@@ -998,36 +950,66 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         : local.charAt(0).toUpperCase()+local.slice(1);
     }
 
-    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
+    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+(?:\s*\|\|?\s*[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+)?\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
     const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
     const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
     let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
     if(!dates){
-      const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
-      if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
+      const single = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
+      if(single) dates = single[0];
+      else{
+        const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
+        if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
+      }
     }
 
     let pax = '';
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID (4–9 digits not part of phone/date/pax)
-    let leadId = '';
-    try{
-      const phoneDigits = (phone || '').replace(/\D/g,'');
-      const paxDigits   = (pax   || '').replace(/\D/g,'');
-      const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
-      for(const cand of idCandidates){
-        if (cand === paxDigits) continue;
-        if (phoneDigits && phoneDigits.includes(cand)) continue;
-        if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
-        leadId = cand; break;
-      }
-    }catch(_){}
+    // Lead ID (prefer header)
+    let leadId = header?.leadId || '';
+    if(!leadId){
+      try{
+        const phoneDigits = (phone || '').replace(/\D/g,'');
+        const paxDigits   = (pax   || '').replace(/\D/g,'');
+        const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
+        for(const cand of idCandidates){
+          if (cand === paxDigits) continue;
+          if (phoneDigits && phoneDigits.includes(cand)) continue;
+          if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
+          leadId = cand; break;
+        }
+      }catch(_){}
+    }
 
-    return { name, email, phone, route, dates, pax, leadId, notes:'' };
+    const startDate = header?.startDate || ''; // YYYY-MM-DD from 2nd timestamp
+
+    return { name, email, phone, route, dates, pax, leadId, startDate, notes:'' };
+  }
+
+  // MULTI blob parser: splits on header lines
+  function parseBulkLeads(text){
+    const raw = (text||'').replace(/\r/g,'\n');
+    const lines = raw.split('\n');
+    const headers = [];
+    for(let i=0;i<lines.length;i++){
+      const ln = lines[i].trim();
+      if(!ln) continue;
+      if(parseHeader(ln)) headers.push({ idx:i });
+    }
+    if(headers.length<=1) return [];
+    const blocks = [];
+    for(let i=0;i<headers.length;i++){
+      const start = headers[i].idx;
+      const end = (i+1<headers.length ? headers[i+1].idx : lines.length);
+      const block = lines.slice(start, end).join('\n').trim();
+      if(block) blocks.push(block);
+    }
+    const items = blocks.map(b => parseLeadBlob(b));
+    return items;
   }
 
   /* ========= Contact link helpers ========= */
@@ -1043,7 +1025,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       ? `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(addr)}&su=${enc(subject)}&body=${enc(body)}&tf=1`
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
-  /* ✂️ CHANGED: only FIRST name in SMS template */
+  /* Only FIRST name in SMS template */
   function defaultSmsContent(c){
     const first = ((c?.name||'').trim().split(/\s+/)[0]||'').trim();
     return `Hello${first ? ' ' + first : ''} — following up.`;
@@ -1147,7 +1129,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         const contactHtml = `
            ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
            <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}
+          ${c.leadId ? `<br>Lead: <a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a>` : ''}`;
 
         tr.innerHTML = `
           <td data-label="Name">
@@ -1185,7 +1168,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+      c.leadId? `<span class="pill">Lead: <a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
     ].filter(Boolean).join(' ');
     td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
@@ -1317,7 +1300,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       c.route ? `<span class="pill">Route:&nbsp;${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates:&nbsp;${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax:&nbsp;${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead:&nbsp;${escapeHtml(String(c.leadId))}</span>` : ''
+      c.leadId? `<span class="pill">Lead:&nbsp;<a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
     ].filter(Boolean);
     return chips.join(' ');
   }
@@ -1419,7 +1402,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     $('#progressBar').style.width = pct+'%';
   }
 
-  /* ===== Reminder popover (NEW) ===== */
+  /* ===== Reminder popover ===== */
   let _reminderAnchor = null;
   function ensureReminderPopover(){
     let el = document.getElementById('reminderPopover');
@@ -1472,11 +1455,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     _reminderAnchor = anchor;
     const t = state.tasks.find(x=>x.id===taskId);
     el.setAttribute('data-task-id', taskId);
-    // Prefill current time if any
     const inp = document.getElementById('rpTime');
     inp.value = (t?.notifyTime || '');
-
-    // Position
     const r = anchor.getBoundingClientRect();
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     let left = r.left;
@@ -1722,7 +1702,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
-    s.moveOffDays = !!$('#moveOffDays');
+    s.moveOffDays = !!$('#moveOffDays').checked;
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
@@ -1756,18 +1736,76 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
+    set('#startDate', parsed.startDate); // <-- fills Start Day from 2nd timestamp if present
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
     }
   }
+
+  function renderMultiPreview(items){
+    const host = $('#multiPreview');
+    const list = $('#multiList');
+    list.innerHTML = '';
+    items.forEach((p, i)=>{
+      const div = document.createElement('div');
+      div.className = 'multi-item';
+      div.setAttribute('data-ix', String(i));
+      const leadChip = p.leadId ? `<span class="pill">Lead: <a class="mono" href="${leadUrl(p.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(p.leadId))}</a></span>` : '';
+      const paxChip  = p.pax ? `<span class="pill">Pax: ${escapeHtml(String(p.pax))}</span>` : '';
+      const datesChip= p.dates ? `<span class="pill">Dates: ${escapeHtml(p.dates)}</span>` : '';
+      const startChip= p.startDate ? `<span class="pill">Start: ${escapeHtml(p.startDate)}</span>` : '';
+      div.innerHTML = `
+        <div class="multi-top">
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="mi-include" checked> Include</label>
+          <strong>${escapeHtml(p.name || '(no name)')}</strong>
+          ${p.route ? `<span class="pill">Route: ${escapeHtml(p.route)}</span>` : ''}
+          ${datesChip}${paxChip}${leadChip}${startChip}
+          ${p.email ? `<span class="pill mono">${escapeHtml(p.email)}</span>` : ''}
+          ${p.phone ? `<span class="pill mono">${escapeHtml(p.phone)}</span>` : ''}
+        </div>
+        <div class="multi-opts">
+          <label>Status 
+            <select class="mi-status">
+              <option value="unreached" selected>Unreached</option>
+              <option value="reached">Reached</option>
+            </select>
+          </label>
+          <input type="text" class="mi-notes" placeholder="Notes (optional)">
+        </div>`;
+      list.appendChild(div);
+    });
+    host.style.display = 'block';
+    $('#clientForm').style.display = 'none'; // hide manual fields in multi mode
+  }
+
+  function resetMultiMode(){
+    multiMode = false;
+    multiItems = [];
+    $('#multiPreview').style.display = 'none';
+    $('#multiList').innerHTML = '';
+    $('#clientForm').style.display = ''; // show standard form
+  }
+
   function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     const blob = ($('#leadBlob').value || '').trim();
     if(!blob) return null;
+
+    // Multi?
+    const bulk = parseBulkLeads(blob);
+    if(bulk.length > 1){
+      multiMode = true;
+      multiItems = bulk;
+      renderMultiPreview(bulk);
+      return 'MULTI';
+    }
+
+    // Single
     const parsed = parseLeadBlob(blob);
     applyParsedToForm(parsed, { onlyFillEmpty });
     return parsed;
   }
+
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
     const exists = state.clients.find(c=>c.id===id);
@@ -1789,46 +1827,11 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     };
     return { client, exists };
   }
-  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; clearBulkUI(); });
+  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
-      /* 🧩 BULK SAVE: if preview exists, add them all */
-      if (bulkStaging.length){
-        const added = [];
-        const todayY = fmt(today());
-        bulkStaging.forEach((p, i)=>{
-          const status = (document.getElementById(`bulk_status_${i}`)?.value || 'unreached');
-          const notes  = (document.getElementById(`bulk_notes_${i}`)?.value || '').trim();
-          const client = {
-            id: uid(),
-            name: (p.name||'').trim() || 'Customer',
-            email: (p.email||'').trim(),
-            phone: (p.phone||'').trim(),
-            status,
-            startDate: todayY,
-            reachedStart: status==='reached' ? todayY : null,
-            route: (p.route||'').trim(),
-            dates: (p.dates||'').trim(),
-            pax:   (p.pax||'').trim(),
-            leadId:(p.leadId||'').trim(),
-            notes
-          };
-          state.clients.push(client);
-          if(status==='unreached') scheduleUnreached(client); else scheduleReached(client);
-          added.push(client);
-        });
-        toast(`Added ${added.length} customer(s)`);
-        $('#leadBlob').value = '';
-        $('#clientForm').reset();
-        $('#clientId').value = '';
-        clearBulkUI();
-        save();
-        closeModal('addModal','addCard');
-        return;
-      }
-
-      // Single mode (original behavior)
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
+      if(multiMode){ toast('You are in multi-paste mode — use “Save all” above.', 'err', 2200); return; }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
       if(!exists){
@@ -1862,6 +1865,47 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
       toast('Save failed', 'err', 2200);
     }
+  });
+
+  // Save all from multi preview
+  $('#saveMulti').addEventListener('click', ()=>{
+    if(!multiMode || !multiItems.length) { resetMultiMode(); return; }
+    const rows = $$('#multiList .multi-item');
+    let added = 0;
+    rows.forEach((row, i)=>{
+      const include = row.querySelector('.mi-include')?.checked;
+      if(!include) return;
+      const status = row.querySelector('.mi-status')?.value || 'unreached';
+      const notes = (row.querySelector('.mi-notes')?.value || '').trim();
+      const p = multiItems[i];
+      const client = {
+        id: uid(),
+        name: p.name || '',
+        email: p.email || '',
+        phone: p.phone || '',
+        status,
+        startDate: p.startDate || fmt(today()),
+        reachedStart: (status==='reached') ? (p.startDate || fmt(today())) : null,
+        route: p.route || '',
+        dates: p.dates || '',
+        pax: p.pax || '',
+        leadId: p.leadId || '',
+        notes
+      };
+      if(!client.name) return; // skip nameless
+      state.clients.push(client);
+      if(client.status==='unreached') scheduleUnreached(client);
+      else scheduleReached(client);
+      added++;
+    });
+    save();
+    toast(`Added ${added} customer${added===1?'':'s'}.`);
+    $('#leadBlob').value = '';
+    resetMultiMode();
+    closeModal('addModal','addCard');
+  });
+  $('#multiCancel').addEventListener('click', ()=>{
+    resetMultiMode();
   });
 
   /* ===== Add Task modal ===== */
@@ -1934,9 +1978,9 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const tag = (document.activeElement || {}).tagName?.toLowerCase();
       if (tag==='textarea' || tag==='input' || tag==='select'){ e.preventDefault(); saveTaskFromModal(); }
     }
-    /* ✂️ NEW: Esc closes Add Customer modal too */
+    /* Esc closes Add Customer modal too */
     const addOpen = $('#addModal')?.classList.contains('open');
-    if (addOpen && e.key==='Escape'){ e.preventDefault(); clearBulkUI(); closeModal('addModal','addCard'); }
+    if (addOpen && e.key==='Escape'){ e.preventDefault(); closeModal('addModal','addCard'); }
     /* Close reminder popover on Esc */
     if (e.key==='Escape'){ closeReminderPopover(); }
   });
@@ -1977,8 +2021,15 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     makeModalFromCard('addCard','addModal');
     makeModalFromCard('taskCard','taskModal');
     // wire Add customer triggers
-    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; clearBulkUI(); openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
-    $('#closeAdd')?.addEventListener('click', ()=> { clearBulkUI(); closeModal('addModal','addCard'); });
+    $('#openAdd')?.addEventListener('click', ()=>{
+      $('#clientForm')?.reset();
+      $('#clientId').value='';
+      $('#leadBlob').value='';
+      resetMultiMode();
+      openModal('addModal','addCard');
+      setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30);
+    });
+    $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
     refresh(); buildCalendar();
   }
   bootstrap();
