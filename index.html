@@ -250,6 +250,15 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .note-preview:hover{text-decoration:underline}
 .actions{display:flex; gap:6px; justify-content:flex-end; align-items:center}
 
+/* 🔧 Column sizing & alignment fix */
+#clientsTbl th:nth-child(1), #clientsTbl td:nth-child(1){ width:26%; }
+#clientsTbl th:nth-child(2), #clientsTbl td:nth-child(2){ width:28%; }
+#clientsTbl th:nth-child(3), #clientsTbl td:nth-child(3){ width:12%; text-align:center; }
+#clientsTbl th:nth-child(4), #clientsTbl td:nth-child(4){ width:14%; text-align:center; }
+#clientsTbl th:nth-child(5), #clientsTbl td:nth-child(5){ width:20%; }
+#clientsTbl td.actions{ text-align:right; }
+#clientsTbl .actions{ justify-content:flex-end; }
+
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
 .agenda-item.done{opacity:.55}
@@ -410,12 +419,12 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 .reminder-popover .btns{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
 .reminder-popover input[type="time"]{ height:34px; }
 
-/* ===== Multi-paste preview ===== */
-#multiPreview{ display:none; margin-top:8px; }
-.multi-item{ border:1px solid var(--line); border-radius:10px; padding:10px; margin:8px 0; background:var(--surface); }
-.multi-top{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-.multi-opts{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:6px; }
-.multi-opts input[type="text"]{ height:34px; }
+/* Small time chip next to bell */
+.bell-time{
+  display:inline-block; margin:0 6px 0 8px; padding:2px 6px;
+  border:1px solid var(--line); border-radius:999px; font-size:11px;
+  background:var(--chip);
+}
 </style>
 </head>
 <body>
@@ -443,18 +452,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       <div class="bd">
         <div class="lead-block highlight">
           <div>
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID, Start Day)</label>
-            <textarea id="leadBlob" rows="6" placeholder="Paste one or many leads… (Enter = quick save for single; auto preview for multiple)"></textarea>
-          </div>
-
-          <!-- MULTI PREVIEW -->
-          <div id="multiPreview" class="slab">
-            <div class="tiny" style="margin-bottom:6px"><b>Parsed customers</b> — review status/notes. The standard form is hidden in multi-mode.</div>
-            <div id="multiList"></div>
-            <div class="right" style="margin-top:8px">
-              <button type="button" id="multiCancel">Cancel</button>
-              <button type="button" id="saveMulti" class="primary">Save all</button>
-            </div>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
+            <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
         </div>
 
@@ -750,15 +749,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   const storeKey  = 'followup_crm_v21';
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
-
-  // Multi-mode flag
-  let multiMode = false;
-  let multiItems = [];
-
-  function leadUrl(id){
-    const base = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
-    return base + encodeURIComponent(String(id||'').trim());
-  }
+  const LEAD_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
 
   // Instant parse on paste into the lead blob
   const leadBlobEl = document.getElementById('leadBlob');
@@ -766,8 +757,8 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
       if (!has) return;
-      const res = parseBlob({ onlyFillEmpty: false });
-      if(res!=='MULTI'){ toast('Parsed from paste. Review & save.'); }
+      parseBlob({ onlyFillEmpty: false });
+      toast('Parsed from paste. Review & save.');
     });
   });
   // ⏎ to save directly from the blob box (no Shift)
@@ -776,8 +767,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       const has = (leadBlobEl.value || '').trim();
       if(!has) return;
       e.preventDefault();
-      const outcome = parseBlob({ onlyFillEmpty:true });
-      if(outcome==='MULTI'){ return; } // in multi mode, don't trigger single save
+      parseBlob({ onlyFillEmpty:true });
       document.getElementById('saveCustomer').click();
     }
   });
@@ -851,7 +841,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     let modal = document.createElement('div');
     modal.id = modalId; modal.className = 'modal'; modal.style.display = 'none';
     document.body.appendChild(modal); modal.appendChild(card);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) { modal.classList.remove('open'); modal.style.display='none'; document.body.classList.remove('modal-open'); resetMultiMode(); }});
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) { modal.classList.remove('open'); modal.style.display='none'; document.body.classList.remove('modal-open'); }});
     return modal;
   }
   function openModal(modalId, cardId){
@@ -863,7 +853,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     const m = document.getElementById(modalId), c = document.getElementById(cardId);
     if(!m || !c) return;
     m.classList.remove('open'); m.style.display='none'; c.style.display='none'; document.body.classList.remove('modal-open');
-    resetMultiMode();
   }
 
   /* ========= State ========= */
@@ -901,29 +890,13 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= Lead Parsers ========= */
-
-  // Parse header (created, updated, leadId, name, RT/OJ)
-  function parseHeader(line){
-    const m = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(\d{4,9})\s+new\s+([^\t\n]+?)\s+(RT|OJ)\s*$/);
-    if(!m) return null;
-    const created = m[1], updated = m[2], leadId = m[3], name = m[4].trim();
-    const startDate = (updated || '').slice(0,10);
-    return { created, updated, leadId, name, startDate };
-  }
-
-  // SINGLE blob parser (also understands the header format and fills startDate)
+  /* ========= Lead Parser ========= */
   function parseLeadBlob(text){
     const raw = (text||'').replace(/\r/g,'\n');
-    const lines = raw.split('\n').map(s=>s.replace(/\t+/g,'\t'));
-    // Try header on first non-empty line
-    let header = null;
-    for(const ln of lines){ if(ln.trim()){ header = parseHeader(ln.trim()); break; } }
     const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
 
     const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
 
-    // Remove ISO dates while finding phone
     let noDates = whole
       .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
       .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
@@ -937,11 +910,9 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       });
     const phone = phoneCandidates[0] || '';
 
-    let name = header?.name || '';
-    if(!name){
-      const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
-      if(nm) name = nm[1].trim();
-    }
+    let name = '';
+    const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
+    if(nm) name = nm[1].trim();
     if(!name && email){
       const local = email.split('@')[0];
       const parts = local.split(/[._-]+/);
@@ -950,66 +921,36 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         : local.charAt(0).toUpperCase()+local.slice(1);
     }
 
-    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+(?:\s*\|\|?\s*[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+)?\b/);
+    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
     const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
     const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
     let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
     if(!dates){
-      const single = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
-      if(single) dates = single[0];
-      else{
-        const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
-        if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
-      }
+      const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
+      if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
     }
 
     let pax = '';
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID (prefer header)
-    let leadId = header?.leadId || '';
-    if(!leadId){
-      try{
-        const phoneDigits = (phone || '').replace(/\D/g,'');
-        const paxDigits   = (pax   || '').replace(/\D/g,'');
-        const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
-        for(const cand of idCandidates){
-          if (cand === paxDigits) continue;
-          if (phoneDigits && phoneDigits.includes(cand)) continue;
-          if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
-          leadId = cand; break;
-        }
-      }catch(_){}
-    }
+    // Lead ID (4–9 digits not part of phone/date/pax)
+    let leadId = '';
+    try{
+      const phoneDigits = (phone || '').replace(/\D/g,'');
+      const paxDigits   = (pax   || '').replace(/\D/g,'');
+      const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
+      for(const cand of idCandidates){
+        if (cand === paxDigits) continue;
+        if (phoneDigits && phoneDigits.includes(cand)) continue;
+        if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
+        leadId = cand; break;
+      }
+    }catch(_){}
 
-    const startDate = header?.startDate || ''; // YYYY-MM-DD from 2nd timestamp
-
-    return { name, email, phone, route, dates, pax, leadId, startDate, notes:'' };
-  }
-
-  // MULTI blob parser: splits on header lines
-  function parseBulkLeads(text){
-    const raw = (text||'').replace(/\r/g,'\n');
-    const lines = raw.split('\n');
-    const headers = [];
-    for(let i=0;i<lines.length;i++){
-      const ln = lines[i].trim();
-      if(!ln) continue;
-      if(parseHeader(ln)) headers.push({ idx:i });
-    }
-    if(headers.length<=1) return [];
-    const blocks = [];
-    for(let i=0;i<headers.length;i++){
-      const start = headers[i].idx;
-      const end = (i+1<headers.length ? headers[i+1].idx : lines.length);
-      const block = lines.slice(start, end).join('\n').trim();
-      if(block) blocks.push(block);
-    }
-    const items = blocks.map(b => parseLeadBlob(b));
-    return items;
+    return { name, email, phone, route, dates, pax, leadId, notes:'' };
   }
 
   /* ========= Contact link helpers ========= */
@@ -1126,23 +1067,27 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       .forEach(c => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-rowid', c.id);
+        const leadChip = c.leadId
+          ? `<span class="pill">Lead:&nbsp;<a href="${LEAD_BASE + encodeURIComponent(String(c.leadId))}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>`
+          : '';
+
         const contactHtml = `
            ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
            <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}
-          ${c.leadId ? `<br>Lead: <a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a>` : ''}`;
+          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
 
         tr.innerHTML = `
           <td data-label="Name">
             <strong>${escapeHtml(c.name)}</strong>
             <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
-              ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
+              ${[c.route?`Route:${escapeHtml(' '+c.route)}`:'', c.dates?` • Dates:${escapeHtml(' '+c.dates)}`:'', c.pax?` • Pax:${escapeHtml(' '+String(c.pax))}`:''].filter(Boolean).join('')}
             </div>
           </td>
           <td data-label="Contact" class="tiny">${contactHtml}</td>
-          <td data-label="Status"><span class="badge">${c.status}</span></td>
-          <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
+          <td data-label="Status" style="text-align:center"><span class="badge">${c.status}</span></td>
+          <td data-label="Next Action" style="text-align:center">${nextActionDateForClient(c.id)}</td>
           <td data-label="Actions" class="actions">
+            ${leadChip}
             <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
             <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
             <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
@@ -1168,7 +1113,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead: <a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
+      c.leadId? `<span class="pill">Lead: <a href="${LEAD_BASE + encodeURIComponent(String(c.leadId))}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
     ].filter(Boolean).join(' ');
     td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
@@ -1300,7 +1245,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       c.route ? `<span class="pill">Route:&nbsp;${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates:&nbsp;${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax:&nbsp;${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead:&nbsp;<a class="mono" href="${leadUrl(c.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
+      c.leadId? `<span class="pill">Lead:&nbsp;<a href="${LEAD_BASE + encodeURIComponent(String(c.leadId))}" target="_blank" rel="noopener">${escapeHtml(String(c.leadId))}</a></span>` : ''
     ].filter(Boolean);
     return chips.join(' ');
   }
@@ -1330,6 +1275,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
 
     const bell = t.important ? '🔔' : '🔕';
     const bellTitle = t.important ? 'Edit reminder' : 'Add reminder';
+    const timeChip = t.notifyTime ? `<span class="bell-time mono" title="Reminder time">${escapeHtml(t.notifyTime)}</span>` : '';
 
     div.innerHTML = `
       <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
@@ -1342,8 +1288,9 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
         <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
         ${notesHtml}
       </div>
-      <div class="tiny mono">
-        ${t.date}
+      <div class="tiny mono" style="display:flex; align-items:center; gap:6px">
+        <span>${t.date}</span>
+        ${timeChip}
         <button class="btn-icon" data-bell="${t.id}" title="${bellTitle}" aria-label="${bellTitle}">${bell}</button>
         <button class="btn-icon" data-del="${t.id}" title="Delete task" aria-label="Delete task">🗑️</button>
       </div>`;
@@ -1455,8 +1402,10 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     _reminderAnchor = anchor;
     const t = state.tasks.find(x=>x.id===taskId);
     el.setAttribute('data-task-id', taskId);
+    // Prefill current time if any
     const inp = document.getElementById('rpTime');
     inp.value = (t?.notifyTime || '');
+    // Position
     const r = anchor.getBoundingClientRect();
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     let left = r.left;
@@ -1702,7 +1651,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
       thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
     };
-    s.moveOffDays = !!$('#moveOffDays').checked;
+    s.moveOffDays = !!$('#moveOffDays');
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
@@ -1736,76 +1685,18 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
-    set('#startDate', parsed.startDate); // <-- fills Start Day from 2nd timestamp if present
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
     }
   }
-
-  function renderMultiPreview(items){
-    const host = $('#multiPreview');
-    const list = $('#multiList');
-    list.innerHTML = '';
-    items.forEach((p, i)=>{
-      const div = document.createElement('div');
-      div.className = 'multi-item';
-      div.setAttribute('data-ix', String(i));
-      const leadChip = p.leadId ? `<span class="pill">Lead: <a class="mono" href="${leadUrl(p.leadId)}" target="_blank" rel="noopener">${escapeHtml(String(p.leadId))}</a></span>` : '';
-      const paxChip  = p.pax ? `<span class="pill">Pax: ${escapeHtml(String(p.pax))}</span>` : '';
-      const datesChip= p.dates ? `<span class="pill">Dates: ${escapeHtml(p.dates)}</span>` : '';
-      const startChip= p.startDate ? `<span class="pill">Start: ${escapeHtml(p.startDate)}</span>` : '';
-      div.innerHTML = `
-        <div class="multi-top">
-          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="mi-include" checked> Include</label>
-          <strong>${escapeHtml(p.name || '(no name)')}</strong>
-          ${p.route ? `<span class="pill">Route: ${escapeHtml(p.route)}</span>` : ''}
-          ${datesChip}${paxChip}${leadChip}${startChip}
-          ${p.email ? `<span class="pill mono">${escapeHtml(p.email)}</span>` : ''}
-          ${p.phone ? `<span class="pill mono">${escapeHtml(p.phone)}</span>` : ''}
-        </div>
-        <div class="multi-opts">
-          <label>Status 
-            <select class="mi-status">
-              <option value="unreached" selected>Unreached</option>
-              <option value="reached">Reached</option>
-            </select>
-          </label>
-          <input type="text" class="mi-notes" placeholder="Notes (optional)">
-        </div>`;
-      list.appendChild(div);
-    });
-    host.style.display = 'block';
-    $('#clientForm').style.display = 'none'; // hide manual fields in multi mode
-  }
-
-  function resetMultiMode(){
-    multiMode = false;
-    multiItems = [];
-    $('#multiPreview').style.display = 'none';
-    $('#multiList').innerHTML = '';
-    $('#clientForm').style.display = ''; // show standard form
-  }
-
   function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     const blob = ($('#leadBlob').value || '').trim();
     if(!blob) return null;
-
-    // Multi?
-    const bulk = parseBulkLeads(blob);
-    if(bulk.length > 1){
-      multiMode = true;
-      multiItems = bulk;
-      renderMultiPreview(bulk);
-      return 'MULTI';
-    }
-
-    // Single
     const parsed = parseLeadBlob(blob);
     applyParsedToForm(parsed, { onlyFillEmpty });
     return parsed;
   }
-
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
     const exists = state.clients.find(c=>c.id===id);
@@ -1831,7 +1722,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
   $('#saveCustomer').addEventListener('click', ()=>{
     try{
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
-      if(multiMode){ toast('You are in multi-paste mode — use “Save all” above.', 'err', 2200); return; }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
       if(!exists){
@@ -1865,47 +1755,6 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
       alert('Could not save customer. If this persists, click “Wipe All” to clear local data and try again.');
       toast('Save failed', 'err', 2200);
     }
-  });
-
-  // Save all from multi preview
-  $('#saveMulti').addEventListener('click', ()=>{
-    if(!multiMode || !multiItems.length) { resetMultiMode(); return; }
-    const rows = $$('#multiList .multi-item');
-    let added = 0;
-    rows.forEach((row, i)=>{
-      const include = row.querySelector('.mi-include')?.checked;
-      if(!include) return;
-      const status = row.querySelector('.mi-status')?.value || 'unreached';
-      const notes = (row.querySelector('.mi-notes')?.value || '').trim();
-      const p = multiItems[i];
-      const client = {
-        id: uid(),
-        name: p.name || '',
-        email: p.email || '',
-        phone: p.phone || '',
-        status,
-        startDate: p.startDate || fmt(today()),
-        reachedStart: (status==='reached') ? (p.startDate || fmt(today())) : null,
-        route: p.route || '',
-        dates: p.dates || '',
-        pax: p.pax || '',
-        leadId: p.leadId || '',
-        notes
-      };
-      if(!client.name) return; // skip nameless
-      state.clients.push(client);
-      if(client.status==='unreached') scheduleUnreached(client);
-      else scheduleReached(client);
-      added++;
-    });
-    save();
-    toast(`Added ${added} customer${added===1?'':'s'}.`);
-    $('#leadBlob').value = '';
-    resetMultiMode();
-    closeModal('addModal','addCard');
-  });
-  $('#multiCancel').addEventListener('click', ()=>{
-    resetMultiMode();
   });
 
   /* ===== Add Task modal ===== */
@@ -2021,14 +1870,7 @@ button[data-bell].btn-icon:hover { filter: brightness(1.1); }
     makeModalFromCard('addCard','addModal');
     makeModalFromCard('taskCard','taskModal');
     // wire Add customer triggers
-    $('#openAdd')?.addEventListener('click', ()=>{
-      $('#clientForm')?.reset();
-      $('#clientId').value='';
-      $('#leadBlob').value='';
-      resetMultiMode();
-      openModal('addModal','addCard');
-      setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30);
-    });
+    $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
     $('#closeAdd')?.addEventListener('click', ()=> closeModal('addModal','addCard'));
     refresh(); buildCalendar();
   }
