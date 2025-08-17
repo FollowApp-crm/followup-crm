@@ -98,7 +98,7 @@ body.light button:not(.primary):not(.ghost):not(.btn-danger):not(.toggle) {
   background:#fff; color:var(--ink); border-color:var(--line);
 }
 
-/* Flash the Agenda date field when it’s changed from the calendar */
+/* Flash the Agenda date field when changed from calendar */
 @keyframes agendaDateGlow{
   0%   { box-shadow: 0 0 0 0 rgba(124,92,255,.45), 0 0 0 6px rgba(124,92,255,.18); }
   100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
@@ -265,6 +265,11 @@ body.light .group-hd .label{ background:#f1f4ff; color:#1e2758 }
 .progress{height:12px; border-radius:999px; background:var(--chip); border:1px solid var(--line); overflow:hidden}
 .progress > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0}
 
+/* >>> Bell inline row */
+#agenda [data-bellbox]{ display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
+#agenda [data-bellbox] input[type="time"]{ height:28px; }
+#agenda [data-bellbox] .pill{ margin-right:2px; }
+
 /* =================== CALENDAR =================== */
 #calendarGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px }
 .cal-head{ font-weight:700; font-size:12px; opacity:.8; padding:4px 2px; text-align:center }
@@ -408,7 +413,7 @@ body.light { color-scheme: light; }
   <main class="wrap grid">
 
     <!-- Add/Edit card (moved into modal at runtime) -->
-    <section class="card" id="addCard">
+    <section class="card" id="addCard" style="display:none">
       <div class="hd">
         <strong>Add / Edit Customer</strong>
         <span class="badge">Local only</span>
@@ -478,7 +483,6 @@ body.light { color-scheme: light; }
             </div>
           </div>
 
-          <!-- Start date -->
           <div class="row single">
             <div>
               <label>Start date (defaults to today or auto from blob)</label>
@@ -494,7 +498,7 @@ body.light { color-scheme: light; }
       </div>
     </section>
 
-    <!-- Add Task (NEW) — modal card moved into its own modal -->
+    <!-- Add Task modal card -->
     <section class="card" id="taskCard" style="display:none">
       <div class="hd">
         <strong>Add Task</strong>
@@ -718,24 +722,26 @@ body.light { color-scheme: light; }
 
   // Instant parse on paste into the lead blob
   const leadBlobEl = document.getElementById('leadBlob');
-  leadBlobEl.addEventListener('paste', () => {
-    requestAnimationFrame(() => {
-      const has = (leadBlobEl.value || '').trim();
-      if (!has) return;
-      parseBlob({ onlyFillEmpty: false });
-      toast('Parsed from paste. Review & save.');
+  if (leadBlobEl){
+    leadBlobEl.addEventListener('paste', () => {
+      requestAnimationFrame(() => {
+        const has = (leadBlobEl.value || '').trim();
+        if (!has) return;
+        parseBlob({ onlyFillEmpty: false });
+        toast('Parsed from paste. Review & save.');
+      });
     });
-  });
-  // ⏎ to save directly from the blob box (no Shift)
-  leadBlobEl.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter' && !e.shiftKey){
-      const has = (leadBlobEl.value || '').trim();
-      if(!has) return;
-      e.preventDefault();
-      parseBlob({ onlyFillEmpty:true });
-      document.getElementById('saveCustomer').click();
-    }
-  });
+    // ⏎ to save directly from the blob box (no Shift)
+    leadBlobEl.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && !e.shiftKey){
+        const has = (leadBlobEl.value || '').trim();
+        if(!has) return;
+        e.preventDefault();
+        parseBlob({ onlyFillEmpty:true });
+        document.getElementById('saveCustomer').click();
+      }
+    });
+  }
 
   function flashAgendaDate(){
     const el = document.getElementById('agendaDate');
@@ -838,11 +844,26 @@ body.light { color-scheme: light; }
   }
 
   /* ========= Add Task modal ========= */
+  let taskKeysBound = false;
+  function taskModalKeyHandler(e){
+    const open = document.getElementById('taskModal')?.classList.contains('open');
+    if(!open) return;
+    if(e.key === 'Escape'){ e.preventDefault(); closeTaskModal(); return; }
+    if(e.key === 'Enter' && !e.shiftKey){
+      const tag = (e.target?.tagName||'').toLowerCase();
+      if(tag !== 'textarea'){ e.preventDefault(); saveCustomTask(); }
+    }
+  }
+  function bindTaskKeys(bind){
+    if(bind && !taskKeysBound){ document.addEventListener('keydown', taskModalKeyHandler); taskKeysBound=true; }
+    if(!bind && taskKeysBound){ document.removeEventListener('keydown', taskModalKeyHandler); taskKeysBound=false; }
+  }
   function closeTaskModal(){
     const m = $('#taskModal'); const card = $('#taskCard');
     if(m){ m.classList.remove('open'); m.style.display='none'; }
     if(card){ card.style.display='none'; }
     document.body.classList.remove('modal-open');
+    bindTaskKeys(false);
   }
   function openTaskModal(){
     const m = $('#taskModal'); const card = $('#taskCard');
@@ -856,6 +877,7 @@ body.light { color-scheme: light; }
     card.style.display='block';
     m.style.display='flex'; m.classList.add('open');
     document.body.classList.add('modal-open');
+    bindTaskKeys(true);
     setTimeout(()=>{ try{ $('#ctClient').focus(); }catch(_){} }, 30);
   }
   function initTaskModal(){
@@ -875,7 +897,7 @@ body.light { color-scheme: light; }
       clients: [],
       tasks: [],
       settings: {
-        // ⬇️ Defaults: Friday & Saturday OFF
+        // Defaults: Friday & Saturday OFF
         workingDays: { mon:true, tue:true, wed:true, thu:true, fri:false, sat:false, sun:true },
         moveOffDays: true,
         overrides: {}
@@ -943,7 +965,7 @@ body.light { color-scheme: light; }
     const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
     const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
-    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?)";
     const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
     let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
     if(!dates){
@@ -955,7 +977,7 @@ body.light { color-scheme: light; }
     const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
     if(mpax) pax = mpax[1];
 
-    // Lead ID (4–9 digits not part of phone/date/pax)
+    // Lead ID
     let leadId = '';
     try{
       const phoneDigits = (phone || '').replace(/\D/g,'');
@@ -969,7 +991,6 @@ body.light { color-scheme: light; }
       }
     }catch(_){}
 
-    // ⬅️ NEW: Day 1 anchor from the 2nd ISO date in blob
     const startDate = extractSecondIsoDate(whole);
 
     return { name, email, phone, route, dates, pax, leadId, notes:'', startDate };
@@ -989,19 +1010,30 @@ body.light { color-scheme: light; }
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  // ⬅️ NEW: RingCentral SMS deep-link (Windows app first, then mobile, then sms:)
+  // Improved RingCentral deep-link chain to open specific SMS thread (Windows first)
+  function tryOpenURI(uri){
+    const i = document.createElement('iframe');
+    i.style.display='none'; i.src=uri; document.body.appendChild(i);
+    setTimeout(()=>{ try{ document.body.removeChild(i); }catch(_){ } }, 900);
+  }
   function openRingCentralSms(num){
     const digits = (num||'').replace(/[^\d+]/g,'');
-    const tryOpen = (uri) => {
-      const i = document.createElement('iframe'); i.style.display='none'; i.src=uri;
-      document.body.appendChild(i); setTimeout(()=>{ try{ document.body.removeChild(i); }catch(_){ } }, 900);
-    };
     try{
       const ua = navigator.userAgent || '';
-      if (/Windows/i.test(ua)) tryOpen(`rcapp://sms?number=${digits}`);
-      tryOpen(`rcmobile://sms?number=${digits}`);
-      setTimeout(()=>{ window.location.href = `sms:${digits}`; }, 50);
-    }catch(_){ window.location.href = `sms:${digits}`; }
+      if (/Windows/i.test(ua)){
+        // Try several desktop variants
+        tryOpenURI(`rcapp://r/sms?number=${digits}`);
+        tryOpenURI(`rcapp://sms?number=${digits}`);
+        tryOpenURI(`rcapp://message/compose?type=SMS&numbers=${digits}`);
+        tryOpenURI(`rcapp://compose?type=sms&numbers=${digits}`);
+      }
+      // Mobile app scheme
+      tryOpenURI(`rcmobile://sms?number=${digits}`);
+      // Fallback to OS sms:
+      setTimeout(()=>{ window.location.href = `sms:${digits}`; }, 80);
+    }catch(_){
+      window.location.href = `sms:${digits}`;
+    }
   }
   document.addEventListener('click', (e)=>{
     const a = e.target.closest('a[data-rcsms]');
@@ -1246,7 +1278,7 @@ body.light { color-scheme: light; }
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   let agendaFilter = '';
-  // ⬇️ Default sort = By client
+  // Default sort = By client
   let sortMode = localStorage.getItem(SORT_KEY) || 'client';
 
   function setAgendaFilter(val){
@@ -1260,6 +1292,8 @@ body.light { color-scheme: light; }
   function clientNameLower(t){ return clientDisplayName(t).toLowerCase(); }
   function sortTasksForMode(a,b){
     const byType = typeOrder(a.type) - typeOrder(b.type);
+    the: {
+    }
     const byName = clientNameLower(a).localeCompare(clientNameLower(b));
     const byTitle = (a.title||'').localeCompare(b.title||'');
     return sortMode==='client' ? (byName || byType || byTitle) : (byType || byName || byTitle);
@@ -1301,7 +1335,7 @@ body.light { color-scheme: light; }
     const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
     const chips = detailsChipsFor(t);
 
-    // ⬇️ Per-task bell UI next to bin (shows saved HH:MM if present)
+    // Per-task bell UI next to bin (shows saved HH:MM if present)
     const bell = `<button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>${t.notifyTime?` <span class="tiny mono">⏰ ${t.notifyTime}</span>`:''}`;
 
     div.innerHTML = `
@@ -1320,7 +1354,7 @@ body.light { color-scheme: light; }
     return div;
   }
 
-  // Inline bell time picker (mini)
+  // Inline bell time picker (now horizontal)
   $('#agenda').addEventListener('click', (e)=>{
     // Delete
     const del = e.target.closest('[data-del]');
@@ -1341,7 +1375,7 @@ body.light { color-scheme: light; }
       wrap.style.marginTop='6px';
       wrap.innerHTML = `
         <span class="pill">Notify @</span>
-        <input type="time" id="bellTime_${id}" value="${t?.notifyTime||''}" style="height:28px">
+        <input type="time" id="bellTime_${id}" value="${t?.notifyTime||''}">
         <button class="tiny" data-bell-save="${id}">Save</button>
         <button class="tiny" data-bell-clear="${id}">Clear</button>`;
       host.appendChild(wrap);
@@ -1674,7 +1708,6 @@ body.light { color-scheme: light; }
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
-    // NEW: auto-apply start date from blob’s 2nd ISO date
     set('#startDate', parsed.startDate);
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
@@ -1754,26 +1787,28 @@ body.light { color-scheme: light; }
     const sel = $('#ctClient'); if(!sel) return;
     const keep = sel.value;
     sel.innerHTML = '';
+    // NEW: "(None)" default option
+    sel.insertAdjacentHTML('beforeend', `<option value="" selected>(None)</option>`);
     const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
-    sel.insertAdjacentHTML('beforeend', `<option value="" disabled selected hidden>Select client…</option>`);
     opts.forEach(c=>{
       const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
       sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
     });
-    if (opts.length && keep) sel.value = keep;
+    if (keep) sel.value = keep;
   }
   function clearCustomTaskForm(){
     ['ctClient','ctType','ctTitle','ctDate','ctTime','ctNotes'].forEach(id=>{
       const el = $('#'+id); if(!el) return;
-      if (id==='ctType') el.value='call'; else el.value='';
+      if (id==='ctType') el.value='call';
+      else if(id==='ctClient') el.value='';
+      else el.value='';
     });
     $('#ctImportant').checked = false;
     $('#ctNotify').checked = false; $('#ctNotify').disabled = true;
   }
   function saveCustomTask(){
     const clientId = $('#ctClient').value;
-    if(!clientId) return alert('Pick a client');
-    const c = clientById(clientId); if(!c) return alert('Unknown client');
+    const c = clientId ? clientById(clientId) : null; // allow none
     const type  = $('#ctType').value || 'custom';
     let title   = ($('#ctTitle').value||'').trim();
     if (!title) title = titleDefaultFor(type) || 'Custom';
@@ -1783,7 +1818,11 @@ body.light { color-scheme: light; }
     const notify = !!$('#ctNotify').checked && !!time;
     const important = notify ? true : !!$('#ctImportant').checked;
 
-    const t = { clientId: c.id, clientName: c.name, date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important };
+    const t = {
+      clientId: c ? c.id : undefined,
+      clientName: c ? c.name : '',
+      date, type, title, label: 'Custom', source: 'custom', status: 'open', notes, important
+    };
     if (time){
       t.notifyTime = time;
       if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
@@ -1824,6 +1863,15 @@ body.light { color-scheme: light; }
 
   /* ========= Bootstrap ========= */
   function bootstrap(){
+    // Create modals
+    const addCard = document.getElementById('addCard');
+    const addModal = document.createElement('div'); addModal.id='addModal'; addModal.className='modal'; addModal.style.display='none';
+    document.body.appendChild(addModal); addModal.appendChild(addCard);
+
+    const taskCard = document.getElementById('taskCard');
+    const taskModal = document.createElement('div'); taskModal.id='taskModal'; taskModal.className='modal'; taskModal.style.display='none';
+    document.body.appendChild(taskModal); taskModal.appendChild(taskCard);
+
     initAddModal();
     initTaskModal();
     refresh();
