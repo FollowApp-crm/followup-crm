@@ -787,41 +787,43 @@ function mountSortGroupLabel(){
   const byType   = document.getElementById('sortType');
   if (!byClient || !byType || !byClient.parentElement) return;
 
-  // Remove any old loose “Sort:” chip and old right-side Sort button
-document.querySelectorAll('#actionsCard .pill, #actionsCard .label, #actionsCard button')
-  .forEach(el => {
-    const t = (el.textContent || '').trim().toLowerCase();
-    if ((t === 'sort:' || t === 'sort') && !el.closest('#sortGroup')) el.remove();
-  });
+  // Wrapper that will contain: [ Sort: ] [ By client | By task ]
+  let wrap = document.getElementById('sortWrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'sortWrap';
+    wrap.className = 'controls-row'; // same row container you use near "Show:"
+    byClient.parentElement.insertBefore(wrap, byClient);
+  }
 
-  ['#sort','#sortBtn','[data-act="sort"]','button.sort'].forEach(sel=>{
-    const n = document.querySelector(sel);
-    if (n && !n.closest('#sortGroup')) n.remove();
-  });
-
-  // Create/find wrapper before the first sort button
+  // The segmented button container
   let group = document.getElementById('sortGroup');
   if (!group){
     group = document.createElement('div');
     group.id = 'sortGroup';
     group.className = 'btn-group';
-    byClient.parentElement.insertBefore(group, byClient);
   }
 
-  // Create/find label
+  // The label chip
   let label = document.getElementById('sortLabel');
   if (!label){
     label = document.createElement('span');
     label.id = 'sortLabel';
     label.className = 'pill tiny mono';
+    label.textContent = 'Sort:';
+  } else {
+    label.textContent = 'Sort:';
   }
-  label.textContent = 'Sort:'; // match the Show: group
 
-  // Move pieces into the group
-  group.appendChild(label);
+  // Assemble: label and group are siblings
+  wrap.appendChild(label);
+  wrap.appendChild(group);
+
+  // Move buttons into the group
   group.appendChild(byClient);
   group.appendChild(byType);
 }
+
 
 
 
