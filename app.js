@@ -787,17 +787,15 @@ function mountSortGroupLabel(){
   const byType   = document.getElementById('sortType');
   if (!byClient || !byType || !byClient.parentElement) return;
 
-  // Remove any old, loose “Sort:” chip and the old right-side “Sort” button
-  document.querySelectorAll('.pill, .label, button').forEach(el=>{
-    const t = (el.textContent || '').trim().toLowerCase();
-    if ((t === 'sort:' || t === 'sort') && !el.closest('#sortGroup')) el.remove();
-  });
+  // Remove any old loose “Sort:” chip and old right-side Sort button
+document.querySelectorAll('#actionsCard .pill, #actionsCard .label, #actionsCard button').forEach( /* … */ );
+
   ['#sort','#sortBtn','[data-act="sort"]','button.sort'].forEach(sel=>{
     const n = document.querySelector(sel);
     if (n && !n.closest('#sortGroup')) n.remove();
   });
 
-  // Make/find the wrapper placed before the first sort button
+  // Create/find wrapper before the first sort button
   let group = document.getElementById('sortGroup');
   if (!group){
     group = document.createElement('div');
@@ -806,38 +804,22 @@ function mountSortGroupLabel(){
     byClient.parentElement.insertBefore(group, byClient);
   }
 
-  // Make/find the label
+  // Create/find label
   let label = document.getElementById('sortLabel');
   if (!label){
     label = document.createElement('span');
     label.id = 'sortLabel';
     label.className = 'pill tiny mono';
-    label.textContent = 'Sort:';
   }
+  label.textContent = 'Sort:'; // match the Show: group
 
-  // Move pieces into the group (no duplicates)
+  // Move pieces into the group
   group.appendChild(label);
   group.appendChild(byClient);
   group.appendChild(byType);
 }
 
 
-  // Make/find the label
-  let label = document.getElementById('sortLabel');
-  if (!label) {
-    label = document.createElement('span');
-    label.id = 'sortLabel';
-    label.className = 'pill tiny mono';                    // uses your existing pill style
-  }
-
-  // Move pieces into the group (this *moves* existing nodes; no duplicates)
-  group.appendChild(label);
-  group.appendChild(byClient);
-  group.appendChild(byType);
-
-  // Set initial text
-  label.textContent = 'Sort · ' + (sortMode === 'client' ? 'By Client' : 'By Task');
-}
 
 
 // ✅ Guarded version—paste here (replace your old setShowButtons)
@@ -864,10 +846,7 @@ if (showAllEl && showOpenEl && showDoneEl){
   showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
 }
 
-// Initialize
-mountSortGroupLabel();   // builds: Sort: [By client] [By task]
-setSortButtons();        // sets the active state; keeps label “Sort:”
-setShowButtons();        // your existing Show: buttons
+
 
 
 
@@ -875,16 +854,74 @@ setShowButtons();        // your existing Show: buttons
     $('#viewToday').classList.toggle('primary', mode === 'today');
     $('#viewWeek').classList.toggle('primary', mode === 'week');
   }
-  $('#sortClient').addEventListener('click',  ()=>{ sortMode='client'; localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
-  $('#sortType').addEventListener('click',    ()=>{ sortMode='type';   localStorage.setItem(SORT_KEY, sortMode); setSortButtons(); renderAgenda(); });
+const sortClientEl = document.getElementById('sortClient');
+const sortTypeEl   = document.getElementById('sortType');
 
-  $('#viewToday').addEventListener('click', ()=>{ currentAgendaDate=today(); renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode('today'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#viewWeek').addEventListener('click', ()=>{ const from=today(); const to=addDays(today(),7); renderAgenda=()=>buildAgendaRange(from,to); setAgendaMode('week'); $('#agendaDate').value=''; renderAgenda(); });
-  $('#agendaDate').addEventListener('change', ()=>{ const d=$('#agendaDate').value?parseLocalYMD($('#agendaDate').value):today(); currentAgendaDate=d; renderAgenda=()=>buildAgenda(currentAgendaDate); setAgendaMode(null); renderAgenda(); });
-  $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
-  $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
-  setSortButtons();
-  mountSortGroupLabel(); 
+if (sortClientEl && sortTypeEl) {
+  sortClientEl.addEventListener('click', () => {
+    sortMode = 'client';
+    localStorage.setItem(SORT_KEY, sortMode);
+    setSortButtons();
+    renderAgenda();
+  });
+  sortTypeEl.addEventListener('click', () => {
+    sortMode = 'type';
+    localStorage.setItem(SORT_KEY, sortMode);
+    setSortButtons();
+    renderAgenda();
+  });
+}
+
+
+const viewTodayEl = document.getElementById('viewToday');
+const viewWeekEl  = document.getElementById('viewWeek');
+const agendaDateEl = document.getElementById('agendaDate');
+
+if (viewTodayEl) {
+  viewTodayEl.addEventListener('click', ()=>{
+    currentAgendaDate = today();
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode('today');
+    if (agendaDateEl) agendaDateEl.value = '';
+    renderAgenda();
+  });
+}
+
+if (viewWeekEl) {
+  viewWeekEl.addEventListener('click', ()=>{
+    const from = today();
+    const to   = addDays(today(), 7);
+    renderAgenda = ()=> buildAgendaRange(from, to);
+    setAgendaMode('week');
+    if (agendaDateEl) agendaDateEl.value = '';
+    renderAgenda();
+  });
+}
+
+if (agendaDateEl) {
+  agendaDateEl.addEventListener('change', ()=>{
+    const d = agendaDateEl.value ? parseLocalYMD(agendaDateEl.value) : today();
+    currentAgendaDate = d;
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode(null);
+    renderAgenda();
+  });
+}
+
+const agendaFilterEl = document.getElementById('agendaFilter');
+const agendaFilterClearEl = document.getElementById('agendaFilterClear');
+
+if (agendaFilterEl) {
+  agendaFilterEl.addEventListener('input', ()=> setAgendaFilter(agendaFilterEl.value));
+}
+if (agendaFilterClearEl && agendaFilterEl) {
+  agendaFilterClearEl.addEventListener('click', ()=>{
+    agendaFilterEl.value = '';
+    setAgendaFilter('');
+  });
+}
+
+
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
@@ -1307,7 +1344,15 @@ const items = state.tasks.filter(
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
-  function bootstrap(){ initAddModal(); refresh(); buildCalendar(); }
-  bootstrap();
+ function bootstrap(){
+  initAddModal();
+  refresh();
+  buildCalendar();
+  // now that DOM is there, wire/adjust the sort+show UI
+  mountSortGroupLabel();
+  setSortButtons();
+  setShowButtons();
+}
+bootstrap();
 
 })();
