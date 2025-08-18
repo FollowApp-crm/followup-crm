@@ -777,24 +777,50 @@ function setSortButtons(){
   byClient.setAttribute('aria-pressed', String(sortMode==='client'));
   byType.setAttribute('aria-pressed',   String(sortMode==='type'));
 
+  // Keep the label just "Sort:" so it matches the Show: group
   const lbl = document.getElementById('sortLabel');
-  if (lbl) lbl.textContent = 'Sort · ' + (sortMode==='client' ? 'By Client' : 'By Task');
+  if (lbl) lbl.textContent = 'Sort:';
 }
 
-// is it here?
 function mountSortGroupLabel(){
   const byClient = document.getElementById('sortClient');
-  const byType   = document.getElementById('sortType');   // <- capital T
+  const byType   = document.getElementById('sortType');
   if (!byClient || !byType || !byClient.parentElement) return;
 
-  // Make/find the wrapper that will sit before the first button
+  // Remove any old, loose “Sort:” chip and the old right-side “Sort” button
+  document.querySelectorAll('.pill, .label, button').forEach(el=>{
+    const t = (el.textContent || '').trim().toLowerCase();
+    if ((t === 'sort:' || t === 'sort') && !el.closest('#sortGroup')) el.remove();
+  });
+  ['#sort','#sortBtn','[data-act="sort"]','button.sort'].forEach(sel=>{
+    const n = document.querySelector(sel);
+    if (n && !n.closest('#sortGroup')) n.remove();
+  });
+
+  // Make/find the wrapper placed before the first sort button
   let group = document.getElementById('sortGroup');
-  if (!group) {
+  if (!group){
     group = document.createElement('div');
-    group.id = 'sortGroup';                                // <- capital G
+    group.id = 'sortGroup';
     group.className = 'btn-group';
-    byClient.parentElement.insertBefore(group, byClient);  // insert before the first button
+    byClient.parentElement.insertBefore(group, byClient);
   }
+
+  // Make/find the label
+  let label = document.getElementById('sortLabel');
+  if (!label){
+    label = document.createElement('span');
+    label.id = 'sortLabel';
+    label.className = 'pill tiny mono';
+    label.textContent = 'Sort:';
+  }
+
+  // Move pieces into the group (no duplicates)
+  group.appendChild(label);
+  group.appendChild(byClient);
+  group.appendChild(byType);
+}
+
 
   // Make/find the label
   let label = document.getElementById('sortLabel');
@@ -838,11 +864,11 @@ if (showAllEl && showOpenEl && showDoneEl){
   showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
 }
 
-
 // Initialize
-setShowButtons();
-mountSortGroupLabel();   // build the wrapper + label and move the sort buttons
-setSortButtons();        // set active state and label text
+mountSortGroupLabel();   // builds: Sort: [By client] [By task]
+setSortButtons();        // sets the active state; keeps label “Sort:”
+setShowButtons();        // your existing Show: buttons
+
 
 
   function setAgendaMode(mode){
