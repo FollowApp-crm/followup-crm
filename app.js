@@ -796,13 +796,14 @@ function mountSortGroupLabel(){
     byClient.parentElement.insertBefore(wrap, byClient);
   }
 
-  // The segmented button container
-  let group = document.getElementById('sortGroup');
-  if (!group){
-    group = document.createElement('div');
-    group.id = 'sortGroup';
-    group.className = 'btn-group';
-  }
+// The segmented button container
+let group = document.getElementById('sortGroup');
+if (!group){
+  group = document.createElement('div');
+  group.id = 'sortGroup';
+  group.className = 'seg';   // ← was 'btn-group'
+}
+
 
   // The label chip
   let label = document.getElementById('sortLabel');
