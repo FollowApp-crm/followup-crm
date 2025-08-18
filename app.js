@@ -6,10 +6,12 @@
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const storeKey  = 'followup_crm_v21';
   const THEME_KEY = 'followup_crm_theme';
-  const SORT_KEY  = 'followup_crm_sort';
+const SORT_KEY  = 'followup_crm_sort';
+const SHOW_KEY  = 'followup_crm_show';
 
   // Instant parse on paste into the lead blob + Enter-to-save ✨
-  const leadBlobEl = document.getElementById('leadBlob');
+const leadBlobEl = document.getElementById('leadBlob');
+if (leadBlobEl){
   leadBlobEl.addEventListener('paste', () => {
     requestAnimationFrame(() => {
       const has = (leadBlobEl.value || '').trim();
@@ -18,7 +20,7 @@
       toast('Parsed from paste. Review & save.');
     });
   });
-  // ⏎ to save directly from the blob box (no Shift)
+
   leadBlobEl.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter' && !e.shiftKey){
       const has = (leadBlobEl.value || '').trim();
@@ -28,6 +30,8 @@
       document.getElementById('saveCustomer').click();
     }
   });
+}
+
 
   function flashAgendaDate(){
     const el = document.getElementById('agendaDate');
@@ -542,8 +546,10 @@
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
   // ✨ Default sort is "client"
-  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // 'type' | 'client'
-  let agendaFilter = '';
+let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // 'type' | 'client'
+let showMode = localStorage.getItem(SHOW_KEY) || 'all';     // 'all' | 'open' | 'done'
+let agendaFilter = '';
+ 
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -561,6 +567,11 @@
     return sortMode==='client' ? (byName || byType || byTitle) : (byType || byName || byTitle);
   }
   function matchesFilter(t){ return !agendaFilter || clientNameLower(t).includes(agendaFilter); }
+function matchesShow(t){
+  if (showMode === 'open') return t.status !== 'done';
+  if (showMode === 'done') return t.status === 'done';
+  return true; // 'all'
+}
 
   function detailsChipsFor(t){
     const c = t.clientId ? clientById(t.clientId) : null;
@@ -676,7 +687,9 @@
   function buildAgenda(date){
     const f = fmt(date);
     const cont = $('#agenda');
-    const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
+const items = state.tasks
+  .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
+  .sort(sortTasksForMode);
     cont.innerHTML = '';
     if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
     if (sortMode === 'client') renderGroupedByClient(cont, items);
@@ -689,7 +702,9 @@
     const days = Math.ceil((to-from)/86400000)+1;
     for(let i=0;i<days;i++){
       const d = addDays(from,i), f = fmt(d);
-      const items = state.tasks.filter(t=> t.date===f && matchesFilter(t)).sort(sortTasksForMode);
+const items = state.tasks
+  .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
+  .sort(sortTasksForMode);
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
       if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
@@ -749,14 +764,45 @@
     }
   });
 
-  // Agenda controls
-  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
-  function setSortButtons(){
-    $('#sortClient').classList.toggle('primary',  sortMode === 'client');
-    $('#sortType').classList.toggle('primary',    sortMode === 'type');
-    $('#sortClient').setAttribute('aria-pressed', String(sortMode==='client'));
-    $('#sortType').setAttribute('aria-pressed',   String(sortMode==='type'));
-  }
+// Agenda controls
+let renderAgenda = ()=> buildAgenda(currentAgendaDate);
+
+function setSortButtons(){
+  $('#sortClient').classList.toggle('primary',  sortMode === 'client');
+  $('#sortType').classList.toggle('primary',    sortMode === 'type');
+  $('#sortClient').setAttribute('aria-pressed', String(sortMode==='client'));
+  $('#sortType').setAttribute('aria-pressed',   String(sortMode==='type'));
+}
+
+// ✅ Guarded version—paste here (replace your old setShowButtons)
+function setShowButtons(){
+  const all = $('#showAll'), openBtn = $('#showOpen'), done = $('#showDone');
+  if (!all || !openBtn || !done) return;
+  all.classList.toggle('primary',  showMode === 'all');
+  openBtn.classList.toggle('primary', showMode === 'open');
+  done.classList.toggle('primary',  showMode === 'done');
+  all.setAttribute('aria-pressed',   String(showMode==='all'));
+  openBtn.setAttribute('aria-pressed', String(showMode==='open'));
+  done.setAttribute('aria-pressed',  String(showMode==='done'));
+}
+
+
+// Listeners
+const showAllEl  = $('#showAll');
+const showOpenEl = $('#showOpen');
+const showDoneEl = $('#showDone');
+
+if (showAllEl && showOpenEl && showDoneEl){
+  showAllEl.addEventListener('click',  ()=>{ showMode='all';  localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
+  showOpenEl.addEventListener('click', ()=>{ showMode='open'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
+  showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
+}
+
+
+// Initialize
+setShowButtons();
+
+
   function setAgendaMode(mode){
     $('#viewToday').classList.toggle('primary', mode === 'today');
     $('#viewWeek').classList.toggle('primary', mode === 'week');
@@ -908,7 +954,9 @@
     for(let d=1; d<=daysInMonth; d++){
       const dt  = new Date(year, month, d);
       const ymd = fmt(dt);
-      const items = state.tasks.filter(t => t.date === ymd && t.status !== 'done' && (!agendaFilter || (t.clientName||'').toLowerCase().includes(agendaFilter)));
+const items = state.tasks.filter(
+  t => t.date === ymd && matchesFilter(t) && matchesShow(t)
+);
       const cell = document.createElement('div');
       cell.className='cal-cell'; if(!isWorkingDay(dt)) cell.classList.add('offday');
       cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length}</div>` : '');
