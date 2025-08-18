@@ -4,11 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Follow-Up CRM — Standalone</title>
-
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-
   <style>
-    /* ===== Lead paste block (textarea + side buttons) ===== */
+ /* ===== Lead paste block (textarea + side buttons) ===== */
     .lead-block{ display:block; margin-bottom:10px; }
     .lead-actions{ display:none; }
     @media (max-width:760px){ .lead-block{ display:block; } }
@@ -777,17 +775,17 @@
   <!-- Toast container -->
   <div id="toaster" aria-live="polite"></div>
 
+  <!--  → Important Fix: Moved script to end to ensure all elements exist before JS runs -->
   <script>
-  (function(){
-    'use strict';
+    (function(){
+      'use strict';
 
-    const $  = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const storeKey  = 'followup_crm_v21';
-    const THEME_KEY = 'followup_crm_theme';
-    const SORT_KEY  = 'followup_crm_sort';
-    const LEAD_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
-
+      const $  = sel => document.querySelector(sel);
+      const $$ = sel => Array.from(document.querySelectorAll(sel));
+      const storeKey  = 'followup_crm_v21';
+      const THEME_KEY = 'followup_crm_theme';
+      const SORT_KEY  = 'followup_crm_sort';
+      const LEAD_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
     // ===== Bulk import state =====
     const bulk = { items: [], selected: new Set() };
 
@@ -2027,20 +2025,19 @@
     $('#search')?.addEventListener('input', refresh);
     $('#statusFilter')?.addEventListener('change', refresh);
 
-    /* ========= Bootstrap ========= */
-    function bootstrap(){
-      makeModalFromCard('addCard','addModal');
-      makeModalFromCard('taskCard','taskModal');
-      $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; hideBulkImport(); openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
-      $('#closeAdd')?.addEventListener('click', ()=> { hideBulkImport(); closeModal('addModal','addCard'); });
-      setSortButtons();
-      setShowButtons();
-      setAgendaMode('today');
-      refresh(); buildCalendar();
-    }
-    bootstrap();
+      function bootstrap(){
+        makeModalFromCard('addCard','addModal');
+        makeModalFromCard('taskCard','taskModal');
+        $('#openAdd')?.addEventListener('click', ()=>{ $('#clientForm')?.reset(); $('#clientId').value=''; $('#leadBlob').value=''; hideBulkImport(); openModal('addModal','addCard'); setTimeout(()=>{ try{ $('#leadBlob').focus(); }catch(_){} }, 30); });
+        $('#closeAdd')?.addEventListener('click', ()=> { hideBulkImport(); closeModal('addModal','addCard'); });
+        setSortButtons();
+        setShowButtons();
+        setAgendaMode('today');
+        refresh(); buildCalendar();
+      }
+      bootstrap();
 
-  })();
+    })();
   </script>
 </body>
 </html>
