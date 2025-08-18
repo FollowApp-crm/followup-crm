@@ -1,0 +1,325 @@
+/* ===============================
+   Follow-Up CRM — app.css
+   =============================== */
+
+/* ---- Root theme variables ---- */
+:root {
+  --bg: #18191c;
+  --bg-card: rgba(32, 34, 37, 0.9);
+  --fg: #f2f3f5;
+  --line: rgba(255, 255, 255, 0.08);
+  --muted: #aaa;
+  --primary: #7c5cff;
+  --primary-hover: #6a48ec;
+  --primary-active: #5c3dd6;
+  --danger: #d94a4a;
+  --danger-hover: #c34242;
+  --danger-active: #a83636;
+  --radius: 14px;
+  --glass-blur: 12px;
+  --shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+
+html.light {
+  --bg: #f7f7f7;
+  --bg-card: rgba(255,255,255,0.75);
+  --fg: #222;
+  --line: rgba(0,0,0,0.08);
+  --muted: #666;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Header ---- */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow);
+  padding: 8px 16px;
+}
+header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+header .sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ---- Layout ---- */
+.wrap {
+  max-width: 1200px;
+  margin: auto;
+  padding: 12px;
+}
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.row {
+  display: flex;
+  gap: 12px;
+}
+.row.single {
+  flex-direction: column;
+}
+.space {
+  flex: 1;
+}
+
+/* ---- Cards ---- */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+.card .hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.card .bd {
+  font-size: 0.9rem;
+}
+.badge {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+.pill {
+  background: var(--line);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.seg button {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--fg);
+}
+.seg button.primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ---- Forms ---- */
+label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+input, select, textarea, button {
+  font: inherit;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+}
+textarea {
+  resize: vertical;
+}
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ---- Buttons ---- */
+button {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: background 0.15s;
+}
+button.primary {
+  background: var(--primary);
+  color: #fff;
+}
+button.primary:hover { background: var(--primary-hover); }
+button.primary:active { background: var(--primary-active); }
+button.ghost {
+  background: transparent;
+  color: var(--fg);
+}
+button.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+button.btn-danger:hover { background: var(--danger-hover); }
+button.btn-danger:active { background: var(--danger-active); }
+.btn-icon {
+  background: transparent;
+  font-size: 1.2rem;
+  padding: 0 6px;
+}
+
+/* ---- Customers Table ---- */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.tbl th {
+  font-weight: 600;
+}
+
+/* ---- KPI Boxes ---- */
+.kpi {
+  display: flex;
+  gap: 12px;
+}
+.kpi .box {
+  flex: 1;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+}
+.kpi .tiny {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.kpi .num {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* ---- Agenda ---- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.progress {
+  background: var(--line);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+}
+
+/* ---- Calendar ---- */
+#calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+#calendarGrid .cell {
+  min-height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px;
+  font-size: 0.8rem;
+  position: relative;
+}
+#calendarGrid .cell.off {
+  background: rgba(220, 0, 0, 0.05);
+}
+#calendarGrid .cell .badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* ---- Popovers / Modals ---- */
+.popover {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.popover .sheet {
+  background: var(--bg-card);
+  padding: 16px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow);
+}
+.pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* ---- Toast ---- */
+#toaster {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 300;
+}
+.toast {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+  font-size: 0.85rem;
+}
+
+/* ---- Utilities ---- */
+.mono { font-family: monospace; }
+.tiny { font-size: 0.75rem; color: var(--muted); }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.right { text-align: right; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .grid { flex-direction: column; }
+  .row { flex-direction: column; }
+  .agenda-layout { flex-direction: column; }
+}
