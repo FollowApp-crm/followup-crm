@@ -251,24 +251,44 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   border-bottom: 1px solid var(--line);
 }
 
-.task-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+
+/* Actions cell: aligned with table rows */
+.tbl td.actions {
+  display: table-cell;      /* keep it a table-cell so borders line up */
+  text-align: right;        /* push icons to the right */
+  vertical-align: middle;   /* center with row */
+  white-space: nowrap;      /* keep buttons in one row */
+  padding: 10px;            /* match other cells */
 }
 
-.task-actions button {
-  width: 28px;
-  height: 28px;
-  display: flex;
+.tbl td.actions .btn-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
 }
+
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
-.actions{display:flex; gap:6px; justify-content:flex-end; align-items:center}
+/* Actions cell: aligned with table rows */
+.tbl td.actions {
+  display: table-cell;      /* keep it a table-cell so borders line up */
+  text-align: right;        /* push icons to the right */
+  vertical-align: middle;   /* center with row */
+  white-space: nowrap;      /* keep buttons in one row */
+  padding: 10px;            /* match other cells */
+}
+
+.tbl td.actions .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+}
 
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
@@ -393,7 +413,11 @@ body.light .ovr-list li{ background:#fff }
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
-  .actions{justify-content:flex-start}
+.tbl td.actions {
+  display:flex; 
+  justify-content:flex-start; 
+  gap:6px;
+}
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
   /* Customers header layout */
