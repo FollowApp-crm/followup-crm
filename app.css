@@ -418,6 +418,7 @@ body.light .ovr-list li{ background:#fff }
 }
 
 /* =================== SCROLLBARS =================== */
+.customers-scroll { overflow-x: hidden; }
 html{ scrollbar-gutter: stable both-edges; }
 :root{ color-scheme: dark light; }
 :root{
