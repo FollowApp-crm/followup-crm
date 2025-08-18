@@ -254,14 +254,13 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   text-align: right;
   vertical-align: middle;
   white-space: nowrap;      /* keep buttons in one row */
-  padding: 10px;
+  padding: 10px 6px 10px 10px;
   overflow: visible;        /* don't clip buttons */
   text-overflow: clip;      /* override ellipsis from generic td rule */
   min-width: 200px;         /* room for ~5 buttons (32px each + gaps + padding) */
 }
 /* Fix column width for table-layout: fixed */
-.tbl th:last-child { width: 204px; }
-
+.tbl th:last-child { width: 200px; }
 
 
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -397,7 +396,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .tbl th:last-child { width: auto; }
-.tbl td.actions { min-width: 204; }
+.tbl td.actions { min-width: 0; }
 
   .wrap{padding-top:12px;padding-bottom:12px}
   .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
