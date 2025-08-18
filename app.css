@@ -448,3 +448,22 @@ body.light { color-scheme: light; } /* override in light mode */
 .agenda-item input[type="checkbox"], input[type="checkbox"]{
   width: 18px; height: 18px; padding: 0; accent-color: var(--accent);
 }
+/* Sort group layout (label outside the box) */
+#sortWrap { display:flex; align-items:center; gap:8px; }
+
+/* Make Sort's segmented buttons match Show (no purple) */
+#sortGroup.btn-group > button.primary {
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+#sortGroup.btn-group > button {
+  background: transparent;
+}
+/* Light theme: make Sort selected look like Show */
+body.light #sortGroup.btn-group > button.primary{
+  background:#e9ecff;
+  box-shadow: inset 0 0 0 1px #cfd6f8;
+  color:#1e2758;
+}
+
