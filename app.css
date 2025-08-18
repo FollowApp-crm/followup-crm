@@ -268,15 +268,15 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 /* Actions cell: aligned with table rows */
 
 
-.tbl td.actions .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-left: 6px;
+.tbl td.actions .btn-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  margin-left:4px;
 }
-.tbl td.actions .btn-icon:first-child { margin-left: 0; }
+.tbl td.actions .btn-icon:first-child{ margin-left:0; }
 
 
 /* =================== AGENDA =================== */
@@ -405,11 +405,8 @@ body.light .ovr-list li{ background:#fff }
   .tbl tr{display:block; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin:10px 0}
   .tbl td{display:flex; gap:10px; justify-content:space-between; align-items:center; white-space:normal}
   .tbl td::before{content:attr(data-label); color:var(--muted); font-size:12px}
-.tbl td.actions {
-  display:flex; 
-  justify-content:flex-start; 
-  gap:6px;
-}
+.tbl td.actions { display:flex; justify-content:flex-start; gap:4px; }
+
   header{ box-shadow:none; }
   .ovr{ flex-direction:column; align-items:stretch; }
   /* Customers header layout */
