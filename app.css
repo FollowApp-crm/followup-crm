@@ -252,14 +252,20 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 }
 
 
-/* Actions cell: aligned with table rows */
+/* Actions cell: keep borders aligned and make all buttons visible */
 .tbl td.actions {
-  display: table-cell;      /* keep it a table-cell so borders line up */
-  text-align: right;        /* push icons to the right */
-  vertical-align: middle;   /* center with row */
+  display: table-cell;      /* stay a table cell so borders line up */
+  text-align: right;
+  vertical-align: middle;
   white-space: nowrap;      /* keep buttons in one row */
-  padding: 10px;            /* match other cells */
+  padding: 10px;
+  overflow: visible;        /* don't clip buttons */
+  text-overflow: clip;      /* override ellipsis from generic td rule */
+  min-width: 220px;         /* room for ~5 buttons (32px each + gaps + padding) */
 }
+/* Fix column width for table-layout: fixed */
+.tbl th:last-child { width: 220px; }
+
 
 .tbl td.actions .btn-icon {
   display: inline-flex;
@@ -273,13 +279,7 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
 /* Actions cell: aligned with table rows */
-.tbl td.actions {
-  display: table-cell;      /* keep it a table-cell so borders line up */
-  text-align: right;        /* push icons to the right */
-  vertical-align: middle;   /* center with row */
-  white-space: nowrap;      /* keep buttons in one row */
-  padding: 10px;            /* match other cells */
-}
+
 
 .tbl td.actions .btn-icon {
   display: inline-flex;
@@ -406,6 +406,9 @@ body.light .ovr-list li{ background:#fff }
 
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
+  .tbl th:last-child { width: auto; }
+.tbl td.actions { min-width: 0; }
+
   .wrap{padding-top:12px;padding-bottom:12px}
   .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
   .kpi{grid-template-columns:repeat(2,1fr)}
