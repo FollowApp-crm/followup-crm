@@ -5,18 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Follow-Up CRM — Standalone</title>
 
-  <!-- Favicon -->
+  <!-- ✅ Checkmark favicon -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c5cff'/%3E%3Cpath d='M18 34l8 8 20-20' stroke='%23fff' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 
-  <!-- External stylesheet -->
-  <link rel="stylesheet" href="styles.css" />
+  <!-- External CSS -->
+  <link rel="stylesheet" href="app.css" />
+
+  <!-- External JS -->
+  <script src="app.js" defer></script>
 </head>
 <body>
   <header>
     <div class="wrap" style="display:flex; align-items:center; gap:12px">
       <div>
         <h1>Follow-Up CRM</h1>
-        <div class="sub">Single-file CRM for <b>Unreached</b> and <b>Reached</b> customers, agenda & calendar.</div>
+        <!-- Updated wording: multi-file, still local/no-server -->
+        <div class="sub">Local-only CRM (HTML + CSS + JS) for <b>Unreached</b> and <b>Reached</b> customers, agenda & calendar—no servers or logins.</div>
       </div>
       <div class="space"></div>
       <button id="themeToggle" class="toggle" aria-label="Toggle theme">☀️ Light</button>
@@ -24,41 +28,21 @@
   </header>
 
   <main class="wrap grid">
-    <!-- Add/Edit customer (rendered inside modal) -->
+
+    <!-- Add/Edit card (moved into modal at runtime) -->
     <section class="card" id="addCard">
       <div class="hd">
         <strong>Add / Edit Customer</strong>
         <span class="badge">Local only</span>
         <div class="space"></div>
-        <button id="closeAdd" class="btn-icon" title="Close" aria-label="Close">✖</button>
+        <button id="closeAdd" class="btn-icon" title="Close">✖</button>
       </div>
       <div class="bd">
         <div class="lead-block highlight">
           <div>
-            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID). Paste multiple to bulk-import.</label>
+            <label>Paste from Leads CRM (auto-fills Name, Email, Phone, Route, Dates, Pax, Lead ID)</label>
             <textarea id="leadBlob" rows="6" placeholder="Paste the whole blob here…"></textarea>
           </div>
-        </div>
-
-        <!-- Bulk import panel -->
-        <div id="bulkImport" class="bulk slab" style="display:none">
-          <div class="flex-row">
-            <strong>Parsed multiple leads</strong>
-            <span id="bulkCountPill" class="pill">0 selected</span>
-            <span class="space"></span>
-            <label>Status
-              <select id="bulkStatus" style="height:34px">
-                <option value="unreached">Unreached</option>
-                <option value="reached">Reached</option>
-              </select>
-            </label>
-            <button id="bulkAdd" class="primary">Add selected</button>
-            <button id="bulkCancel" class="ghost">Cancel</button>
-          </div>
-          <div class="bulk-head">
-            <div></div><div>Name</div><div>Email</div><div>Phone</div><div>Route</div><div>Pax</div><div>Lead ID</div>
-          </div>
-          <div id="bulkList" class="bulk-list"></div>
         </div>
 
         <form id="clientForm" novalidate>
@@ -105,7 +89,7 @@
             </div>
             <div>
               <label>Dates</label>
-              <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" autocomplete="off" />
+              <input id="dates" placeholder="Sep 07 - Sep 15 or 2025-09-02 → 2025-09-10" />
             </div>
           </div>
 
@@ -116,78 +100,20 @@
             </div>
           </div>
 
+          <!-- Start date is now separate from actions -->
           <div class="row single">
             <div>
               <label>Start date (defaults to today)</label>
-              <input id="startDate" type="date" autocomplete="off" />
+              <input id="startDate" type="date" />
             </div>
           </div>
 
+          <!-- Sticky footer actions -->
           <div class="form-footer">
             <button type="button" class="ghost" id="resetForm">Clear</button>
             <button class="primary" type="button" id="saveCustomer">Save Customer</button>
           </div>
         </form>
-      </div>
-    </section>
-
-    <!-- Add Task (rendered inside modal) -->
-    <section class="card" id="taskCard">
-      <div class="hd">
-        <strong>Add Task</strong>
-        <span class="badge">Local only</span>
-        <div class="space"></div>
-        <button id="ctClose" class="btn-icon" title="Close" aria-label="Close">✖</button>
-      </div>
-      <div class="bd">
-        <div class="row">
-          <div>
-            <label>Client</label>
-            <select id="ctClient"></select>
-          </div>
-          <div>
-            <label>Type</label>
-            <select id="ctType">
-              <option value="call">call</option>
-              <option value="callvm">callvm</option>
-              <option value="sms">sms</option>
-              <option value="email">email</option>
-              <option value="custom">custom</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Title</label>
-            <input id="ctTitle" placeholder="Call / Email / Custom…" />
-          </div>
-          <div>
-            <label>Date</label>
-            <input id="ctDate" type="date" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="row single">
-          <div>
-            <label>Notes (optional)</label>
-            <textarea id="ctNotes" rows="3" placeholder="Press Enter to save; Shift+Enter for newline."></textarea>
-          </div>
-        </div>
-
-        <div class="row single">
-          <div class="inline-controls">
-            <label class="button-chip">Notify @</label>
-            <input id="ctTime" type="time" />
-            <button type="button" class="btn-icon" id="ctNow" title="Use current time" aria-label="Use current time">⏰</button>
-            <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctNotify" disabled> Enable</label>
-            <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
-
-            <span class="space"></span>
-            <button type="button" id="ctClear" class="ghost">Clear</button>
-            <button type="button" id="ctSave" class="primary">Save task</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -214,20 +140,13 @@
 
         <div class="mt16 customers-scroll" style="margin-top:12px; overflow-x:auto; max-height:50vh; overflow-y:auto;">
           <table class="tbl" id="clientsTbl">
-            <colgroup>
-              <col class="col-name" />
-              <col class="col-contact" />
-              <col class="col-status" />
-              <col class="col-next" />
-              <col class="col-actions" />
-            </colgroup>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Status</th>
                 <th>Next Action Date</th>
-                <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -235,7 +154,7 @@
         </div>
 
         <div class="mt16 right">
-          <button class="btn-danger" id="wipeAll" title="Delete all data" aria-label="Delete all data">Wipe All</button>
+          <button class="btn-danger" id="wipeAll" title="Delete all data">Wipe All</button>
         </div>
 
         <div class="mt16 tiny">Rules:
@@ -252,31 +171,23 @@
     <div class="row agenda-layout">
       <!-- Agenda -->
       <section class="card" id="actionsCard">
-        <div class="hd">
-          <strong>Agenda</strong>
-          <button id="openTask" class="btn-icon add-btn" title="Add task" aria-label="Add task">＋</button>
-        </div>
+        <div class="hd"><strong>Agenda</strong></div>
         <div class="bd">
           <div class="toolbar">
             <button type="button" id="viewToday" class="primary">Today</button>
             <button type="button" id="viewWeek">Next 7 days</button>
-            <input type="date" id="agendaDate" autocomplete="off" />
+            <input type="date" id="agendaDate" />
             <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
-            <button type="button" id="agendaFilterClear" title="Clear filter" aria-label="Clear filter">Clear</button>
+            <button type="button" id="agendaFilterClear" title="Clear filter">Clear</button>
+
+            <!-- ✨ Fancy + modal trigger -->
+            <button type="button" id="addTaskBtn" class="btn-icon add-btn" title="Add task">＋</button>
 
             <div class="space"></div>
             <div class="pill">Sort:</div>
             <div class="seg" role="group" aria-label="Sort tasks">
-              <button type="button" id="sortClient"  class="primary" aria-pressed="true">By client</button>
-              <button type="button" id="sortType"    aria-pressed="false">By task</button>
-            </div>
-
-            <div class="space"></div>
-            <div class="pill">Show:</div>
-            <div class="seg" role="group" aria-label="Show tasks">
-              <button type="button" id="showAll" class="primary" aria-pressed="true">All</button>
-              <button type="button" id="showOpen" aria-pressed="false">Incomplete</button>
-              <button type="button" id="showDone" aria-pressed="false">Complete</button>
+              <button type="button" id="sortClient" class="primary" aria-pressed="true">By client</button>
+              <button type="button" id="sortType" aria-pressed="false">By task</button>
             </div>
 
             <div class="space"></div>
@@ -293,6 +204,67 @@
             </div>
           </div>
 
+          <!-- Add Custom Task modal (sheet inside overlay) ✨ -->
+          <div id="customTaskPop" class="popover" style="display:none">
+            <div class="sheet">
+              <div class="pop-head">
+                <strong>New task</strong>
+                <button type="button" class="btn-icon" id="ctClose" title="Close">✖</button>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Client</label>
+                  <select id="ctClient"></select>
+                </div>
+                <div>
+                  <label>Type</label>
+                  <select id="ctType">
+                    <option value="call">call</option>
+                    <option value="callvm">callvm</option>
+                    <option value="sms">sms</option>
+                    <option value="email">email</option>
+                    <option value="custom">custom</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Title</label>
+                  <input id="ctTitle" placeholder="Call / Email / Custom…" />
+                </div>
+                <div>
+                  <label>Date</label>
+                  <input id="ctDate" type="date" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Time (optional)</label>
+                  <input id="ctTime" type="time" />
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding-top:26px">
+                  <label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="ctImportant"> Important</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px" title="Enable desktop alert at the chosen time"><input type="checkbox" id="ctNotify" disabled> Notify me</label>
+                </div>
+              </div>
+
+              <div class="row single">
+                <div>
+                  <label>Notes (optional)</label>
+                  <textarea id="ctNotes" rows="3" placeholder="Context for this task…"></textarea>
+                </div>
+              </div>
+
+              <div class="right" style="margin-top:8px">
+                <button type="button" id="ctCancel" class="ghost">Cancel</button>
+                <button type="button" id="ctSave" class="primary">Save task</button>
+              </div>
+            </div>
+          </div>
+
           <div class="mt12 progress"><span id="progressBar"></span></div>
           <div id="agenda" class="mt12"></div>
         </div>
@@ -303,12 +275,12 @@
         <div class="hd cal-hd">
           <strong>Calendar</strong>
           <div class="cal-month tiny">
-            <button class="btn-icon" id="calPrev" title="Previous month" aria-label="Previous month">◀</button>
+            <button class="btn-icon" id="calPrev" title="Previous month">◀</button>
             <span id="calTitle" class="mono"></span>
-            <button class="btn-icon" id="calNext" title="Next month" aria-label="Next month">▶</button>
+            <button class="btn-icon" id="calNext" title="Next month">▶</button>
           </div>
           <div class="space"></div>
-          <button class="settings-btn" id="calSettingsBtn" title="Calendar settings" aria-label="Calendar settings">⚙️ Settings</button>
+          <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
         </div>
         <div class="bd">
           <div id="calSettings" style="display:none">
@@ -334,8 +306,9 @@
             <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
             <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
 
+            <!-- FLEX row: date + select + add -->
             <div class="ovr">
-              <input type="date" id="ovrDate" autocomplete="off" />
+              <input type="date" id="ovrDate" />
               <select id="ovrType">
                 <option value="work">Mark as Working</option>
                 <option value="off">Mark as Off</option>
@@ -355,12 +328,5 @@
 
   <!-- Toast container -->
   <div id="toaster" aria-live="polite"></div>
-
-  <!-- Modals (containers injected at runtime) -->
-  <div id="addModal" class="modal" role="dialog" aria-modal="true" style="display:none"></div>
-  <div id="taskModal" class="modal" role="dialog" aria-modal="true" style="display:none"></div>
-
-  <!-- External script -->
-  <script src="app.js"></script>
 </body>
 </html>
