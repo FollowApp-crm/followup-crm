@@ -788,7 +788,11 @@ function mountSortGroupLabel(){
   if (!byClient || !byType || !byClient.parentElement) return;
 
   // Remove any old loose “Sort:” chip and old right-side Sort button
-document.querySelectorAll('#actionsCard .pill, #actionsCard .label, #actionsCard button').forEach( /* … */ );
+document.querySelectorAll('#actionsCard .pill, #actionsCard .label, #actionsCard button')
+  .forEach(el => {
+    const t = (el.textContent || '').trim().toLowerCase();
+    if ((t === 'sort:' || t === 'sort') && !el.closest('#sortGroup')) el.remove();
+  });
 
   ['#sort','#sortBtn','[data-act="sort"]','button.sort'].forEach(sel=>{
     const n = document.querySelector(sel);
