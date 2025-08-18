@@ -768,11 +768,51 @@ const items = state.tasks
 let renderAgenda = ()=> buildAgenda(currentAgendaDate);
 
 function setSortButtons(){
-  $('#sortClient').classList.toggle('primary',  sortMode === 'client');
-  $('#sortType').classList.toggle('primary',    sortMode === 'type');
-  $('#sortClient').setAttribute('aria-pressed', String(sortMode==='client'));
-  $('#sortType').setAttribute('aria-pressed',   String(sortMode==='type'));
+  const byClient = $('#sortClient');
+  const byType   = $('#sortType');
+  if (!byClient || !byType) return;
+
+  byClient.classList.toggle('primary',  sortMode === 'client');
+  byType.classList.toggle('primary',    sortMode === 'type');
+  byClient.setAttribute('aria-pressed', String(sortMode==='client'));
+  byType.setAttribute('aria-pressed',   String(sortMode==='type'));
+
+  const lbl = document.getElementById('sortLabel');
+  if (lbl) lbl.textContent = 'Sort · ' + (sortMode==='client' ? 'By Client' : 'By Task');
 }
+
+// is it here?
+function mountSortGroupLabel(){
+  const byClient = document.getElementById('sortClient');
+  const byType   = document.getElementById('sortType');   // <- capital T
+  if (!byClient || !byType || !byClient.parentElement) return;
+
+  // Make/find the wrapper that will sit before the first button
+  let group = document.getElementById('sortGroup');
+  if (!group) {
+    group = document.createElement('div');
+    group.id = 'sortGroup';                                // <- capital G
+    group.className = 'btn-group';
+    byClient.parentElement.insertBefore(group, byClient);  // insert before the first button
+  }
+
+  // Make/find the label
+  let label = document.getElementById('sortLabel');
+  if (!label) {
+    label = document.createElement('span');
+    label.id = 'sortLabel';
+    label.className = 'pill tiny mono';                    // uses your existing pill style
+  }
+
+  // Move pieces into the group (this *moves* existing nodes; no duplicates)
+  group.appendChild(label);
+  group.appendChild(byClient);
+  group.appendChild(byType);
+
+  // Set initial text
+  label.textContent = 'Sort · ' + (sortMode === 'client' ? 'By Client' : 'By Task');
+}
+
 
 // ✅ Guarded version—paste here (replace your old setShowButtons)
 function setShowButtons(){
@@ -801,6 +841,8 @@ if (showAllEl && showOpenEl && showDoneEl){
 
 // Initialize
 setShowButtons();
+mountSortGroupLabel();   // build the wrapper + label and move the sort buttons
+setSortButtons();        // set active state and label text
 
 
   function setAgendaMode(mode){
@@ -816,6 +858,7 @@ setShowButtons();
   $('#agendaFilter').addEventListener('input', ()=> setAgendaFilter($('#agendaFilter').value));
   $('#agendaFilterClear').addEventListener('click', ()=>{ $('#agendaFilter').value=''; setAgendaFilter(''); });
   setSortButtons();
+  mountSortGroupLabel(); 
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
