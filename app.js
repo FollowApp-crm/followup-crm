@@ -793,9 +793,9 @@ const showOpenEl = $('#showOpen');
 const showDoneEl = $('#showDone');
 
 if (showAllEl && showOpenEl && showDoneEl){
-  showAllEl.addEventListener('click',  ()=>{ showMode='all';  localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
-  showOpenEl.addEventListener('click', ()=>{ showMode='open'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
-  showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); });
+  showAllEl.addEventListener('click',  ()=>{ showMode='all';  localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+  showOpenEl.addEventListener('click', ()=>{ showMode='open'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+  showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
 }
 
 
