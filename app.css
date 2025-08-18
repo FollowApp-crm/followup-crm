@@ -246,10 +246,6 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   padding: 8px 6px;
 }
 
-.tbl tr {
-  display: table-row;
-  border-bottom: 1px solid var(--line);
-}
 
 
 /* Actions cell: keep borders aligned and make all buttons visible */
@@ -261,20 +257,12 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   padding: 10px;
   overflow: visible;        /* don't clip buttons */
   text-overflow: clip;      /* override ellipsis from generic td rule */
-  min-width: 220px;         /* room for ~5 buttons (32px each + gaps + padding) */
+  min-width: 200px;         /* room for ~5 buttons (32px each + gaps + padding) */
 }
 /* Fix column width for table-layout: fixed */
-.tbl th:last-child { width: 220px; }
+.tbl th:last-child { width: 204px; }
 
 
-.tbl td.actions .btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-left: 8px;
-}
 
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
@@ -287,8 +275,10 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
   justify-content: center;
   width: 32px;
   height: 32px;
-  margin-left: 8px;
+  margin-left: 6px;
 }
+.tbl td.actions .btn-icon:first-child { margin-left: 0; }
+
 
 /* =================== AGENDA =================== */
 .agenda-item{display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
@@ -407,7 +397,7 @@ body.light .ovr-list li{ background:#fff }
 /* =================== MOBILE POLISH =================== */
 @media (max-width:760px){
   .tbl th:last-child { width: auto; }
-.tbl td.actions { min-width: 0; }
+.tbl td.actions { min-width: 204; }
 
   .wrap{padding-top:12px;padding-bottom:12px}
   .row{grid-template-columns:1fr !important;}  /* ensure agenda/calendar stack */
