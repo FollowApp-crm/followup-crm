@@ -240,6 +240,32 @@ body.light .kpi .box{ background:var(--card); border-color:var(--line) }
 .tbl{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
 .tbl th,.tbl td{padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .tbl th{color:#a8b0c4; font-weight:600; position:sticky; top:0; background:var(--panel)}
+/* === Fix row alignment & actions === */
+.tbl td {
+  vertical-align: middle;
+  padding: 8px 6px;
+}
+
+.tbl tr {
+  display: table-row;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.task-actions button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
 .note-preview{color:#9aa3bb; cursor:pointer; font-family:ui-monospace,Menlo,Consolas,monospace}
 .note-preview:hover{text-decoration:underline}
 .actions{display:flex; gap:6px; justify-content:flex-end; align-items:center}
