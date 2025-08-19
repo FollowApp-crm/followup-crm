@@ -196,6 +196,7 @@
             <!-- Range controls -->
             <button type="button" id="viewToday" class="primary">Today</button>
             <button type="button" id="viewWeek">Next 7 days</button>
+            <button type="button" id="openCal" class="toggle" aria-controls="calendarDrawer" aria-expanded="false">📅 Calendar</button>
             <input type="date" id="agendaDate" />
             <input type="text" id="agendaFilter" class="mono" placeholder="Filter by client…" style="max-width:220px" />
             <button type="button" id="agendaFilterClear" title="Clear filter">✖</button>
@@ -285,60 +286,36 @@
         </div>
       </section>
 
-      <!-- Calendar -->
-      <section class="card" id="calendarCard">
-        <div class="hd cal-hd">
-          <strong>Calendar</strong>
-          <div class="cal-month tiny">
-            <button class="btn-icon" id="calPrev" title="Previous month">◀</button>
-            <span id="calTitle" class="mono"></span>
-            <button class="btn-icon" id="calNext" title="Next month">▶</button>
-          </div>
-          <div class="space"></div>
-          <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
-        </div>
-        <div class="bd">
-          <div id="calSettings" style="display:none">
-            <div class="tiny" style="font-weight:600; margin-bottom:6px">Working days (auto-scheduled tasks):</div>
-            <div class="wdays">
-              <label class="cell"><input type="checkbox" id="wd_mon"><span>Mon</span></label>
-              <label class="cell"><input type="checkbox" id="wd_tue"><span>Tue</span></label>
-              <label class="cell"><input type="checkbox" id="wd_wed"><span>Wed</span></label>
-              <label class="cell"><input type="checkbox" id="wd_thu"><span>Thu</span></label>
-              <label class="cell"><input type="checkbox" id="wd_fri"><span>Fri</span></label>
-              <label class="cell"><input type="checkbox" id="wd_sat"><span>Sat</span></label>
-              <label class="cell"><input type="checkbox" id="wd_sun"><span>Sun</span></label>
-            </div>
 
-            <div class="switch-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <label style="display:flex; align-items:center; gap:8px">
-                <input type="checkbox" id="moveOffDays" />
-                Move auto tasks off non-working days
-              </label>
-              <button id="saveCalSettings" class="primary" style="height:34px">Save</button>
-            </div>
-
-            <hr style="border:none;border-top:1px solid var(--line); margin:14px 0">
-            <div class="tiny" style="font-weight:600; margin-bottom:6px">Date-specific overrides:</div>
-
-            <div class="ovr">
-              <input type="date" id="ovrDate" />
-              <select id="ovrType">
-                <option value="work">Mark as Working</option>
-                <option value="off">Mark as Off</option>
-              </select>
-              <button id="addOverride">Add</button>
-            </div>
-
-            <div class="tiny" style="margin-top:8px">These override weekday rules for the exact date.</div>
-            <ul id="overrideList" class="ovr-list"></ul>
-          </div>
-
-          <div id="calendarGrid"></div>
-        </div>
-      </section>
     </div>
   </main>
+<!-- Slide-out Calendar Drawer -->
+<div id="calendarDrawer">
+  <div class="drawer-scrim"></div>
+  <aside class="drawer-panel">
+    <!-- Calendar card MOVED here -->
+    <section class="card" id="calendarCard">
+      <div class="hd cal-hd">
+        <strong>Calendar</strong>
+        <div class="cal-month tiny">
+          <button class="btn-icon" id="calPrev" title="Previous month">◀</button>
+          <span id="calTitle" class="mono"></span>
+          <button class="btn-icon" id="calNext" title="Next month">▶</button>
+        </div>
+        <div class="space"></div>
+        <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
+        <button class="btn-icon" id="calDrawerClose" title="Close calendar">✖</button>
+      </div>
+      <div class="bd">
+        <div id="calSettings" style="display:none">
+          <!-- (keep all your settings content exactly as you have it) -->
+          <!-- … -->
+        </div>
+        <div id="calendarGrid"></div>
+      </div>
+    </section>
+  </aside>
+</div>
 
   <!-- Toast container -->
   <div id="toaster" aria-live="polite"></div>
