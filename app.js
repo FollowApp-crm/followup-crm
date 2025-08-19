@@ -190,75 +190,296 @@ if (leadBlobEl){
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= Lead Parser ========= */
-  function parseLeadBlob(text){
-    const raw = (text||'').replace(/\r/g,'\n');
-    const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
+/* ========= Helpers from your file are assumed above ========= */
 
-    const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
-
-    let noDates = whole
-      .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
-      .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
-
-    const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
-      .map(s=>s.trim())
-      .filter(s=>!/:/.test(s))
-      .filter(s=>{
-        const digits = s.replace(/\D/g,'');
-        return digits.length>=10 && digits.length<=15;
-      });
-    const phone = phoneCandidates[0] || '';
-
-    let name = '';
-    const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|[A-Z]{2,3}\b)|\t|\n|$)/i);
-    if(nm) name = nm[1].trim();
-    if(!name && email){
-      const local = email.split('@')[0];
-      const parts = local.split(/[._-]+/);
-      name = parts.length>1
-        ? parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ')
-        : local.charAt(0).toUpperCase()+local.slice(1);
-    }
-
-    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+\b/);
-    const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
-
-    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
-    const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
-    let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
-    if(!dates){
-      const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
-      if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
-    }
-
-    let pax = '';
-    const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
-    if(mpax) pax = mpax[1];
-
-    // Lead ID (4–9 digits not part of phone/date/pax)
-    let leadId = '';
-    try{
-      const phoneDigits = (phone || '').replace(/\D/g,'');
-      const paxDigits   = (pax   || '').replace(/\D/g,'');
-      const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
-      for(const cand of idCandidates){
-        if (cand === paxDigits) continue;
-        if (phoneDigits && phoneDigits.includes(cand)) continue;
-        if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
-        leadId = cand; break;
+/* ========= Instant parse on paste / Enter ========= */
+const leadBlobEl = document.getElementById('leadBlob');
+if (leadBlobEl){
+  leadBlobEl.addEventListener('paste', () => {
+    requestAnimationFrame(() => {
+      const has = (leadBlobEl.value || '').trim();
+      if (!has) return;
+      const res = parseBlob({ onlyFillEmpty:false });
+      if (res?.mode === 'multi') {
+        toast(`Detected ${res.count} leads. Review & Save All.`);
+      } else {
+        toast('Parsed from paste. Review & save.');
       }
-    }catch(_){}
+    });
+  });
 
-    // ✨ Start date from the SECOND ISO date in the blob
-    let startDate = '';
-    try{
-      const ymds = Array.from(whole.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
-      startDate = ymds[1] || ymds[0] || '';
-    }catch(_){}
+  leadBlobEl.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      const has = (leadBlobEl.value || '').trim();
+      if(!has) return;
+      e.preventDefault();
+      const res = parseBlob({ onlyFillEmpty:true });
+      // Only auto-save for a single lead. Bulk opens its own modal.
+      if(res?.mode === 'single'){
+        document.getElementById('saveCustomer').click();
+      }
+    }
+  });
+}
 
-    return { name, email, phone, route, dates, pax, leadId, notes:'', startDateFromBlob:startDate };
+/* ========= Lead Parser (single + bulk) ========= */
+
+// Existing single-lead parser (unchanged, minor defensiveness)
+function parseLeadBlob(text){
+  const raw = (text||'').replace(/\r/g,'\n');
+  const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
+
+  const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
+
+  let noDates = whole
+    .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
+
+  const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
+    .map(s=>s.trim())
+    .filter(s=>!/:/.test(s))
+    .filter(s=>{
+      const digits = s.replace(/\D/g,'');
+      return digits.length>=10 && digits.length<=15;
+    });
+  const phone = phoneCandidates[0] || '';
+
+  let name = '';
+  const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|OJ|[A-Z]{2,3}\b)|\t|\n|$)/i);
+  if(nm) name = nm[1].trim();
+  if(!name && email){
+    const local = email.split('@')[0];
+    const parts = local.split(/[._-]+/);
+    name = parts.length>1
+      ? parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ')
+      : local.charAt(0).toUpperCase()+local.slice(1);
   }
+
+  const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+(?:\s*\|\|[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+)?\b/);
+  const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
+
+  const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+  const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
+  let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
+  if(!dates){
+    const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
+    if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
+  }
+
+  let pax = '';
+  const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
+  if(mpax) pax = mpax[1];
+
+  let leadId = '';
+  try{
+    const phoneDigits = (phone || '').replace(/\D/g,'');
+    const paxDigits   = (pax   || '').replace(/\D/g,'');
+    const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
+    for(const cand of idCandidates){
+      if (cand === paxDigits) continue;
+      if (phoneDigits && phoneDigits.includes(cand)) continue;
+      if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
+      leadId = cand; break;
+    }
+  }catch(_){}
+
+  let startDate = '';
+  try{
+    const ymds = Array.from(whole.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
+    startDate = ymds[1] || ymds[0] || '';
+  }catch(_){}
+
+  return { name, email, phone, route, dates, pax, leadId, notes:'', startDateFromBlob:startDate };
+}
+
+// NEW: detect & parse multiple leads from one blob
+function parseMultiLeadBlob(text){
+  const src = (text||'').replace(/\r/g,'\n').trim();
+  if (!src) return [];
+
+  // Split on a "header" line that looks like:
+  // YYYY-MM-DD HH:MM:SS <tab/space> YYYY-MM-DD HH:MM:SS <tab/space> <digits> <tab/space> ...
+  const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b)/g;
+  let parts = src.split(headerRE);
+  // If the very first line isn't a header, see if there are *no* headers at all
+  const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
+  if(!looksLikeHeader && parts.length===1){
+    // No headers found — treat as one lead
+    const one = parseLeadBlob(src);
+    // Try to grab a leading timestamp date as start
+    const hd = src.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+    if (hd) one.startDateFromBlob = one.startDateFromBlob || hd[1];
+    return [one].filter(x => (x.name||x.email||x.phone));
+  }
+
+  // For each chunk, parse as a single lead and also pull the first timestamp date as startDate
+  const leads = parts.map(chunk => {
+    const p = parseLeadBlob(chunk);
+    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+    if (hdr) {
+      // prefer first timestamp as the anchor
+      p.startDateFromBlob = p.startDateFromBlob || hdr[1];
+      p._updatedYmd = hdr[2];
+    }
+    return p;
+  }).filter(x => (x.name||x.email||x.phone));
+
+  return leads;
+}
+
+// NEW: bulk review modal (built entirely in JS—no HTML edits required)
+function openBulkReview(leads){
+  closeBulkReview(); // safety
+  const modal = document.createElement('div');
+  modal.id = 'bulkModal';
+  modal.className = 'modal open';
+  modal.style.display = 'flex';
+
+  const card = document.createElement('section');
+  card.className = 'card';
+  card.style.width = 'min(1000px, 98vw)';
+  card.style.maxHeight = '88vh';
+  card.style.overflow = 'auto';
+
+  const hd = document.createElement('div');
+  hd.className = 'hd';
+  hd.innerHTML = `<strong>Review ${leads.length} parsed lead${leads.length>1?'s':''}</strong><span class="badge">Bulk add</span>`;
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn-icon';
+  closeBtn.textContent = '✖';
+  closeBtn.addEventListener('click', closeBulkReview);
+  hd.appendChild(document.createElement('span')).className = 'space';
+  hd.appendChild(closeBtn);
+
+  const bd = document.createElement('div');
+  bd.className = 'bd';
+
+  const list = document.createElement('div');
+  list.className = 'bulk-list';
+
+  leads.forEach((p, i) => {
+    const box = document.createElement('div');
+    box.className = 'slab bulk-item';
+    box.innerHTML = `
+      <div class="top"><strong>${escapeHtml(p.name||'—')}</strong></div>
+      <div class="tiny mono">${escapeHtml(p.email||'—')} ${p.phone?(' • '+escapeHtml(p.phone)) : ''}</div>
+      <div class="tiny" style="margin-top:6px">
+        ${p.route?`<span class="pill">Route:&nbsp;${escapeHtml(p.route)}</span>`:''}
+        ${p.dates?` <span class="pill">Dates:&nbsp;${escapeHtml(p.dates)}</span>`:''}
+        ${p.pax?` <span class="pill">Pax:&nbsp;${escapeHtml(String(p.pax))}</span>`:''}
+        ${p.leadId?` <span class="pill">Lead:&nbsp;${escapeHtml(String(p.leadId))}</span>`:''}
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>Start date</label>
+          <input type="date" id="b_start_${i}" value="${escapeHtml(p.startDateFromBlob||fmt(today()))}">
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="b_status_${i}">
+            <option value="unreached" selected>Unreached</option>
+            <option value="reached">Reached</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div>
+          <label>Notes</label>
+          <textarea id="b_notes_${i}" rows="2" placeholder="Optional notes…"></textarea>
+        </div>
+      </div>
+    `;
+    list.appendChild(box);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'right';
+  actions.style.marginTop = '10px';
+
+  const cancel = document.createElement('button');
+  cancel.className = 'ghost';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeBulkReview);
+
+  const saveAll = document.createElement('button');
+  saveAll.className = 'primary';
+  saveAll.textContent = `Save ${leads.length} ${leads.length>1?'customers':'customer'}`;
+  saveAll.addEventListener('click', () => {
+    // Build & insert clients, then schedule
+    leads.forEach((p, i) => {
+      const status = document.getElementById(`b_status_${i}`).value || 'unreached';
+      const notes  = document.getElementById(`b_notes_${i}`).value || '';
+      const start  = document.getElementById(`b_start_${i}`).value || fmt(today());
+
+      const client = {
+        id: uid(),
+        name: (p.name||'').trim() || '—',
+        email: (p.email||'').trim(),
+        phone: (p.phone||'').trim(),
+        status,
+        startDate: start,
+        reachedStart: (status==='reached') ? start : null,
+        route: (p.route||'').trim(),
+        dates: (p.dates||'').trim(),
+        pax:   (p.pax||'').trim(),
+        leadId:(p.leadId||'').trim(),
+        notes: notes
+      };
+
+      state.clients.push(client);
+      if (status === 'unreached') scheduleUnreached(client);
+      else scheduleReached(client);
+    });
+
+    // Clean form blob, refresh/save, close
+    const lb = document.getElementById('leadBlob');
+    if(lb) lb.value = '';
+    document.getElementById('clientForm')?.reset();
+    document.getElementById('clientId')?.value = '';
+    save();
+    toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
+    closeBulkReview();
+  });
+
+  actions.appendChild(cancel);
+  actions.appendChild(saveAll);
+
+  bd.appendChild(list);
+  bd.appendChild(actions);
+  card.appendChild(hd);
+  card.appendChild(bd);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  // Esc to close
+  modal._esc = (e)=>{ if(e.key==='Escape') closeBulkReview(); };
+  document.addEventListener('keydown', modal._esc);
+  // click backdrop
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) closeBulkReview(); });
+}
+
+function closeBulkReview(){
+  const m = document.getElementById('bulkModal');
+  if (!m) return;
+  if(m._esc) document.removeEventListener('keydown', m._esc);
+  m.remove();
+}
+
+// UPDATED: parseBlob now handles bulk and returns a mode flag
+function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
+  const blob = ($('#leadBlob').value || '').trim();
+  if(!blob) return null;
+
+  const many = parseMultiLeadBlob(blob);
+  if (many.length > 1){
+    openBulkReview(many);
+    return { mode:'multi', count: many.length };
+  }
+
+  const parsed = many[0] || parseLeadBlob(blob);
+  applyParsedToForm(parsed, { onlyFillEmpty });
+  return { mode:'single', parsed };
+}
 
   /* ========= Contact link helpers ========= */
   const CALL_LINK_MODE = 'tel';
