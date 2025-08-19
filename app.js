@@ -939,6 +939,7 @@ c.leadId ? leadChipHtml(c.leadId) : ''
     if(!hhmm){ delete t.notifyTime; delete t.notifyAt; t.important=false; save(); return; }
     t.notifyTime = hhmm; t.important = true;
     t.notifyAt = combineYmdTimeLocal(t.date, hhmm).toISOString();
+    t.requireInteraction = true; 
     save();
   }
   function clearNotifyTime(id){
@@ -1219,17 +1220,28 @@ if (agendaFilterClearEl && agendaFilterEl) {
   function isSecure(){ return window.isSecureContext || location.protocol==='https:' || ['localhost','127.0.0.1','[::1]'].includes(location.hostname); }
   function setNotifStatus(txt){ const el=$('#notifStatus'); if(el) el.textContent = txt; }
   function fmtToday(){ return fmt(today()); }
-  function notifyTask(t){
-    if (!notifSupported() || Notification.permission!=='granted') return;
-    try{
-      const tag = t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-      const n = new Notification(`${t.title}${t.clientName ? ' — '+t.clientName : ''}`, {
+function notifyTask(t){
+  if (!notifSupported() || Notification.permission !== 'granted') return;
+  try{
+    const tag = t.id || ('rand-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+
+    // default to persistent notifications unless explicitly disabled
+    const persistent = (t.requireInteraction === undefined) ? true : !!t.requireInteraction;
+
+    const n = new Notification(
+      `${t.title}${t.clientName ? ' — '+t.clientName : ''}`,
+      {
         body: `${t.label||''} • ${t.date}${t.notifyTime?(' @ '+t.notifyTime):''}`,
-        tag, renotify:true, silent:false, requireInteraction: !!t.requireInteraction
-      });
-      n.onclick = () => { try{ window.focus(); }catch(_){} };
-    }catch(e){}
-  }
+        tag,
+        renotify: true,
+        silent: false,
+        requireInteraction: persistent
+      }
+    );
+    n.onclick = () => { try{ window.focus(); }catch(_){} };
+  }catch(e){}
+}
+
   function getNotifiedSet(){
     const f = fmtToday();
     try { const o = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}'); return o[f] ? new Set(o[f]) : new Set(); } catch(e){ return new Set(); }
@@ -1566,6 +1578,7 @@ cell.addEventListener('click', ()=>{
     if (time){
       t.notifyTime = time;
       if (notify) t.notifyAt = combineYmdTimeLocal(date, time).toISOString();
+      t.requireInteraction = true;  
     }
 
     addTask(t);
