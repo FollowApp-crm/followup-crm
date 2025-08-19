@@ -188,13 +188,6 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 /* Make the specific “Wipe All” a rounded card chip */
 #wipeAll{ border-radius:14px; height:38px; padding:0 14px; }
 
-/* Segmented control (sort) */
-.seg{ display:inline-flex; gap:0; background: var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
-.seg > button{ background: transparent !important; border:0; color: var(--ink); height:32px; padding:0 12px; border-radius:8px; }
-.seg > button.primary{ background: var(--panel) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
-body.light .seg{ background:#f1f4ff; border-color:var(--line) }
-body.light .seg > button.primary{ background:#e9ecff !important; box-shadow: inset 0 0 0 1px #cfd6f8; color:#1e2758 !important }
-
 /* Subtle highlight for the paste block */
 .lead-block.highlight{
   padding:10px; border:1px dashed var(--accent); border-radius:12px;
@@ -451,19 +444,27 @@ body.light { color-scheme: light; } /* override in light mode */
 /* Sort group layout (label outside the box) */
 #sortWrap { display:flex; align-items:center; gap:8px; }
 
-/* Make Sort's segmented buttons match Show (no purple) */
-#sortGroup.btn-group > button.primary {
-  background: rgba(255,255,255,0.08);
-  color: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+/* Row layout for 'Sort:' chip + segmented buttons */
+#sortWrap{ display:flex; align-items:center; gap:8px; }
+
+/* Segmented control (shared by Show and Sort) */
+.seg{ display:inline-flex; gap:0; background:var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
+.seg > button{ background:transparent !important; border:0; color:var(--ink); height:32px; padding:0 12px; border-radius:8px; }
+.seg > button.primary{
+  background:var(--panel) !important;
+  border:0 !important;                        /* kill purple border */
+  box-shadow: inset 0 0 0 1px var(--line);
+  color:var(--ink) !important;
 }
-#sortGroup.btn-group > button {
-  background: transparent;
-}
-/* Light theme: make Sort selected look like Show */
-body.light #sortGroup.btn-group > button.primary{
-  background:#e9ecff;
+body.light .seg{ background:#f1f4ff; border-color:var(--line); }
+body.light .seg > button.primary{
+  background:#e9ecff !important;
   box-shadow: inset 0 0 0 1px #cfd6f8;
-  color:#1e2758;
+  color:#1e2758 !important;
 }
+
+/* Neutral focus (no purple outline) */
+#sortGroup button:focus{ outline:none; }
+#sortGroup button:focus-visible{ outline:2px solid var(--line); outline-offset:2px; }
+
 
