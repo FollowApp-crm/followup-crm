@@ -226,8 +226,7 @@ body.light #ctClient option:hover,
 body.light #ctClient option:checked { background: #e9ecff; color: #1e2758; }
 
 /* Neutral focus for the segmented buttons (keeps things tidy) */
-.seg > button:focus { outline: none; }
-.seg > button:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
+
 
 /* =================== KPI =================== */
 .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
