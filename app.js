@@ -281,10 +281,14 @@ function parseMultiLeadBlob(text){
   const src = (text||'').replace(/\r/g,'\n').trim();
   if (!src) return [];
 
-const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4,}\b/.test(parts[0]);
+  // Split whenever we hit a new header line that starts a lead row
+  const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4,}\b)/g;
   let parts = src.split(headerRE);
 
-  const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
+  // Does the first chunk look like a header-started lead?
+  const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4,}\b/.test(parts[0]);
+
+  // If it’s just one block and not a header list, treat it as a single lead
   if(!looksLikeHeader && parts.length===1){
     const one = parseLeadBlob(src);
     const hd = src.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
@@ -292,19 +296,20 @@ const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d
     return [one].filter(x => (x.name||x.email||x.phone));
   }
 
+  // Map each chunk to a parsed lead and capture created/updated dates from the header
   const leads = parts.map(chunk => {
     const p = parseLeadBlob(chunk);
-const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
     if (hdr) {
-      // first group = created, second = updated
-      p.startDateFromBlob = p.startDateFromBlob || hdr[1];
-      p._updatedYmd = hdr[2];
+      p.startDateFromBlob = p.startDateFromBlob || hdr[1]; // created
+      p._updatedYmd = hdr[2];                               // updated
     }
     return p;
   }).filter(x => (x.name||x.email||x.phone));
 
   return leads;
 }
+
 
 
 
