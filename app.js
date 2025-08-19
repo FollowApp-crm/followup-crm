@@ -1,10 +1,23 @@
 (function(){
   'use strict';
+console.log('[crm] boot');
+window.addEventListener('error', e => console.error('[crm error]', e.message));
 
   /* ========= Helpers ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const storeKey  = 'followup_crm_v21';
+  // Migrate legacy localStorage, only if v21 is empty
+(() => {
+  if (!localStorage.getItem(storeKey)) {
+    const legacy = ['followup_crm_v20','followup_crm_v2','followup_crm'];
+    for (const k of legacy) {
+      const v = localStorage.getItem(k);
+      if (v) { localStorage.setItem(storeKey, v); break; }
+    }
+  }
+})();
+
   const THEME_KEY = 'followup_crm_theme';
   const SORT_KEY  = 'followup_crm_sort';
   const SHOW_KEY  = 'followup_crm_show';
@@ -69,7 +82,7 @@
   /* ========= Theme ========= */
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = (t==='light' ? '🌙 Dark' : '☀️ Light'); }
   applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
-  $('#themeToggle').addEventListener('click', ()=>{
+  document.getElementById('themeToggle')?.addEventListener('click', ()=>{
     const next = document.body.classList.contains('light') ? 'dark' : 'light';
     localStorage.setItem(THEME_KEY, next); applyTheme(next);
   });
@@ -924,8 +937,7 @@
   }
 
   // Agenda action clicks (delete, bell, RC sms)
-  $('#agenda').addEventListener('click', (e)=>{
-    const del = e.target.closest('[data-del]');
+document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del = e.target.closest('[data-del]');
     if(del){
       const id = del.getAttribute('data-del');
       if(confirm('Delete this task?')) deleteTask(id);
