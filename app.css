@@ -510,6 +510,14 @@ body.light .seg > button.primary{
 #calendarDrawer.open .drawer-scrim { opacity: 1; }
 #calendarDrawer.open .drawer-panel { transform: translateX(0); }
 
+/* --- Pinned/docked calendar: scrim off, panel stays open, page clickable --- */
+#calendarDrawer.pinned .drawer-scrim{ display:none; pointer-events:none; }
+#calendarDrawer.pinned .drawer-panel{ transform: translateX(0); box-shadow: -8px 0 24px rgba(0,0,0,.2); }
+
+/* Nudge content so it isn't covered while docked */
+body.drawer-pinned .wrap{ margin-right: min(420px, 92vw); }
+
+
 /* Optional: tidy group header chips under the client name */
 .group-hd .tiny { margin-top: 4px; }
 
