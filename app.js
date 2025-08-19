@@ -425,8 +425,9 @@ function openBulkReview(leads){
 const idField = document.getElementById('clientId');
 if (idField) idField.value = '';
     save();
-    toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
+    closeAddModal(); 
     closeBulkReview();
+    toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
   });
 
   actions.appendChild(cancel);
