@@ -138,52 +138,59 @@ function applyTheme(t){
   }
 // --- Drawer: docked by default ---
 function initCalendarDrawer(){
-  // Use existing container from your HTML
-  const drawer = document.getElementById('calendarDrawer');
-  if (!drawer) return;
+  // Ensure container exists
+  let drawer = document.getElementById('calendarDrawer');
+  if(!drawer){
+    drawer = document.createElement('div');
+    drawer.id = 'calendarDrawer';
+    drawer.innerHTML = `
+      <div class="drawer-scrim"></div>
+      <aside class="drawer-panel"></aside>`;
+    document.body.appendChild(drawer);
+  }
   const panel = drawer.querySelector('.drawer-panel');
 
-  // Move the Calendar card into the drawer (once)
+  // Move the existing Calendar card into the drawer
   const cal = document.getElementById('calendarCard');
-  if (cal && !panel.contains(cal)) panel.appendChild(cal);
+  if (cal) panel.appendChild(cal);
 
-  const openBtn  = document.getElementById('openCal');
-  const closeBtn = document.getElementById('calDrawerClose'); // ← from your HTML
-
-  // Default state: OPEN + PINNED
-  drawer.classList.add('open', 'pinned');
+  // ✅ Docked/open by default
+  drawer.classList.add('open','pinned');
   document.body.classList.add('drawer-pinned');
-  if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
+  document.getElementById('openCal')?.setAttribute('aria-expanded','true');
 
-  // Open/Close button (always opens in pinned mode)
-  openBtn?.addEventListener('click', ()=>{
-    const opening = !drawer.classList.contains('open');
-    if (opening){
-      drawer.classList.add('open', 'pinned');
-      document.body.classList.add('drawer-pinned');
-    } else {
-      drawer.classList.remove('open', 'pinned');
-      document.body.classList.remove('drawer-pinned');
-    }
-    openBtn.setAttribute('aria-expanded', String(drawer.classList.contains('open')));
-  });
-
-  // Header close ✖
-  closeBtn?.addEventListener('click', ()=>{
-    drawer.classList.remove('open', 'pinned');
+  // Header close (uses your existing #calDrawerClose in the HTML)
+  document.getElementById('calDrawerClose')?.addEventListener('click', ()=>{
+    drawer.classList.remove('open','pinned');
     document.body.classList.remove('drawer-pinned');
-    openBtn?.setAttribute('aria-expanded','false');
+    document.getElementById('openCal')?.setAttribute('aria-expanded','false');
   });
 
-  // Scrim: only closes when NOT pinned (kept for future flexibility)
-  const scrim = drawer.querySelector('.drawer-scrim');
-  scrim?.addEventListener('click', ()=>{
+  // Scrim closes only when NOT pinned
+  drawer.querySelector('.drawer-scrim')?.addEventListener('click', ()=>{
     if (!drawer.classList.contains('pinned')){
       drawer.classList.remove('open');
-      openBtn?.setAttribute('aria-expanded','false');
+      document.getElementById('openCal')?.setAttribute('aria-expanded','false');
     }
   });
+
+  // Toolbar toggle (📅 Calendar) — open pinned / close + unpin
+  const openBtn = document.getElementById('openCal');
+  if (openBtn){
+    openBtn.addEventListener('click', ()=>{
+      const opening = !drawer.classList.contains('open');
+      if (opening){
+        drawer.classList.add('open','pinned');
+        document.body.classList.add('drawer-pinned');
+      } else {
+        drawer.classList.remove('open','pinned');
+        document.body.classList.remove('drawer-pinned');
+      }
+      openBtn.setAttribute('aria-expanded', String(opening));
+    });
+  }
 }
+
 
 
 
