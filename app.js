@@ -281,7 +281,7 @@ function parseMultiLeadBlob(text){
   const src = (text||'').replace(/\r/g,'\n').trim();
   if (!src) return [];
 
-  const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b)/g;
+const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\d{4,}\b/.test(parts[0]);
   let parts = src.split(headerRE);
 
   const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
@@ -294,7 +294,7 @@ function parseMultiLeadBlob(text){
 
   const leads = parts.map(chunk => {
     const p = parseLeadBlob(chunk);
-    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
     if (hdr) {
       // first group = created, second = updated
       p.startDateFromBlob = p.startDateFromBlob || hdr[1];
