@@ -787,25 +787,24 @@ function mountSortGroupLabel(){
   const byType   = document.getElementById('sortType');
   if (!byClient || !byType || !byClient.parentElement) return;
 
-  // Wrapper that will contain: [ Sort: ] [ By client | By task ]
+  // If buttons are inside an old segmented/group container, pull them out
+  const oldWrap = byClient.closest('.seg, .btn-group');
+  if (oldWrap){
+    oldWrap.parentElement.insertBefore(byClient, oldWrap);
+    oldWrap.parentElement.insertBefore(byType, oldWrap);
+    if (!oldWrap.querySelector('button')) oldWrap.remove();
+  }
+
+  // Row wrapper (sibling to the segmented control)
   let wrap = document.getElementById('sortWrap');
   if (!wrap){
     wrap = document.createElement('div');
     wrap.id = 'sortWrap';
-    wrap.className = 'controls-row'; // same row container you use near "Show:"
+    wrap.className = 'toolbar'; // same row style you use elsewhere
     byClient.parentElement.insertBefore(wrap, byClient);
   }
 
-// The segmented button container
-let group = document.getElementById('sortGroup');
-if (!group){
-  group = document.createElement('div');
-  group.id = 'sortGroup';
-  group.className = 'seg';   // ← was 'btn-group'
-}
-
-
-  // The label chip
+  // Label chip (just like Show:)
   let label = document.getElementById('sortLabel');
   if (!label){
     label = document.createElement('span');
@@ -816,14 +815,20 @@ if (!group){
     label.textContent = 'Sort:';
   }
 
-  // Assemble: label and group are siblings
+  // Segmented container (same look as Show)
+  let group = document.getElementById('sortGroup');
+  if (!group){
+    group = document.createElement('div');
+    group.id = 'sortGroup';
+    group.className = 'seg';    // ← NOT "btn-group"
+  }
+
   wrap.appendChild(label);
   wrap.appendChild(group);
-
-  // Move buttons into the group
   group.appendChild(byClient);
   group.appendChild(byType);
 }
+
 
 
 
