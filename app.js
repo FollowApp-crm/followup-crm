@@ -136,76 +136,55 @@ function applyTheme(t){
     document.getElementById('closeAdd')?.addEventListener('click', closeAddModal);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAddModal(); });
   }
-// --- Drawer (dockable/pinnable) ---
+// --- Drawer: docked by default ---
 function initCalendarDrawer(){
-  // Ensure container exists
-  let drawer = document.getElementById('calendarDrawer');
-  if(!drawer){
-    drawer = document.createElement('div');
-    drawer.id = 'calendarDrawer';
-    drawer.innerHTML = `
-      <div class="drawer-scrim"></div>
-      <aside class="drawer-panel"></aside>`;
-    document.body.appendChild(drawer);
-  }
+  // Use existing container from your HTML
+  const drawer = document.getElementById('calendarDrawer');
+  if (!drawer) return;
   const panel = drawer.querySelector('.drawer-panel');
 
-  // Move the existing Calendar card into the drawer
+  // Move the Calendar card into the drawer (once)
   const cal = document.getElementById('calendarCard');
-  if (cal) panel.appendChild(cal);
+  if (cal && !panel.contains(cal)) panel.appendChild(cal);
 
-  // Add Pin + Close buttons into the calendar header (once)
-  const head = cal?.querySelector('.cal-hd');
-  if (head && !head.querySelector('#calPin')) {
-    const pinBtn = document.createElement('button');
-    pinBtn.id = 'calPin';
-    pinBtn.className = 'settings-btn';
-    pinBtn.textContent = '📌 Dock';
+  const openBtn  = document.getElementById('openCal');
+  const closeBtn = document.getElementById('calDrawerClose'); // ← from your HTML
 
-    const closeBtn = document.createElement('button');
-    closeBtn.id = 'calClose';
-    closeBtn.className = 'btn-icon';
-    closeBtn.title = 'Close';
-    closeBtn.textContent = '✖';
+  // Default state: OPEN + PINNED
+  drawer.classList.add('open', 'pinned');
+  document.body.classList.add('drawer-pinned');
+  if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
 
-    head.appendChild(pinBtn);
-    head.appendChild(closeBtn);
+  // Open/Close button (always opens in pinned mode)
+  openBtn?.addEventListener('click', ()=>{
+    const opening = !drawer.classList.contains('open');
+    if (opening){
+      drawer.classList.add('open', 'pinned');
+      document.body.classList.add('drawer-pinned');
+    } else {
+      drawer.classList.remove('open', 'pinned');
+      document.body.classList.remove('drawer-pinned');
+    }
+    openBtn.setAttribute('aria-expanded', String(drawer.classList.contains('open')));
+  });
 
-    // Pin/Dock: keep it open without blocking the page
-    pinBtn.addEventListener('click', ()=>{
-      const pinned = drawer.classList.toggle('pinned');
-      document.body.classList.toggle('drawer-pinned', pinned);
-      pinBtn.textContent = pinned ? '📌 Docked' : '📌 Dock';
-      if (pinned) drawer.classList.add('open');
-    });
+  // Header close ✖
+  closeBtn?.addEventListener('click', ()=>{
+    drawer.classList.remove('open', 'pinned');
+    document.body.classList.remove('drawer-pinned');
+    openBtn?.setAttribute('aria-expanded','false');
+  });
 
-    // Close button hides the drawer
-    closeBtn.addEventListener('click', ()=>{
-      drawer.classList.remove('open');
-      const btn = document.getElementById('openCal');
-      if (btn) btn.setAttribute('aria-expanded','false');
-    });
-  }
-
-  // Scrim click closes only when NOT pinned
+  // Scrim: only closes when NOT pinned (kept for future flexibility)
   const scrim = drawer.querySelector('.drawer-scrim');
   scrim?.addEventListener('click', ()=>{
     if (!drawer.classList.contains('pinned')){
       drawer.classList.remove('open');
-      const btn = document.getElementById('openCal');
-      if (btn) btn.setAttribute('aria-expanded','false');
+      openBtn?.setAttribute('aria-expanded','false');
     }
   });
-
-  // Toolbar toggle button
-  const openBtn = document.getElementById('openCal');
-  if (openBtn){
-    openBtn.addEventListener('click', ()=>{
-      drawer.classList.toggle('open');
-      openBtn.setAttribute('aria-expanded', String(drawer.classList.contains('open')));
-    });
-  }
 }
+
 
 
   /* ========= State ========= */
