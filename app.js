@@ -354,7 +354,7 @@ function openBulkReview(leads){
         ${p.route?`<span class="pill">Route:&nbsp;${escapeHtml(p.route)}</span>`:''}
         ${p.dates?` <span class="pill">Dates:&nbsp;${escapeHtml(p.dates)}</span>`:''}
         ${p.pax?` <span class="pill">Pax:&nbsp;${escapeHtml(String(p.pax))}</span>`:''}
-        ${p.leadId?` <span class="pill">Lead:&nbsp;${escapeHtml(String(p.leadId))}</span>`:''}
+${p.leadId ? ` ${leadChipHtml(p.leadId)}` : ''}
       </div>
       <div class="row" style="margin-top:8px">
         <div>
@@ -632,12 +632,14 @@ function leadChipHtml(id){
 const leadInline = c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : '';
 
         tr.innerHTML = `
-          <td data-label="Name">
-            <strong>${escapeHtml(c.name)}</strong>
-            <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
-              ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
-            </div>
-          </td>
+ <td data-label="Name">
+  <strong>${escapeHtml(c.name)}</strong>
+  <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
+    ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
+  </div>
+  ${leadInline}
+</td>
+
           <td data-label="Contact" class="tiny">${contactHtml}</td>
           <td data-label="Status"><span class="badge">${c.status}</span></td>
           <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
