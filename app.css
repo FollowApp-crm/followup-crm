@@ -492,5 +492,35 @@ body.light .seg > button.primary{
 }
 .bulk-item .top{ font-size:14px; margin-bottom:4px; }
 
+:root { --content-width: 1040px; }
+
+/* Center the main cards (Customers + Agenda) to the same width */
+.centered {
+  max-width: var(--content-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Right-side drawer for the calendar */
+#calendarDrawer { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+#calendarDrawer .drawer-scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .2s;
+}
+#calendarDrawer .drawer-panel {
+  position: fixed; top: 0; right: 0; height: 100%;
+  width: min(420px, 92vw);
+  background: var(--card-bg, #1f2330);
+  box-shadow: -14px 0 30px rgba(0,0,0,.25);
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  overflow: auto;
+  padding: 16px;
+}
+#calendarDrawer.open { pointer-events: auto; }
+#calendarDrawer.open .drawer-scrim { opacity: 1; }
+#calendarDrawer.open .drawer-panel { transform: translateX(0); }
+
+/* Optional: tidy group header chips under the client name */
+.group-hd .tiny { margin-top: 4px; }
 
 
