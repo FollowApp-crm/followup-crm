@@ -449,7 +449,8 @@ function closeBulkReview(){
 
 // UPDATED: parseBlob now handles bulk and returns a mode flag
 function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
-  const blob = ($('#leadBlob').value || '').trim();
+  const lb = $('#leadBlob');
+  const blob = (lb?.value || '').trim();
   if(!blob) return null;
 
   const many = parseMultiLeadBlob(blob);
@@ -650,7 +651,7 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     row.appendChild(td); tr.after(row);
   }
 
-$('#clientsTbl').addEventListener('click', e=>{
+$('#clientsTbl')?.addEventListener('click', e=>{
   // Toggle notes when clicking the inline preview
   const preview = e.target.closest('.note-preview');
   if (preview){
@@ -1269,17 +1270,21 @@ const items = state.tasks.filter(
       const cell = document.createElement('div');
       cell.className='cal-cell'; if(!isWorkingDay(dt)) cell.classList.add('offday');
       cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length}</div>` : '');
-      cell.addEventListener('click', ()=>{
-        $('#agendaDate').value = ymd;
-        $('#agendaDate').dispatchEvent(new Event('change'));
-        flashAgendaDate();
-        const target = document.getElementById('actionsCard');
-        if (target && target.scrollIntoView){
-          target.scrollIntoView({ behavior:'smooth', block:'start' });
-        } else {
-          window.scrollTo({ top: $('#actionsCard').offsetTop - 70, behavior:'smooth' });
-        }
-      });
+cell.addEventListener('click', ()=>{
+  const ad = $('#agendaDate');
+  if (ad){
+    ad.value = ymd;
+    ad.dispatchEvent(new Event('change'));
+    flashAgendaDate();
+  }
+  const target = document.getElementById('actionsCard');
+  if (target?.scrollIntoView){
+    target.scrollIntoView({ behavior:'smooth', block:'start' });
+  } else if (target){
+    window.scrollTo({ top: target.offsetTop - 70, behavior:'smooth' });
+  }
+});
+
       grid.appendChild(cell);
     }
   }
@@ -1385,9 +1390,10 @@ const items = state.tasks.filter(
     return { client, exists };
   }
   $('#resetForm')?.addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
-  $('#saveCustomer')?.addEventListener('click', ()=>{
-    try{
-      if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
+ $('#saveCustomer')?.addEventListener('click', ()=>{
+  try{
+    const lb = $('#leadBlob');
+    if ((lb?.value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
       if(!client.name){ alert('Name is required'); $('#name').focus(); return; }
       if(!exists){
