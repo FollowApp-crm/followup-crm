@@ -9,28 +9,7 @@
 const SORT_KEY  = 'followup_crm_sort';
 const SHOW_KEY  = 'followup_crm_show';
 
-  // Instant parse on paste into the lead blob + Enter-to-save ✨
-const leadBlobEl = document.getElementById('leadBlob');
-if (leadBlobEl){
-  leadBlobEl.addEventListener('paste', () => {
-    requestAnimationFrame(() => {
-      const has = (leadBlobEl.value || '').trim();
-      if (!has) return;
-      parseBlob({ onlyFillEmpty: false });
-      toast('Parsed from paste. Review & save.');
-    });
-  });
 
-  leadBlobEl.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter' && !e.shiftKey){
-      const has = (leadBlobEl.value || '').trim();
-      if(!has) return;
-      e.preventDefault();
-      parseBlob({ onlyFillEmpty:true });
-      document.getElementById('saveCustomer').click();
-    }
-  });
-}
 
 
   function flashAgendaDate(){
