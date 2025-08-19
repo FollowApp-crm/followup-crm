@@ -1722,7 +1722,26 @@ function initCalendarDrawer(){
   initNotificationsUI();
   startNotificationTicker();
 
-  
+  // === Calendar Drawer (open/close)
+const calDrawer = document.getElementById('calendarDrawer');
+const openCalBtn = document.getElementById('openCal');
+const calScrim = calDrawer?.querySelector('.drawer-scrim');
+const calCloseBtn = document.getElementById('calDrawerClose');
+
+function openCalendarDrawer(){
+  calDrawer?.classList.add('open');
+  openCalBtn?.setAttribute('aria-expanded','true');
+}
+function closeCalendarDrawer(){
+  calDrawer?.classList.remove('open');
+  openCalBtn?.setAttribute('aria-expanded','false');
+}
+
+openCalBtn?.addEventListener('click', openCalendarDrawer);
+calScrim?.addEventListener('click', closeCalendarDrawer);
+calCloseBtn?.addEventListener('click', closeCalendarDrawer);
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeCalendarDrawer(); });
+
   /* ========= Bootstrap ========= */
 function bootstrap(){
   initAddModal();
