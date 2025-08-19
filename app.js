@@ -1611,15 +1611,28 @@ cell.addEventListener('click', ()=>{
   startNotificationTicker();
 
   /* ========= Bootstrap ========= */
- function bootstrap(){
+function bootstrap(){
   initAddModal();
   refresh();
   buildCalendar();
-  // now that DOM is there, wire/adjust the sort+show UI
   mountSortGroupLabel();
   setSortButtons();
   setShowButtons();
+
+  // 🔎 Customers search + status filter
+  const searchEl = document.getElementById('search');
+  if (searchEl){
+    const onType = () => refresh();            // or debounce(onType, 120) if you prefer
+    searchEl.addEventListener('input', onType);
+    searchEl.addEventListener('change', onType);
+    searchEl.addEventListener('keydown', (e)=>{ // Esc to clear
+      if (e.key === 'Escape'){ searchEl.value=''; refresh(); }
+    });
+  }
+  document.getElementById('statusFilter')
+    ?.addEventListener('change', () => refresh());
 }
+
 bootstrap();
 
 })();
