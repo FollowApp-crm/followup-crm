@@ -417,7 +417,8 @@ function openBulkReview(leads){
     const lb = document.getElementById('leadBlob');
     if(lb) lb.value = '';
     document.getElementById('clientForm')?.reset();
-    document.getElementById('clientId')?.value = '';
+const idField = document.getElementById('clientId');
+if (idField) idField.value = '';
     save();
     toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
     closeBulkReview();
