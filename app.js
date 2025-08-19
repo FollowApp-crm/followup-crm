@@ -53,25 +53,7 @@
     copyTextToClipboard(text, what);
   });
 
-  // Close + reset the New Task UI (legacy safeguard)
-  function closeNewTaskUI(){
-    const panel =
-      document.getElementById('newTaskPanel') ||
-      document.getElementById('addTaskPopover') ||
-      document.getElementById('taskPopover') ||
-      document.getElementById('newTask') ||
-      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
-    if (panel){
-      panel.classList.remove('open','show');
-      panel.removeAttribute('data-open');
-      panel.style.display = 'none';
-    }
-    const form =
-      document.getElementById('newTaskForm') ||
-      document.getElementById('addTaskForm') ||
-      document.getElementById('taskForm');
-    form?.reset();
-  }
+  
 
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
@@ -1547,6 +1529,11 @@
   /* ========= Notifications boot ========= */
   initNotificationsUI();
   startNotificationTicker();
+
+  // Customers search + status filter (wire them to refresh the table)
+document.getElementById('search')?.addEventListener('input', refresh);
+document.getElementById('statusFilter')?.addEventListener('change', refresh);
+
 
   /* ========= Bootstrap ========= */
   function bootstrap(){
