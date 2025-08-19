@@ -136,6 +136,77 @@ function applyTheme(t){
     document.getElementById('closeAdd')?.addEventListener('click', closeAddModal);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAddModal(); });
   }
+// --- Drawer (dockable/pinnable) ---
+function initCalendarDrawer(){
+  // Ensure container exists
+  let drawer = document.getElementById('calendarDrawer');
+  if(!drawer){
+    drawer = document.createElement('div');
+    drawer.id = 'calendarDrawer';
+    drawer.innerHTML = `
+      <div class="drawer-scrim"></div>
+      <aside class="drawer-panel"></aside>`;
+    document.body.appendChild(drawer);
+  }
+  const panel = drawer.querySelector('.drawer-panel');
+
+  // Move the existing Calendar card into the drawer
+  const cal = document.getElementById('calendarCard');
+  if (cal) panel.appendChild(cal);
+
+  // Add Pin + Close buttons into the calendar header (once)
+  const head = cal?.querySelector('.cal-hd');
+  if (head && !head.querySelector('#calPin')) {
+    const pinBtn = document.createElement('button');
+    pinBtn.id = 'calPin';
+    pinBtn.className = 'settings-btn';
+    pinBtn.textContent = '📌 Dock';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'calClose';
+    closeBtn.className = 'btn-icon';
+    closeBtn.title = 'Close';
+    closeBtn.textContent = '✖';
+
+    head.appendChild(pinBtn);
+    head.appendChild(closeBtn);
+
+    // Pin/Dock: keep it open without blocking the page
+    pinBtn.addEventListener('click', ()=>{
+      const pinned = drawer.classList.toggle('pinned');
+      document.body.classList.toggle('drawer-pinned', pinned);
+      pinBtn.textContent = pinned ? '📌 Docked' : '📌 Dock';
+      if (pinned) drawer.classList.add('open');
+    });
+
+    // Close button hides the drawer
+    closeBtn.addEventListener('click', ()=>{
+      drawer.classList.remove('open');
+      const btn = document.getElementById('openCal');
+      if (btn) btn.setAttribute('aria-expanded','false');
+    });
+  }
+
+  // Scrim click closes only when NOT pinned
+  const scrim = drawer.querySelector('.drawer-scrim');
+  scrim?.addEventListener('click', ()=>{
+    if (!drawer.classList.contains('pinned')){
+      drawer.classList.remove('open');
+      const btn = document.getElementById('openCal');
+      if (btn) btn.setAttribute('aria-expanded','false');
+    }
+  });
+
+  // Toolbar toggle button
+  const openBtn = document.getElementById('openCal');
+  if (openBtn){
+    openBtn.addEventListener('click', ()=>{
+      drawer.classList.toggle('open');
+      openBtn.setAttribute('aria-expanded', String(drawer.classList.contains('open')));
+    });
+  }
+}
+
 
   /* ========= State ========= */
   function defaults(){
@@ -1670,77 +1741,13 @@ function centerMainCards(){
   agenda?.classList.add('centered');
 }
 
-// Move the calendar into a slide-out drawer + add a toggle button near Agenda
-function initCalendarDrawer(){
-  const grid = document.getElementById('calendarGrid');
-  if (!grid) return;
 
-  // Find the top container for the calendar UI and give it an id if missing
-  const calSection = grid.closest('section') || grid.closest('.card') || grid.parentElement;
-  if (!calSection) return;
-  calSection.id = calSection.id || 'calendarSection';
-
-  // Build drawer once
-  let drawer = document.getElementById('calendarDrawer');
-  if (!drawer){
-    drawer = document.createElement('aside');
-    drawer.id = 'calendarDrawer';
-
-    const scrim = document.createElement('div');
-    scrim.className = 'drawer-scrim';
-    scrim.addEventListener('click', ()=> drawer.classList.remove('open'));
-
-    const panel = document.createElement('div');
-    panel.className = 'drawer-panel';
-    panel.appendChild(calSection); // move calendar into the drawer
-
-    drawer.appendChild(scrim);
-    drawer.appendChild(panel);
-    document.body.appendChild(drawer);
-  }
-
-  // Add a toggle button to the Agenda header (or top of the section)
-  const agendaHost =
-    document.getElementById('actionsCard') ||
-    document.getElementById('agenda')?.closest('section') ||
-    document.getElementById('agenda')?.closest('.card') ||
-    document.body;
-
-  let btn = document.getElementById('toggleCalendar');
-  if (!btn){
-    btn = document.createElement('button');
-    btn.id = 'toggleCalendar';
-    btn.className = 'ghost';
-    btn.textContent = '📆 Calendar';
-    (agendaHost.querySelector('.hd') || agendaHost).appendChild(btn);
-  }
-  btn.addEventListener('click', ()=> drawer.classList.toggle('open'));
-}
 
 
   /* ========= Notifications boot ========= */
   initNotificationsUI();
   startNotificationTicker();
 
-  // === Calendar Drawer (open/close)
-const calDrawer = document.getElementById('calendarDrawer');
-const openCalBtn = document.getElementById('openCal');
-const calScrim = calDrawer?.querySelector('.drawer-scrim');
-const calCloseBtn = document.getElementById('calDrawerClose');
-
-function openCalendarDrawer(){
-  calDrawer?.classList.add('open');
-  openCalBtn?.setAttribute('aria-expanded','true');
-}
-function closeCalendarDrawer(){
-  calDrawer?.classList.remove('open');
-  openCalBtn?.setAttribute('aria-expanded','false');
-}
-
-openCalBtn?.addEventListener('click', openCalendarDrawer);
-calScrim?.addEventListener('click', closeCalendarDrawer);
-calCloseBtn?.addEventListener('click', closeCalendarDrawer);
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeCalendarDrawer(); });
 
   /* ========= Bootstrap ========= */
 function bootstrap(){
@@ -1750,6 +1757,7 @@ function bootstrap(){
   mountSortGroupLabel();
   setSortButtons();
   setShowButtons();
+  initCalendarDrawer();
 
   // 🔎 Customers search + status filter
   const searchEl = document.getElementById('search');
@@ -1765,7 +1773,6 @@ function bootstrap(){
   document.getElementById('statusFilter')
     ?.addEventListener('change', () => refresh());
     centerMainCards();
-  initCalendarDrawer();
 }
 
 bootstrap();
