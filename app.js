@@ -1656,12 +1656,73 @@ cell.addEventListener('click', ()=>{
     return;
   }
 });
+// Put Customers + Agenda on the same centered width
+function centerMainCards(){
+  // Adjust these fallbacks to your actual containers
+  const customers = document.getElementById('customersCard')
+                 || document.getElementById('clientsTbl')?.closest('section')
+                 || document.getElementById('clientsTbl')?.closest('.card');
+  const agenda = document.getElementById('actionsCard')
+               || document.getElementById('agenda')?.closest('section')
+               || document.getElementById('agenda')?.closest('.card');
+
+  customers?.classList.add('centered');
+  agenda?.classList.add('centered');
+}
+
+// Move the calendar into a slide-out drawer + add a toggle button near Agenda
+function initCalendarDrawer(){
+  const grid = document.getElementById('calendarGrid');
+  if (!grid) return;
+
+  // Find the top container for the calendar UI and give it an id if missing
+  const calSection = grid.closest('section') || grid.closest('.card') || grid.parentElement;
+  if (!calSection) return;
+  calSection.id = calSection.id || 'calendarSection';
+
+  // Build drawer once
+  let drawer = document.getElementById('calendarDrawer');
+  if (!drawer){
+    drawer = document.createElement('aside');
+    drawer.id = 'calendarDrawer';
+
+    const scrim = document.createElement('div');
+    scrim.className = 'drawer-scrim';
+    scrim.addEventListener('click', ()=> drawer.classList.remove('open'));
+
+    const panel = document.createElement('div');
+    panel.className = 'drawer-panel';
+    panel.appendChild(calSection); // move calendar into the drawer
+
+    drawer.appendChild(scrim);
+    drawer.appendChild(panel);
+    document.body.appendChild(drawer);
+  }
+
+  // Add a toggle button to the Agenda header (or top of the section)
+  const agendaHost =
+    document.getElementById('actionsCard') ||
+    document.getElementById('agenda')?.closest('section') ||
+    document.getElementById('agenda')?.closest('.card') ||
+    document.body;
+
+  let btn = document.getElementById('toggleCalendar');
+  if (!btn){
+    btn = document.createElement('button');
+    btn.id = 'toggleCalendar';
+    btn.className = 'ghost';
+    btn.textContent = '📆 Calendar';
+    (agendaHost.querySelector('.hd') || agendaHost).appendChild(btn);
+  }
+  btn.addEventListener('click', ()=> drawer.classList.toggle('open'));
+}
 
 
   /* ========= Notifications boot ========= */
   initNotificationsUI();
   startNotificationTicker();
 
+  
   /* ========= Bootstrap ========= */
 function bootstrap(){
   initAddModal();
@@ -1684,6 +1745,8 @@ function bootstrap(){
 
   document.getElementById('statusFilter')
     ?.addEventListener('change', () => refresh());
+    centerMainCards();
+  initCalendarDrawer();
 }
 
 bootstrap();
