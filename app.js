@@ -294,10 +294,15 @@ function parseMultiLeadBlob(text){
   // For each chunk, parse as a single lead and also pull the first timestamp date as startDate
   const leads = parts.map(chunk => {
     const p = parseLeadBlob(chunk);
-    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+const ymds = Array.from(chunk.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
+if (ymds.length){
+  // second date = Day 1, first date = updated/created
+  p.startDateFromBlob = p.startDateFromBlob || ymds[1] || ymds[0];
+  p._updatedYmd = ymds[0];
+}
     if (hdr) {
       // prefer first timestamp as the anchor
-      p.startDateFromBlob = p.startDateFromBlob || hdr[1];
+      p.startDateFromBlob = p.startDateFromBlob || hdr[2];
       p._updatedYmd = hdr[2];
     }
     return p;
@@ -997,6 +1002,12 @@ function setSortButtons(){
 }
 
 function mountSortGroupLabel(){
+  if (document.getElementById('sortWrap') && document.getElementById('sortGroup')) {
+  // Keep existing accessible markup; just ensure label text
+  const lbl = document.getElementById('sortLabel'); if (lbl) lbl.textContent = 'Sort:';
+  return;
+}
+
   const byClient = document.getElementById('sortClient');
   const byType   = document.getElementById('sortType');
   if (!byClient || !byType || !byClient.parentElement) return;
