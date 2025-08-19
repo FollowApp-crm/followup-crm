@@ -202,10 +202,9 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .right{display:flex; gap:8px; justify-content:flex-end}
 
 /* === Two-column Agenda + Calendar (desktop) === */
-.row.agenda-layout{
-  grid-template-columns: minmax(0, 2.2fr) minmax(360px, 1.2fr);
-  gap:16px; align-items:start;
-}
+/* EITHER delete it, OR change to a single column */
+.row.agenda-layout{ grid-template-columns: 1fr; gap:16px; align-items:start; }
+
 
 /* Compact calendar look (small right rail) */
 #calendarCard .bd{ padding:12px; }
@@ -213,15 +212,6 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
 .cal-cell{ min-height:56px; padding:6px; }
 .cal-badge{ margin-top:4px; font-size:10.5px; }
 
-/* Make ONLY the Agenda + Calendar row wider than the page wrap (desktop) */
-@media (min-width:1001px){
-  .row.agenda-layout{
-    --agenda-bleed: clamp(80px, 6vw, 180px);
-    width: calc(100% + var(--agenda-bleed) * 2);
-    margin-left: calc(var(--agenda-bleed) * -1);
-    margin-right: calc(var(--agenda-bleed) * -1);
-  }
-}
 /* --- Add-Task modal: Client dropdown polish --- */
 #customTaskPop .row { grid-template-columns: 2fr 1fr; }     /* make Client wider than Type */
 #ctClient { min-width: 320px; }                              /* avoid cramped dropdown */
@@ -509,7 +499,8 @@ body.light .seg > button.primary{
 #calendarDrawer .drawer-panel {
   position: fixed; top: 0; right: 0; height: 100%;
   width: min(420px, 92vw);
-  background: var(--card-bg, #1f2330);
+  background: var(--panel);
+  border-left: 1px solid var(--line);
   box-shadow: -14px 0 30px rgba(0,0,0,.25);
   transform: translateX(100%);
   transition: transform .25s ease;
