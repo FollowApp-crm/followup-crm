@@ -88,9 +88,12 @@ const SHOW_KEY  = 'followup_crm_show';
   }
 
   /* ========= Theme ========= */
-  function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = (t==='light' ? '🌙 Dark' : '☀️ Light'); }
-  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
-  $('#themeToggle').addEventListener('click', ()=>{
+function applyTheme(t){
+  document.body.classList.toggle('light', t==='light');
+  const btn = $('#themeToggle');
+  if (btn) btn.textContent = (t==='light' ? '🌙 Dark' : '☀️ Light');
+}  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+  $('#themeToggle')?.addEventListener('click', ()=>{
     const next = document.body.classList.contains('light') ? 'dark' : 'light';
     localStorage.setItem(THEME_KEY, next); applyTheme(next);
   });
@@ -238,7 +241,9 @@ function parseLeadBlob(text){
   const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
   const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
-  const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
+const mDates = whole.match(
+  new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`, 'i')
+);
   let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
   if(!dates){
     const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
@@ -276,33 +281,23 @@ function parseMultiLeadBlob(text){
   const src = (text||'').replace(/\r/g,'\n').trim();
   if (!src) return [];
 
-  // Split on a "header" line that looks like:
-  // YYYY-MM-DD HH:MM:SS <tab/space> YYYY-MM-DD HH:MM:SS <tab/space> <digits> <tab/space> ...
   const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b)/g;
   let parts = src.split(headerRE);
-  // If the very first line isn't a header, see if there are *no* headers at all
+
   const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
   if(!looksLikeHeader && parts.length===1){
-    // No headers found — treat as one lead
     const one = parseLeadBlob(src);
-    // Try to grab a leading timestamp date as start
     const hd = src.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
     if (hd) one.startDateFromBlob = one.startDateFromBlob || hd[1];
     return [one].filter(x => (x.name||x.email||x.phone));
   }
 
-  // For each chunk, parse as a single lead and also pull the first timestamp date as startDate
   const leads = parts.map(chunk => {
     const p = parseLeadBlob(chunk);
-const ymds = Array.from(chunk.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
-if (ymds.length){
-  // second date = Day 1, first date = updated/created
-  p.startDateFromBlob = p.startDateFromBlob || ymds[1] || ymds[0];
-  p._updatedYmd = ymds[0];
-}
+    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
     if (hdr) {
-      // prefer first timestamp as the anchor
-      p.startDateFromBlob = p.startDateFromBlob || hdr[2];
+      // first group = created, second = updated
+      p.startDateFromBlob = p.startDateFromBlob || hdr[1];
       p._updatedYmd = hdr[2];
     }
     return p;
@@ -310,6 +305,9 @@ if (ymds.length){
 
   return leads;
 }
+
+
+
 
 // NEW: bulk review modal (built entirely in JS—no HTML edits required)
 function openBulkReview(leads){
@@ -653,7 +651,7 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
   }
 
 $('#clientsTbl').addEventListener('click', e=>{
-  // Allow clicking the note snippet to toggle notes
+  // Toggle notes when clicking the inline preview
   const preview = e.target.closest('.note-preview');
   if (preview){
     const tr = preview.closest('tr');
@@ -662,71 +660,73 @@ $('#clientsTbl').addEventListener('click', e=>{
     return;
   }
 
-  // existing button[data-act] code follows
   const btn = e.target.closest('button[data-act]');
-  if(!btn) return;
-  // ...
+  if (!btn) return;
+
+  const id  = btn.getAttribute('data-id');
+  const act = btn.getAttribute('data-act');
+  const c   = id ? clientById(id) : null;
+
+  if (act==='note'){ if(id) toggleNotesRow(id); return; }
+
+  if (act==='manual'){
+    const open = document.querySelector(`.manual-row[data-for="${id}"]`);
+    if (open){ $$('.manual-row').forEach(n=>n.remove()); return; }
+    openManualRow(id); return;
+  }
+
+  if (act==='manual-apply'){
+    const date        = document.getElementById(`manualDate_${id}`)?.value || '';
+    const shouldClear = document.getElementById(`manualClear_${id}`)?.checked ?? true;
+    const notes       = document.getElementById(`manualNotes_${id}`)?.value || '';
+    const rmPrev      = document.getElementById(`manualClearPrev_${id}`)?.checked ?? false;
+    if (c) scheduleManualFU(c, date, shouldClear, notes, rmPrev);
+    $$('.manual-row').forEach(n=>n.remove());
+    return;
+  }
+
+  if (act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
+
+  if (act==='edit' && c){
+    $('#clientId').value   = c.id;
+    $('#name').value       = c.name  || '';
+    $('#email').value      = c.email || '';
+    $('#phone').value      = c.phone || '';
+    $('#status').value     = c.status;
+    $('#startDate').value  = c.startDate || '';
+    $('#route').value      = c.route || '';
+    $('#dates').value      = c.dates || '';
+    $('#pax').value        = c.pax   || '';
+    $('#leadId').value     = c.leadId|| '';
+    $('#notes').value      = c.notes || '';
+    openAddModal(false);
+    return;
+  }
+
+  if (act==='reach' && c){
+    c.status = c.status === 'unreached' ? 'reached' : 'unreached';
+    if (c.status === 'reached'){
+      c.reachedStart = fmt(today());
+      clearFutureTasksForClientFrom(c.id, today());
+      scheduleReached(c);
+    } else {
+      c.startDate = fmt(today());
+      clearFutureTasksForClientFrom(c.id, today());
+      scheduleUnreached(c);
+    }
+    save();
+    return;
+  }
+
+  if (act==='del' && id){
+    if (confirm('Delete this customer and all their tasks?')){
+      state.clients = state.clients.filter(x=>x.id!==id);
+      state.tasks   = state.tasks.filter(t=>t.clientId!==id);
+      save();
+    }
+    return;
+  }
 });
- if(!btn) return;
-    const id = btn.getAttribute('data-id');
-    const act = btn.getAttribute('data-act');
-    const c = clientById(id);
-
-    if(act==='note'){ toggleNotesRow(id); return; }
-    if(act==='manual'){
-      const open = document.querySelector(`.manual-row[data-for="${id}"]`);
-      if(open){ $$('.manual-row').forEach(n=>n.remove()); return; }
-      openManualRow(id); return;
-    }
-    if(act==='manual-apply'){
-      const date = document.getElementById(`manualDate_${id}`)?.value || '';
-      const shouldClear = document.getElementById(`manualClear_${id}`)?.checked ?? true;
-      const notes = document.getElementById(`manualNotes_${id}`)?.value || '';
-      const rmPrev = document.getElementById(`manualClearPrev_${id}`)?.checked ?? false;
-      scheduleManualFU(c, date, shouldClear, notes, rmPrev);
-      $$('.manual-row').forEach(n=>n.remove()); return;
-    }
-    if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
-
-    if (act==='edit'){
-      if(!c){ return; }
-      $('#clientId').value = c.id;
-      $('#name').value  = c.name  || '';
-      $('#email').value = c.email || '';
-      $('#phone').value = c.phone || '';
-      $('#status').value = c.status;
-      $('#startDate').value = c.startDate || '';
-      $('#route').value = c.route || '';
-      $('#dates').value = c.dates || '';
-      $('#pax').value   = c.pax   || '';
-      $('#leadId').value = c.leadId || '';
-      $('#notes').value = c.notes || '';
-      openAddModal(false);
-      return;
-    }
-
-    if(act==='reach'){
-      c.status = c.status === 'unreached' ? 'reached' : 'unreached';
-      if(c.status === 'reached'){
-        c.reachedStart = fmt(today());
-        clearFutureTasksForClientFrom(c.id, today());
-        scheduleReached(c);
-      }else{
-        c.startDate = fmt(today());
-        clearFutureTasksForClientFrom(c.id, today());
-        scheduleUnreached(c);
-      }
-      save(); return;
-    }
-    if(act==='del'){
-      if(confirm('Delete this customer and all their tasks?')){
-        state.clients = state.clients.filter(x=>x.id!==id);
-        state.tasks   = state.tasks.filter(t=>t.clientId!==id);
-        save();
-      }
-      return;
-    }
-  });
 
   /* ========= Manual FU ========= */
   function openManualRow(id){
@@ -933,55 +933,19 @@ const items = state.tasks
     updateProgress();
   }
 
-  function updateProgress(){
-    const f = fmt(today());
-    const todays = state.tasks.filter(t=>t.date===f);
-    const done = todays.filter(t=>t.status==='done').length;
-    const total = todays.length || 1;
-    const pct = Math.round((done/total)*100);
-    $('#progressPct').textContent = pct+'%';
-    $('#progressBar').style.width = pct+'%';
-  }
+function updateProgress(){
+  const f = fmt(today());
+  const todays = state.tasks.filter(t=>t.date===f);
+  const done = todays.filter(t=>t.status==='done').length;
+  const total = todays.length || 1;
+  const pct = Math.round((done/total)*100);
+  const pctEl = $('#progressPct'), bar = $('#progressBar');
+  if (pctEl) pctEl.textContent = pct+'%';
+  if (bar) bar.style.width = pct+'%';
+}
 
   // Agenda action clicks (delete, bell, RC sms) ✨
-  $('#agenda').addEventListener('click', (e)=>{
-    const del = e.target.closest('[data-del]');
-    if(del){
-      const id = del.getAttribute('data-del');
-      if(confirm('Delete this task?')) deleteTask(id);
-      return;
-    }
-    const bell = e.target.closest('[data-bell]');
-    if(bell){
-      const id = bell.getAttribute('data-bell');
-      const host = bell.closest('.agenda-item');
-      openNotifyEditor(id, host);
-      return;
-    }
-    const rc = e.target.closest('[data-rcsms]');
-    if(rc){
-      e.preventDefault();
-      const num = rc.getAttribute('data-rcsms') || '';
-      openRingCentralSMS(num);
-      return;
-    }
-    const saveBtn = e.target.closest('[data-save-notify]');
-    if(saveBtn){
-      const id = saveBtn.getAttribute('data-save-notify');
-      const host = saveBtn.closest('.notify-row');
-      const time = host.querySelector('input[type="time"]').value;
-      saveNotifyTime(id, time);
-      host.remove();
-      return;
-    }
-    const clrBtn = e.target.closest('[data-clear-notify]');
-    if(clrBtn){
-      const id = clrBtn.getAttribute('data-clear-notify');
-      clearNotifyTime(id);
-      clrBtn.closest('.notify-row')?.remove();
-      return;
-    }
-  });
+
 
 // Agenda controls
 let renderAgenda = ()=> buildAgenda(currentAgendaDate);
@@ -1087,10 +1051,12 @@ if (showAllEl && showOpenEl && showDoneEl){
 
 
 
-  function setAgendaMode(mode){
-    $('#viewToday').classList.toggle('primary', mode === 'today');
-    $('#viewWeek').classList.toggle('primary', mode === 'week');
-  }
+ function setAgendaMode(mode){
+  const vt = $('#viewToday'), vw = $('#viewWeek');
+  if (vt) vt.classList.toggle('primary', mode === 'today');
+  if (vw) vw.classList.toggle('primary', mode === 'week');
+}
+
 const sortClientEl = document.getElementById('sortClient');
 const sortTypeEl   = document.getElementById('sortType');
 
@@ -1182,7 +1148,7 @@ if (agendaFilterClearEl && agendaFilterEl) {
       window.open(href, '_blank'); setTimeout(openNext, 600);
     })();
   }
-  $('#sendDueEmails').addEventListener('click', ()=>{
+  $('#sendDueEmails')?.addEventListener('click', ()=>{
     const due = collectDueUnreachedEmails();
     if (!due.length){ alert('No unreached emails due today.'); return; }
     if (!confirm(`Open ${due.length} email compose window(s) now?`)) return;
@@ -1359,13 +1325,13 @@ const items = state.tasks.filter(
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
-  $('#calSettingsBtn').addEventListener('click', ()=>{
+  $('#calSettingsBtn')?.addEventListener('click', ()=>{
     const el=$('#calSettings'); const open=el.style.display!=='none';
     el.style.display = open ? 'none' : 'block';
     if(!open) loadSettingsIntoUI();
   });
-  $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
-  $('#addOverride').addEventListener('click', ()=>{
+  $('#saveCalSettings')?.addEventListener('click', saveSettingsFromUI);
+  $('#addOverride')?.addEventListener('click', ()=>{
     const d=$('#ovrDate').value; const t=$('#ovrType').value;
     if(!d) return alert('Pick a date');
     state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
@@ -1396,13 +1362,7 @@ const items = state.tasks.filter(
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
     }
   }
-  function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
-    const blob = ($('#leadBlob').value || '').trim();
-    if(!blob) return null;
-    const parsed = parseLeadBlob(blob);
-    applyParsedToForm(parsed, { onlyFillEmpty });
-    return parsed;
-  }
+
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
     const exists = state.clients.find(c=>c.id===id);
@@ -1424,8 +1384,8 @@ const items = state.tasks.filter(
     };
     return { client, exists };
   }
-  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
-  $('#saveCustomer').addEventListener('click', ()=>{
+  $('#resetForm')?.addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
+  $('#saveCustomer')?.addEventListener('click', ()=>{
     try{
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
@@ -1567,7 +1527,7 @@ const items = state.tasks.filter(
   $('#ctNotify')?.addEventListener('change', ()=>{ if ($('#ctNotify').checked) $('#ctImportant').checked = true; });
 
   /* ========= Wipe All ========= */
-  $('#wipeAll').addEventListener('click', () => {
+  $('#wipeAll')?.addEventListener('click', () => {
     if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
     const tPref = localStorage.getItem(THEME_KEY);
     localStorage.removeItem(storeKey);
@@ -1575,6 +1535,46 @@ const items = state.tasks.filter(
     if(tPref) localStorage.setItem(THEME_KEY, tPref);
     save(); alert('All data cleared.');
   });
+
+  $('#agenda')?.addEventListener('click', (e)=>{
+  const del = e.target.closest('[data-del]');
+  if (del){
+    const id = del.getAttribute('data-del');
+    if (confirm('Delete this task?')) deleteTask(id);
+    return;
+  }
+  const bell = e.target.closest('[data-bell]');
+  if (bell){
+    const id = bell.getAttribute('data-bell');
+    const host = bell.closest('.agenda-item');
+    openNotifyEditor(id, host);
+    return;
+  }
+  const rc = e.target.closest('[data-rcsms]');
+  if (rc){
+    e.preventDefault();
+    const num = rc.getAttribute('data-rcsms') || '';
+    openRingCentralSMS(num);
+    return;
+  }
+  const saveBtn = e.target.closest('[data-save-notify]');
+  if (saveBtn){
+    const id = saveBtn.getAttribute('data-save-notify');
+    const host = saveBtn.closest('.notify-row');
+    const time = host.querySelector('input[type="time"]').value;
+    saveNotifyTime(id, time);
+    host.remove();
+    return;
+  }
+  const clrBtn = e.target.closest('[data-clear-notify]');
+  if (clrBtn){
+    const id = clrBtn.getAttribute('data-clear-notify');
+    clearNotifyTime(id);
+    clrBtn.closest('.notify-row')?.remove();
+    return;
+  }
+});
+
 
   /* ========= Notifications boot ========= */
   initNotificationsUI();
