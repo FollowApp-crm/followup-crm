@@ -514,6 +514,11 @@ body.light .seg > button.primary{
 #calendarDrawer.pinned .drawer-scrim{ display:none; pointer-events:none; }
 #calendarDrawer.pinned .drawer-panel{ transform: translateX(0); box-shadow: -8px 0 24px rgba(0,0,0,.2); }
 
+#calendarDrawer.pinned .drawer-scrim{ display:none; pointer-events:none; }
+#calendarDrawer.pinned .drawer-panel{ transform: translateX(0); box-shadow: -8px 0 24px rgba(0,0,0,.2); }
+body.drawer-pinned .wrap{ margin-right: min(420px, 92vw); }
+
+
 /* Nudge content so it isn't covered while docked */
 body.drawer-pinned .wrap{ margin-right: min(420px, 92vw); }
 
