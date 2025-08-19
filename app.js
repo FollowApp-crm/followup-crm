@@ -55,6 +55,7 @@ const SHOW_KEY  = 'followup_crm_show';
     const what = btn.getAttribute('data-what') || 'value';
     copyTextToClipboard(text, what);
   });
+function onlyDigits(s){ return String(s||'').replace(/\D/g,''); }
 
   // Close + reset the New Task UI (legacy safeguard)
   function closeNewTaskUI(){
@@ -609,53 +610,85 @@ function leadChipHtml(id){
   function clientById(id){ return state.clients.find(c=>c.id===id); }
   function nextActionDateForClient(id){ const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date)); return open[0]?.date || '—'; }
 
-  function refresh(){
-    $('#kTotal').textContent = state.clients.length;
-    $('#kUn').textContent = state.clients.filter(c=>c.status==='unreached').length;
-    $('#kRe').textContent = state.clients.filter(c=>c.status==='reached').length;
-    $('#kTasks').textContent = state.tasks.filter(t=>t.status==='open').length;
+function refresh(){
+  // Header counts
+  $('#kTotal').textContent = state.clients.length;
+  $('#kUn').textContent    = state.clients.filter(c=>c.status==='unreached').length;
+  $('#kRe').textContent    = state.clients.filter(c=>c.status==='reached').length;
+  $('#kTasks').textContent = state.tasks.filter(t=>t.status==='open').length;
 
-    const body = $('#clientsTbl tbody'); body.innerHTML = '';
-    const query = ($('#search').value||'').toLowerCase();
-    const sflt  = ($('#statusFilter').value||'').toLowerCase();
-    [...state.clients]
-      .sort((a,b)=>a.name.localeCompare(b.name))
-      .filter(c => (!sflt || c.status===sflt))
-      .filter(c => [c.name,c.email,c.phone,(c.notes||''),(c.route||''),(c.dates||''),(c.pax||''),(c.leadId||'')].join(' ').toLowerCase().includes(query))
-      .forEach(c => {
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-rowid', c.id);
-        const contactHtml = `
-           ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
-           <br>
-          ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
-const leadInline = c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : '';
+  const body = $('#clientsTbl tbody'); 
+  body.innerHTML = '';
 
-        tr.innerHTML = `
- <td data-label="Name">
-  <strong>${escapeHtml(c.name)}</strong>
-  <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
-    ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
-  </div>
-  ${leadInline}
-</td>
+  // Query + filters
+  const qRaw = ($('#search').value || '').trim();
+  const q    = qRaw.toLowerCase();           // text match
+  const qd   = qRaw.replace(/\D/g, '');      // digits-only match
+  const sflt = ($('#statusFilter').value || '').toLowerCase();
 
-          <td data-label="Contact" class="tiny">${contactHtml}</td>
-          <td data-label="Status"><span class="badge">${c.status}</span></td>
-          <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
-          <td data-label="Actions" class="actions">
-            <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
-            <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
-            <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
-            <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
-            <button type="button" class="btn-icon" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
-          </td>`;
-        body.appendChild(tr);
-      });
-    renderAgenda();
-    updateProgress();
-    try{ buildClientOptionsForPopover(); }catch(_){}
-  }
+  const matchesQuery = (c) => {
+    if (!q && !qd) return true;
+
+    // plain text (case-insensitive)
+    const textBlob = [
+      c.name, c.email, c.phone, (c.notes||''), (c.route||''), (c.dates||''), (c.pax||''), (c.leadId||'')
+    ].join(' ').toLowerCase();
+    if (q && textBlob.includes(q)) return true;
+
+    // digits-only (ignore formatting)
+    if (qd){
+      const digitsBlob = [
+        String(c.phone||'').replace(/\D/g,''),
+        String(c.leadId||'').replace(/\D/g,''),
+        String(c.pax||'').replace(/\D/g,''),
+        String(c.dates||'').replace(/\D/g,'') // also lets 2025-08-19 be found by 20250819
+      ].join(' ');
+      if (digitsBlob.includes(qd)) return true;
+    }
+    return false;
+  };
+
+  [...state.clients]
+    .sort((a,b)=>a.name.localeCompare(b.name))
+    .filter(c => (!sflt || c.status===sflt))   // status filter
+    .filter(matchesQuery)                      // search filter (text or digits)
+    .forEach(c => {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-rowid', c.id);
+
+      const contactHtml = `
+         ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
+         <br>
+        ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
+
+      const leadInline = c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : '';
+
+      tr.innerHTML = `
+        <td data-label="Name">
+          <strong>${escapeHtml(c.name)}</strong>
+          <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
+            ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
+          </div>
+          ${leadInline}
+        </td>
+        <td data-label="Contact" class="tiny">${contactHtml}</td>
+        <td data-label="Status"><span class="badge">${c.status}</span></td>
+        <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
+        <td data-label="Actions" class="actions">
+          <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
+          <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
+          <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
+          <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
+          <button type="button" class="btn-icon" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
+        </td>`;
+      body.appendChild(tr);
+    });
+
+  renderAgenda();
+  updateProgress();
+  try{ buildClientOptionsForPopover(); }catch(_){}
+}
+
 
   function toggleNotesRow(id){
     const existing = document.querySelector(`.note-row[data-for="${id}"]`);
