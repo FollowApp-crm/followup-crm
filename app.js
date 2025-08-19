@@ -485,6 +485,20 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
+// CRM lead links
+const CRM_BASE = 'https://old.business-tickets.com/crmcms/assigned-flights/show/';
+function crmLeadUrl(id){
+  const num = String(id || '').replace(/\D/g, '');   // keep only digits
+  return num ? `${CRM_BASE}${num}` : '';
+}
+function leadChipHtml(id){
+  const url = crmLeadUrl(id);
+  return url
+    ? `<span class="pill">Lead:&nbsp;<a class="mono" href="${url}" target="_blank" rel="noopener">${escapeHtml(String(id))}</a></span>`
+    : '';
+}
+
+  
   // ✨ RingCentral deep links for SMS
   function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function toE164(raw){
@@ -615,6 +629,7 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
            ${c.email ? `<a href="${emailHref(c.email,'Follow-up','Hi …')}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button>` : '-'}
            <br>
           ${c.phone ? `<a href="${phoneHref(c.phone)}">${escapeHtml(c.phone)}</a> <button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button>` : '-'}`;
+const leadInline = c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : '';
 
         tr.innerHTML = `
           <td data-label="Name">
@@ -652,7 +667,7 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
       c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax: ${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead: ${escapeHtml(String(c.leadId))}</span>` : ''
+c.leadId ? leadChipHtml(c.leadId) : ''
     ].filter(Boolean).join(' ');
     td.innerHTML = `<div class="tiny slab">${chips || ''}<div>${escapeHtml(c.notes || 'No notes yet.')}</div></div>`;
     row.appendChild(td); tr.after(row);
@@ -807,7 +822,7 @@ function matchesShow(t){
       c.route ? `<span class="pill">Route:&nbsp;${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates:&nbsp;${escapeHtml(c.dates)}</span>` : '',
       c.pax   ? `<span class="pill">Pax:&nbsp;${escapeHtml(String(c.pax))}</span>` : '',
-      c.leadId? `<span class="pill">Lead:&nbsp;${escapeHtml(String(c.leadId))}</span>` : ''
+c.leadId ? leadChipHtml(c.leadId) : ''
     ].filter(Boolean);
     return chips.join(' ');
   }
