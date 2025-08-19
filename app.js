@@ -647,8 +647,22 @@ function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
     row.appendChild(td); tr.after(row);
   }
 
-  $('#clientsTbl').addEventListener('click', e=>{
-    const btn = e.target.closest('button[data-act]'); if(!btn) return;
+$('#clientsTbl').addEventListener('click', e=>{
+  // Allow clicking the note snippet to toggle notes
+  const preview = e.target.closest('.note-preview');
+  if (preview){
+    const tr = preview.closest('tr');
+    const id = tr && tr.getAttribute('data-rowid');
+    if (id) toggleNotesRow(id);
+    return;
+  }
+
+  // existing button[data-act] code follows
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  // ...
+});
+ if(!btn) return;
     const id = btn.getAttribute('data-id');
     const act = btn.getAttribute('data-act');
     const c = clientById(id);
