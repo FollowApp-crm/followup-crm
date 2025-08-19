@@ -444,8 +444,7 @@ body.light { color-scheme: light; } /* override in light mode */
 /* Sort group layout (label outside the box) */
 #sortWrap { display:flex; align-items:center; gap:8px; }
 
-/* Row layout for 'Sort:' chip + segmented buttons */
-#sortWrap{ display:flex; align-items:center; gap:8px; }
+
 
 /* Segmented control (shared by Show and Sort) */
 .seg{ display:inline-flex; gap:0; background:var(--chip); border:1px solid var(--line); border-radius:10px; padding:2px; overflow:hidden; }
