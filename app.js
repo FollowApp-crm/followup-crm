@@ -1622,17 +1622,19 @@ function bootstrap(){
   // 🔎 Customers search + status filter
   const searchEl = document.getElementById('search');
   if (searchEl){
-    const onType = () => refresh();            // or debounce(onType, 120) if you prefer
+    const onType = () => refresh(); // or debounce(refresh, 120)
     searchEl.addEventListener('input', onType);
     searchEl.addEventListener('change', onType);
-    searchEl.addEventListener('keydown', (e)=>{ // Esc to clear
-      if (e.key === 'Escape'){ searchEl.value=''; refresh(); }
+    searchEl.addEventListener('keydown', (e)=>{
+      if (e.key === 'Escape'){ searchEl.value=''; refresh(); } // Esc to clear
     });
   }
+
   document.getElementById('statusFilter')
     ?.addEventListener('change', () => refresh());
 }
 
 bootstrap();
+
 
 })();
