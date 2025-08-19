@@ -1,26 +1,16 @@
 (function(){
   'use strict';
-console.log('[crm] boot');
-window.addEventListener('error', e => console.error('[crm error]', e.message));
 
   /* ========= Helpers ========= */
   const $  = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const storeKey  = 'followup_crm_v21';
-  // Migrate legacy localStorage, only if v21 is empty
-(() => {
-  if (!localStorage.getItem(storeKey)) {
-    const legacy = ['followup_crm_v20','followup_crm_v2','followup_crm'];
-    for (const k of legacy) {
-      const v = localStorage.getItem(k);
-      if (v) { localStorage.setItem(storeKey, v); break; }
-    }
-  }
-})();
-
   const THEME_KEY = 'followup_crm_theme';
-  const SORT_KEY  = 'followup_crm_sort';
-  const SHOW_KEY  = 'followup_crm_show';
+const SORT_KEY  = 'followup_crm_sort';
+const SHOW_KEY  = 'followup_crm_show';
+
+
+
 
   function flashAgendaDate(){
     const el = document.getElementById('agendaDate');
@@ -66,7 +56,25 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     copyTextToClipboard(text, what);
   });
 
-  
+  // Close + reset the New Task UI (legacy safeguard)
+  function closeNewTaskUI(){
+    const panel =
+      document.getElementById('newTaskPanel') ||
+      document.getElementById('addTaskPopover') ||
+      document.getElementById('taskPopover') ||
+      document.getElementById('newTask') ||
+      document.querySelector('.new-task-panel, .add-task-popover, .task-popover');
+    if (panel){
+      panel.classList.remove('open','show');
+      panel.removeAttribute('data-open');
+      panel.style.display = 'none';
+    }
+    const form =
+      document.getElementById('newTaskForm') ||
+      document.getElementById('addTaskForm') ||
+      document.getElementById('taskForm');
+    form?.reset();
+  }
 
   /* ========= Toast ========= */
   function toast(msg, kind='ok', ms=1800){
@@ -82,7 +90,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
   /* ========= Theme ========= */
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); $('#themeToggle').textContent = (t==='light' ? '🌙 Dark' : '☀️ Light'); }
   applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
-  document.getElementById('themeToggle')?.addEventListener('click', ()=>{
+  $('#themeToggle').addEventListener('click', ()=>{
     const next = document.body.classList.contains('light') ? 'dark' : 'light';
     localStorage.setItem(THEME_KEY, next); applyTheme(next);
   });
@@ -161,286 +169,296 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
   function stepByWorkingDays(fromDate, steps){ let d=new Date(fromDate); for(let i=0;i<steps;i++) d=nextWorkingDay(addDays(d,1)); return d; }
   function adjustAutoDateIfNeeded(dt){ if(!state.settings.moveOffDays) return dt; let d=new Date(dt); while(!isWorkingDay(d)) d=addDays(d,1); return d; }
 
-  /* ========= Instant parse on paste / Enter ========= */
-  const leadBlobEl = document.getElementById('leadBlob');
-  if (leadBlobEl){
-    leadBlobEl.addEventListener('paste', () => {
-      requestAnimationFrame(() => {
-        const has = (leadBlobEl.value || '').trim();
-        if (!has) return;
-        const res = parseBlob({ onlyFillEmpty:false });
-        if (res?.mode === 'multi') {
-          toast(`Detected ${res.count} leads. Review & Save All.`);
-        } else {
-          toast('Parsed from paste. Review & save.');
-        }
-      });
-    });
+/* ========= Helpers from your file are assumed above ========= */
 
-    leadBlobEl.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter' && !e.shiftKey){
-        const has = (leadBlobEl.value || '').trim();
-        if(!has) return;
-        e.preventDefault();
-        const res = parseBlob({ onlyFillEmpty:true });
-        // Only auto-save for a single lead. Bulk opens its own modal.
-        if(res?.mode === 'single'){
-          document.getElementById('saveCustomer').click();
-        }
+/* ========= Instant parse on paste / Enter ========= */
+const leadBlobEl = document.getElementById('leadBlob');
+if (leadBlobEl){
+  leadBlobEl.addEventListener('paste', () => {
+    requestAnimationFrame(() => {
+      const has = (leadBlobEl.value || '').trim();
+      if (!has) return;
+      const res = parseBlob({ onlyFillEmpty:false });
+      if (res?.mode === 'multi') {
+        toast(`Detected ${res.count} leads. Review & Save All.`);
+      } else {
+        toast('Parsed from paste. Review & save.');
       }
     });
-  }
+  });
 
-  /* ========= Lead Parser (single + bulk) ========= */
-
-  // Existing single-lead parser (unchanged, minor defensiveness)
-  function parseLeadBlob(text){
-    const raw = (text||'').replace(/\r/g,'\n');
-    const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
-
-    const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
-
-    let noDates = whole
-      .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
-      .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
-
-    const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
-      .map(s=>s.trim())
-      .filter(s=>!/:/.test(s))
-      .filter(s=>{
-        const digits = s.replace(/\D/g,'');
-        return digits.length>=10 && digits.length<=15;
-      });
-    const phone = phoneCandidates[0] || '';
-
-    let name = '';
-    const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|OJ|[A-Z]{2,3}\b)|\t|\n|$)/i);
-    if(nm) name = nm[1].trim();
-    if(!name && email){
-      const local = email.split('@')[0];
-      const parts = local.split(/[._-]+/);
-      name = parts.length>1
-        ? parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ')
-        : local.charAt(0).toUpperCase()+local.slice(1);
-    }
-
-    const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+(?:\s*\|\|[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+)?\b/);
-    const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
-
-    const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
-    const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
-    let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
-    if(!dates){
-      const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
-      if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
-    }
-
-    let pax = '';
-    const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
-    if(mpax) pax = mpax[1];
-
-    let leadId = '';
-    try{
-      const phoneDigits = (phone || '').replace(/\D/g,'');
-      const paxDigits   = (pax   || '').replace(/\D/g,'');
-      const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
-      for(const cand of idCandidates){
-        if (cand === paxDigits) continue;
-        if (phoneDigits && phoneDigits.includes(cand)) continue;
-        if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
-        leadId = cand; break;
+  leadBlobEl.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      const has = (leadBlobEl.value || '').trim();
+      if(!has) return;
+      e.preventDefault();
+      const res = parseBlob({ onlyFillEmpty:true });
+      // Only auto-save for a single lead. Bulk opens its own modal.
+      if(res?.mode === 'single'){
+        document.getElementById('saveCustomer').click();
       }
-    }catch(_){}
-
-    let startDate = '';
-    try{
-      const ymds = Array.from(whole.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
-      startDate = ymds[1] || ymds[0] || '';
-    }catch(_){}
-
-    return { name, email, phone, route, dates, pax, leadId, notes:'', startDateFromBlob:startDate };
-  }
-
-  // detect & parse multiple leads from one blob
-  function parseMultiLeadBlob(text){
-    const src = (text||'').replace(/\r/g,'\n').trim();
-    if (!src) return [];
-
-    // Split on header lines: "YYYY-MM-DD HH:MM:SS  YYYY-MM-DD HH:MM:SS  <digits> ..."
-    const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b)/g;
-    let parts = src.split(headerRE);
-
-    const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
-    if(!looksLikeHeader && parts.length===1){
-      // No headers found — treat as one lead
-      const one = parseLeadBlob(src);
-      const hd = src.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
-      if (hd) one.startDateFromBlob = one.startDateFromBlob || hd[1];
-      return [one].filter(x => (x.name||x.email||x.phone));
     }
+  });
+}
 
-    const leads = parts.map(chunk => {
-      const p = parseLeadBlob(chunk);
-      const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
-      if (hdr) {
-        p.startDateFromBlob = p.startDateFromBlob || hdr[1];
-        p._updatedYmd = hdr[2];
-      }
-      return p;
-    }).filter(x => (x.name||x.email||x.phone));
+/* ========= Lead Parser (single + bulk) ========= */
 
-    return leads;
+// Existing single-lead parser (unchanged, minor defensiveness)
+function parseLeadBlob(text){
+  const raw = (text||'').replace(/\r/g,'\n');
+  const whole = raw.replace(/\t/g,'  ').replace(/[ \u00A0]+/g,' ').replace(/\n{2,}/g,'\n').trim();
+
+  const email = (whole.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)||[''])[0] || '';
+
+  let noDates = whole
+    .replace(/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?\b/g,' ')
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g,' ');
+
+  const phoneCandidates = (noDates.match(/\+?\d[\d\s().-]{6,}\d/g)||[])
+    .map(s=>s.trim())
+    .filter(s=>!/:/.test(s))
+    .filter(s=>{
+      const digits = s.replace(/\D/g,'');
+      return digits.length>=10 && digits.length<=15;
+    });
+  const phone = phoneCandidates[0] || '';
+
+  let name = '';
+  const nm = whole.match(/\bnew\b[\s:]+([^\n\t]+?)(?=\s+(?:RT|OW|OJ|[A-Z]{2,3}\b)|\t|\n|$)/i);
+  if(nm) name = nm[1].trim();
+  if(!name && email){
+    const local = email.split('@')[0];
+    const parts = local.split(/[._-]+/);
+    name = parts.length>1
+      ? parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ')
+      : local.charAt(0).toUpperCase()+local.slice(1);
   }
 
-  // bulk review modal
-  function openBulkReview(leads){
-    closeBulkReview(); // safety
-    const modal = document.createElement('div');
-    modal.id = 'bulkModal';
-    modal.className = 'modal open';
-    modal.style.display = 'flex';
+  const routeMatch = whole.match(/\b[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+(?:\s*\|\|[A-Z]{3}(?:\s*[-–—→]\s*[A-Z]{3})+)?\b/);
+  const route = routeMatch ? routeMatch[0].replace(/\s*[-–—→]\s*/g,'-').toUpperCase() : '';
 
-    const card = document.createElement('section');
-    card.className = 'card';
-    card.style.width = 'min(1000px, 98vw)';
-    card.style.maxHeight = '88vh';
-    card.style.overflow = 'auto';
+  const monthName = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+  const mDates = whole.match(new RegExp(`\\b${monthName}\\s+\\d{1,2}(?:,\\s*\\d{4})?\\s*(?:-|–|—|to|→)\\s*(?:${monthName}\\s+)?\\d{1,2}(?:,\\s*\\d{4})?\\b`,'i'));
+  let dates = mDates ? mDates[0].replace(/\s{2,}/g,' ').trim() : '';
+  if(!dates){
+    const mYMD = whole.match(/\b\d{4}-\d{2}-\d{2}\s*(?:→|to|–|—|-)\s*\d{4}-\d{2}-\d{2}\b/);
+    if(mYMD) dates = mYMD[0].replace(/\s+/g,' ');
+  }
 
-    const hd = document.createElement('div');
-    hd.className = 'hd';
-    hd.innerHTML = `<strong>Review ${leads.length} parsed lead${leads.length>1?'s':''}</strong><span class="badge">Bulk add</span>`;
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'btn-icon';
-    closeBtn.textContent = '✖';
-    closeBtn.addEventListener('click', closeBulkReview);
-    hd.appendChild(document.createElement('span')).className = 'space';
-    hd.appendChild(closeBtn);
+  let pax = '';
+  const mpax = whole.match(/\b(?:pax|passengers?)\s*[:=]?\s*(\d{1,2})\b/i) || whole.match(/\bx\s*(\d{1,2})\b/i);
+  if(mpax) pax = mpax[1];
 
-    const bd = document.createElement('div');
-    bd.className = 'bd';
+  let leadId = '';
+  try{
+    const phoneDigits = (phone || '').replace(/\D/g,'');
+    const paxDigits   = (pax   || '').replace(/\D/g,'');
+    const idCandidates = Array.from(whole.matchAll(/(?:^|[\s\t:>])(\d{4,9})(?=$|[\s\t<])/g)).map(m => m[1]);
+    for(const cand of idCandidates){
+      if (cand === paxDigits) continue;
+      if (phoneDigits && phoneDigits.includes(cand)) continue;
+      if (/^\d{8}$/.test(cand)) continue; // likely yyyymmdd
+      leadId = cand; break;
+    }
+  }catch(_){}
 
-    const list = document.createElement('div');
-    list.className = 'bulk-list';
+  let startDate = '';
+  try{
+    const ymds = Array.from(whole.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)).map(m=>m[0]);
+    startDate = ymds[1] || ymds[0] || '';
+  }catch(_){}
 
+  return { name, email, phone, route, dates, pax, leadId, notes:'', startDateFromBlob:startDate };
+}
+
+// NEW: detect & parse multiple leads from one blob
+function parseMultiLeadBlob(text){
+  const src = (text||'').replace(/\r/g,'\n').trim();
+  if (!src) return [];
+
+  // Split on a "header" line that looks like:
+  // YYYY-MM-DD HH:MM:SS <tab/space> YYYY-MM-DD HH:MM:SS <tab/space> <digits> <tab/space> ...
+  const headerRE = /\n(?=\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b)/g;
+  let parts = src.split(headerRE);
+  // If the very first line isn't a header, see if there are *no* headers at all
+  const looksLikeHeader = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[\t ]+\d{4,}\b/.test(parts[0]);
+  if(!looksLikeHeader && parts.length===1){
+    // No headers found — treat as one lead
+    const one = parseLeadBlob(src);
+    // Try to grab a leading timestamp date as start
+    const hd = src.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+    if (hd) one.startDateFromBlob = one.startDateFromBlob || hd[1];
+    return [one].filter(x => (x.name||x.email||x.phone));
+  }
+
+  // For each chunk, parse as a single lead and also pull the first timestamp date as startDate
+  const leads = parts.map(chunk => {
+    const p = parseLeadBlob(chunk);
+    const hdr = chunk.match(/^\s*(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+[\t ]+(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}/m);
+    if (hdr) {
+      // prefer first timestamp as the anchor
+      p.startDateFromBlob = p.startDateFromBlob || hdr[1];
+      p._updatedYmd = hdr[2];
+    }
+    return p;
+  }).filter(x => (x.name||x.email||x.phone));
+
+  return leads;
+}
+
+// NEW: bulk review modal (built entirely in JS—no HTML edits required)
+function openBulkReview(leads){
+  closeBulkReview(); // safety
+  const modal = document.createElement('div');
+  modal.id = 'bulkModal';
+  modal.className = 'modal open';
+  modal.style.display = 'flex';
+
+  const card = document.createElement('section');
+  card.className = 'card';
+  card.style.width = 'min(1000px, 98vw)';
+  card.style.maxHeight = '88vh';
+  card.style.overflow = 'auto';
+
+  const hd = document.createElement('div');
+  hd.className = 'hd';
+  hd.innerHTML = `<strong>Review ${leads.length} parsed lead${leads.length>1?'s':''}</strong><span class="badge">Bulk add</span>`;
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn-icon';
+  closeBtn.textContent = '✖';
+  closeBtn.addEventListener('click', closeBulkReview);
+  hd.appendChild(document.createElement('span')).className = 'space';
+  hd.appendChild(closeBtn);
+
+  const bd = document.createElement('div');
+  bd.className = 'bd';
+
+  const list = document.createElement('div');
+  list.className = 'bulk-list';
+
+  leads.forEach((p, i) => {
+    const box = document.createElement('div');
+    box.className = 'slab bulk-item';
+    box.innerHTML = `
+      <div class="top"><strong>${escapeHtml(p.name||'—')}</strong></div>
+      <div class="tiny mono">${escapeHtml(p.email||'—')} ${p.phone?(' • '+escapeHtml(p.phone)) : ''}</div>
+      <div class="tiny" style="margin-top:6px">
+        ${p.route?`<span class="pill">Route:&nbsp;${escapeHtml(p.route)}</span>`:''}
+        ${p.dates?` <span class="pill">Dates:&nbsp;${escapeHtml(p.dates)}</span>`:''}
+        ${p.pax?` <span class="pill">Pax:&nbsp;${escapeHtml(String(p.pax))}</span>`:''}
+        ${p.leadId?` <span class="pill">Lead:&nbsp;${escapeHtml(String(p.leadId))}</span>`:''}
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>Start date</label>
+          <input type="date" id="b_start_${i}" value="${escapeHtml(p.startDateFromBlob||fmt(today()))}">
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="b_status_${i}">
+            <option value="unreached" selected>Unreached</option>
+            <option value="reached">Reached</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div>
+          <label>Notes</label>
+          <textarea id="b_notes_${i}" rows="2" placeholder="Optional notes…"></textarea>
+        </div>
+      </div>
+    `;
+    list.appendChild(box);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'right';
+  actions.style.marginTop = '10px';
+
+  const cancel = document.createElement('button');
+  cancel.className = 'ghost';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeBulkReview);
+
+  const saveAll = document.createElement('button');
+  saveAll.className = 'primary';
+  saveAll.textContent = `Save ${leads.length} ${leads.length>1?'customers':'customer'}`;
+  saveAll.addEventListener('click', () => {
+    // Build & insert clients, then schedule
     leads.forEach((p, i) => {
-      const box = document.createElement('div');
-      box.className = 'slab bulk-item';
-      box.innerHTML = `
-        <div class="top"><strong>${escapeHtml(p.name||'—')}</strong></div>
-        <div class="tiny mono">${escapeHtml(p.email||'—')} ${p.phone?(' • '+escapeHtml(p.phone)) : ''}</div>
-        <div class="tiny" style="margin-top:6px">
-          ${p.route?`<span class="pill">Route:&nbsp;${escapeHtml(p.route)}</span>`:''}
-          ${p.dates?` <span class="pill">Dates:&nbsp;${escapeHtml(p.dates)}</span>`:''}
-          ${p.pax?` <span class="pill">Pax:&nbsp;${escapeHtml(String(p.pax))}</span>`:''}
-          ${p.leadId?` <span class="pill">Lead:&nbsp;${escapeHtml(String(p.leadId))}</span>`:''}
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div>
-            <label>Start date</label>
-            <input type="date" id="b_start_${i}" value="${escapeHtml(p.startDateFromBlob||fmt(today()))}">
-          </div>
-          <div>
-            <label>Status</label>
-            <select id="b_status_${i}">
-              <option value="unreached" selected>Unreached</option>
-              <option value="reached">Reached</option>
-            </select>
-          </div>
-        </div>
-        <div class="row single">
-          <div>
-            <label>Notes</label>
-            <textarea id="b_notes_${i}" rows="2" placeholder="Optional notes…"></textarea>
-          </div>
-        </div>
-      `;
-      list.appendChild(box);
+      const status = document.getElementById(`b_status_${i}`).value || 'unreached';
+      const notes  = document.getElementById(`b_notes_${i}`).value || '';
+      const start  = document.getElementById(`b_start_${i}`).value || fmt(today());
+
+      const client = {
+        id: uid(),
+        name: (p.name||'').trim() || '—',
+        email: (p.email||'').trim(),
+        phone: (p.phone||'').trim(),
+        status,
+        startDate: start,
+        reachedStart: (status==='reached') ? start : null,
+        route: (p.route||'').trim(),
+        dates: (p.dates||'').trim(),
+        pax:   (p.pax||'').trim(),
+        leadId:(p.leadId||'').trim(),
+        notes: notes
+      };
+
+      state.clients.push(client);
+      if (status === 'unreached') scheduleUnreached(client);
+      else scheduleReached(client);
     });
 
-    const actions = document.createElement('div');
-    actions.className = 'right';
-    actions.style.marginTop = '10px';
+    // Clean form blob, refresh/save, close
+    const lb = document.getElementById('leadBlob');
+    if(lb) lb.value = '';
+    document.getElementById('clientForm')?.reset();
+    document.getElementById('clientId')?.value = '';
+    save();
+    toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
+    closeBulkReview();
+  });
 
-    const cancel = document.createElement('button');
-    cancel.className = 'ghost';
-    cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', closeBulkReview);
+  actions.appendChild(cancel);
+  actions.appendChild(saveAll);
 
-    const saveAll = document.createElement('button');
-    saveAll.className = 'primary';
-    saveAll.textContent = `Save ${leads.length} ${leads.length>1?'customers':'customer'}`;
-    saveAll.addEventListener('click', () => {
-      leads.forEach((p, i) => {
-        const status = document.getElementById(`b_status_${i}`).value || 'unreached';
-        const notes  = document.getElementById(`b_notes_${i}`).value || '';
-        const start  = document.getElementById(`b_start_${i}`).value || fmt(today());
+  bd.appendChild(list);
+  bd.appendChild(actions);
+  card.appendChild(hd);
+  card.appendChild(bd);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
 
-        const client = {
-          id: uid(),
-          name: (p.name||'').trim() || '—',
-          email: (p.email||'').trim(),
-          phone: (p.phone||'').trim(),
-          status,
-          startDate: start,
-          reachedStart: (status==='reached') ? start : null,
-          route: (p.route||'').trim(),
-          dates: (p.dates||'').trim(),
-          pax:   (p.pax||'').trim(),
-          leadId:(p.leadId||'').trim(),
-          notes: notes
-        };
+  // Esc to close
+  modal._esc = (e)=>{ if(e.key==='Escape') closeBulkReview(); };
+  document.addEventListener('keydown', modal._esc);
+  // click backdrop
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) closeBulkReview(); });
+}
 
-        state.clients.push(client);
-        if (status === 'unreached') scheduleUnreached(client);
-        else scheduleReached(client);
-      });
+function closeBulkReview(){
+  const m = document.getElementById('bulkModal');
+  if (!m) return;
+  if(m._esc) document.removeEventListener('keydown', m._esc);
+  m.remove();
+}
 
-      const lb = document.getElementById('leadBlob');
-      if(lb) lb.value = '';
-      document.getElementById('clientForm')?.reset();
-      document.getElementById('clientId')?.value = '';
-      save();
-      toast(`Added ${leads.length} customer${leads.length>1?'s':''}`);
-      closeBulkReview();
-    });
+// UPDATED: parseBlob now handles bulk and returns a mode flag
+function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
+  const blob = ($('#leadBlob').value || '').trim();
+  if(!blob) return null;
 
-    actions.appendChild(cancel);
-    actions.appendChild(saveAll);
-
-    bd.appendChild(list);
-    bd.appendChild(actions);
-    card.appendChild(hd);
-    card.appendChild(bd);
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-
-    modal._esc = (e)=>{ if(e.key==='Escape') closeBulkReview(); };
-    document.addEventListener('keydown', modal._esc);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeBulkReview(); });
+  const many = parseMultiLeadBlob(blob);
+  if (many.length > 1){
+    openBulkReview(many);
+    return { mode:'multi', count: many.length };
   }
 
-  function closeBulkReview(){
-    const m = document.getElementById('bulkModal');
-    if (!m) return;
-    if(m._esc) document.removeEventListener('keydown', m._esc);
-    m.remove();
-  }
-
-  // SINGLE parseBlob (handles bulk); keep this one — do NOT redefine later
-  function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
-    const blob = ($('#leadBlob').value || '').trim();
-    if(!blob) return null;
-
-    const many = parseMultiLeadBlob(blob);
-    if (many.length > 1){
-      openBulkReview(many);
-      return { mode:'multi', count: many.length };
-    }
-
-    const parsed = many[0] || parseLeadBlob(blob);
-    applyParsedToForm(parsed, { onlyFillEmpty });
-    return { mode:'single', parsed };
-  }
+  const parsed = many[0] || parseLeadBlob(blob);
+  applyParsedToForm(parsed, { onlyFillEmpty });
+  return { mode:'single', parsed };
+}
 
   /* ========= Contact link helpers ========= */
   const CALL_LINK_MODE = 'tel';
@@ -456,7 +474,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
       : `mailto:${addr}?subject=${enc(subject)}&body=${enc(body)}`;
   }
 
-  // RingCentral deep links for SMS
+  // ✨ RingCentral deep links for SMS
   function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
   function toE164(raw){
     if(!raw) return '';
@@ -549,19 +567,10 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     }
   }
 
-  function clearFutureTasksForClientFrom(id, fromDate){
-    const f = fmt(fromDate);
-    state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='auto' && t.status!=='done' && t.date >= f));
-  }
-  function clearManualTasksForClient(id){
-    state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done'));
-  }
-  function markDone(id, done){
-    const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save();
-  }
-  function deleteTask(id){
-    state.tasks = state.tasks.filter(t=>t.id!==id); save();
-  }
+  function clearFutureTasksForClientFrom(id, fromDate){ const f = fmt(fromDate); state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='auto' && t.status!=='done' && t.date >= f)); }
+  function clearManualTasksForClient(id){ state.tasks = state.tasks.filter(t=> !(t.clientId===id && t.source==='manual' && t.status!=='done')); }
+  function markDone(id, done){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.status = done? 'done':'open'; save(); }
+  function deleteTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); save(); }
 
   // Full regeneration per settings/override change
   function regenerateAutoOpenTasksFromAnchors(){
@@ -573,10 +582,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
 
   /* ========= Customers table ========= */
   function clientById(id){ return state.clients.find(c=>c.id===id); }
-  function nextActionDateForClient(id){
-    const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date));
-    return open[0]?.date || '—';
-  }
+  function nextActionDateForClient(id){ const open = state.tasks.filter(t=>t.clientId===id && t.status==='open').sort((a,b)=> a.date.localeCompare(b.date)); return open[0]?.date || '—'; }
 
   function refresh(){
     $('#kTotal').textContent = state.clients.length;
@@ -602,7 +608,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
         tr.innerHTML = `
           <td data-label="Name">
             <strong>${escapeHtml(c.name)}</strong>
-            <div class="tiny mono note-preview" title="Click to expand notes">
+            <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
               ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
             </div>
           </td>
@@ -641,42 +647,40 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     row.appendChild(td); tr.after(row);
   }
 
-  // Single, well-formed listener (preview + all actions)
-  document.getElementById('clientsTbl')?.addEventListener('click', e=>{
-    // 1) Clicking the inline note preview toggles details
-    const preview = e.target.closest('.note-preview');
-    if (preview){
-      const tr = preview.closest('tr');
-      const id = tr && tr.getAttribute('data-rowid');
-      if (id) toggleNotesRow(id);
-      return;
-    }
+$('#clientsTbl').addEventListener('click', e=>{
+  // Allow clicking the note snippet to toggle notes
+  const preview = e.target.closest('.note-preview');
+  if (preview){
+    const tr = preview.closest('tr');
+    const id = tr && tr.getAttribute('data-rowid');
+    if (id) toggleNotesRow(id);
+    return;
+  }
 
-    // 2) Action buttons
-    const btn = e.target.closest('button[data-act]');
-    if(!btn) return;
-
+  // existing button[data-act] code follows
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  // ...
+});
+ if(!btn) return;
     const id = btn.getAttribute('data-id');
     const act = btn.getAttribute('data-act');
-    const c = id ? clientById(id) : null;
+    const c = clientById(id);
 
-    if(act==='note'){ if(id) toggleNotesRow(id); return; }
-
+    if(act==='note'){ toggleNotesRow(id); return; }
     if(act==='manual'){
       const open = document.querySelector(`.manual-row[data-for="${id}"]`);
       if(open){ $$('.manual-row').forEach(n=>n.remove()); return; }
       openManualRow(id); return;
     }
-
     if(act==='manual-apply'){
       const date = document.getElementById(`manualDate_${id}`)?.value || '';
       const shouldClear = document.getElementById(`manualClear_${id}`)?.checked ?? true;
       const notes = document.getElementById(`manualNotes_${id}`)?.value || '';
       const rmPrev = document.getElementById(`manualClearPrev_${id}`)?.checked ?? false;
-      if(c) scheduleManualFU(c, date, shouldClear, notes, rmPrev);
+      scheduleManualFU(c, date, shouldClear, notes, rmPrev);
       $$('.manual-row').forEach(n=>n.remove()); return;
     }
-
     if(act==='manual-cancel'){ $$('.manual-row').forEach(n=>n.remove()); return; }
 
     if (act==='edit'){
@@ -696,7 +700,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
       return;
     }
 
-    if(act==='reach' && c){
+    if(act==='reach'){
       c.status = c.status === 'unreached' ? 'reached' : 'unreached';
       if(c.status === 'reached'){
         c.reachedStart = fmt(today());
@@ -709,8 +713,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
       }
       save(); return;
     }
-
-    if(act==='del' && id){
+    if(act==='del'){
       if(confirm('Delete this customer and all their tasks?')){
         state.clients = state.clients.filter(x=>x.id!==id);
         state.tasks   = state.tasks.filter(t=>t.clientId!==id);
@@ -756,9 +759,11 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
 
   /* ========= Agenda ========= */
   let currentAgendaDate = today();
-  let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // 'type' | 'client'
-  let showMode = localStorage.getItem(SHOW_KEY) || 'all';     // 'all' | 'open' | 'done'
-  let agendaFilter = '';
+  // ✨ Default sort is "client"
+let sortMode = localStorage.getItem(SORT_KEY) || 'client';  // 'type' | 'client'
+let showMode = localStorage.getItem(SHOW_KEY) || 'all';     // 'all' | 'open' | 'done'
+let agendaFilter = '';
+ 
 
   function setAgendaFilter(val){
     agendaFilter = (val || '').trim().toLowerCase();
@@ -776,11 +781,11 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     return sortMode==='client' ? (byName || byType || byTitle) : (byType || byName || byTitle);
   }
   function matchesFilter(t){ return !agendaFilter || clientNameLower(t).includes(agendaFilter); }
-  function matchesShow(t){
-    if (showMode === 'open') return t.status !== 'done';
-    if (showMode === 'done') return t.status === 'done';
-    return true; // 'all'
-  }
+function matchesShow(t){
+  if (showMode === 'open') return t.status !== 'done';
+  if (showMode === 'done') return t.status === 'done';
+  return true; // 'all'
+}
 
   function detailsChipsFor(t){
     const c = t.clientId ? clientById(t.clientId) : null;
@@ -801,7 +806,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     const icon = { call:'📞', callvm:'📞🗣️', voicemail:'🗣️', sms:'💬', email:'✉️', custom:'📝' }[t.type] || '•';
     const client = clientDisplayName(t);
 
-    // Contact pill per task type (SMS uses RC deep link)
+    // Contact pill per task type (SMS uses RC deep link) ✨
     let contactHtml = '';
     if(t.clientId){
       const c = clientById(t.clientId) || {};
@@ -809,6 +814,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
         const href = phoneHref(c.phone);
         contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='sms' && c.phone){
+        // Use data attribute to open RC SMS
         const e164 = c.phone;
         contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(e164)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
       } else if(t.type==='email' && c.email){
@@ -845,7 +851,7 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     return div;
   }
 
-  // Inline notify editor (bell)
+  // Inline notify editor (bell) ✨
   function openNotifyEditor(taskId, host){
     const t = state.tasks.find(x=>x.id===taskId); if(!t) return;
     const already = host.querySelector('.notify-row'); if(already){ already.remove(); return; }
@@ -895,9 +901,9 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
   function buildAgenda(date){
     const f = fmt(date);
     const cont = $('#agenda');
-    const items = state.tasks
-      .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
-      .sort(sortTasksForMode);
+const items = state.tasks
+  .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
+  .sort(sortTasksForMode);
     cont.innerHTML = '';
     if(items.length===0){ cont.innerHTML = `<div class="tiny">No tasks for ${f}.</div>`; updateProgress(); return; }
     if (sortMode === 'client') renderGroupedByClient(cont, items);
@@ -910,18 +916,14 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     const days = Math.ceil((to-from)/86400000)+1;
     for(let i=0;i<days;i++){
       const d = addDays(from,i), f = fmt(d);
-      const items = state.tasks
-        .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
-        .sort(sortTasksForMode);
+const items = state.tasks
+  .filter(t => t.date===f && matchesFilter(t) && matchesShow(t))
+  .sort(sortTasksForMode);
       const head = document.createElement('div'); head.className = 'tiny'; head.innerHTML = `<div class="badge mono">${f}</div>`;
       cont.appendChild(head);
-      if(items.length===0){
-        const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none);
-      } else if (sortMode === 'client') {
-        renderGroupedByClient(cont, items);
-      } else {
-        items.forEach(t=>cont.appendChild(renderTask(t)));
-      }
+      if(items.length===0){ const none = document.createElement('div'); none.className='tiny'; none.textContent='No tasks'; cont.appendChild(none); }
+      else if (sortMode === 'client') renderGroupedByClient(cont, items);
+      else items.forEach(t=>cont.appendChild(renderTask(t)));
     }
     updateProgress();
   }
@@ -936,8 +938,9 @@ window.addEventListener('error', e => console.error('[crm error]', e.message));
     $('#progressBar').style.width = pct+'%';
   }
 
-  // Agenda action clicks (delete, bell, RC sms)
-document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del = e.target.closest('[data-del]');
+  // Agenda action clicks (delete, bell, RC sms) ✨
+  $('#agenda').addEventListener('click', (e)=>{
+    const del = e.target.closest('[data-del]');
     if(del){
       const id = del.getAttribute('data-del');
       if(confirm('Delete this task?')) deleteTask(id);
@@ -975,159 +978,176 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     }
   });
 
-  // Agenda controls
-  let renderAgenda = ()=> buildAgenda(currentAgendaDate);
+// Agenda controls
+let renderAgenda = ()=> buildAgenda(currentAgendaDate);
 
-  function setSortButtons(){
-    const byClient = $('#sortClient');
-    const byType   = $('#sortType');
-    if (!byClient || !byType) return;
+function setSortButtons(){
+  const byClient = $('#sortClient');
+  const byType   = $('#sortType');
+  if (!byClient || !byType) return;
 
-    byClient.classList.toggle('primary',  sortMode === 'client');
-    byType.classList.toggle('primary',    sortMode === 'type');
-    byClient.setAttribute('aria-pressed', String(sortMode==='client'));
-    byType.setAttribute('aria-pressed',   String(sortMode==='type'));
+  byClient.classList.toggle('primary',  sortMode === 'client');
+  byType.classList.toggle('primary',    sortMode === 'type');
+  byClient.setAttribute('aria-pressed', String(sortMode==='client'));
+  byType.setAttribute('aria-pressed',   String(sortMode==='type'));
 
-    const lbl = document.getElementById('sortLabel');
-    if (lbl) lbl.textContent = 'Sort:';
+  // Keep the label just "Sort:" so it matches the Show: group
+  const lbl = document.getElementById('sortLabel');
+  if (lbl) lbl.textContent = 'Sort:';
+}
+
+function mountSortGroupLabel(){
+  const byClient = document.getElementById('sortClient');
+  const byType   = document.getElementById('sortType');
+  if (!byClient || !byType || !byClient.parentElement) return;
+
+  // If buttons are inside an old segmented/group container, pull them out
+  const oldWrap = byClient.closest('.seg, .btn-group');
+  if (oldWrap){
+    oldWrap.parentElement.insertBefore(byClient, oldWrap);
+    oldWrap.parentElement.insertBefore(byType, oldWrap);
+    if (!oldWrap.querySelector('button')) oldWrap.remove();
   }
 
-  function mountSortGroupLabel(){
-    const byClient = document.getElementById('sortClient');
-    const byType   = document.getElementById('sortType');
-    if (!byClient || !byType || !byClient.parentElement) return;
-
-    const oldWrap = byClient.closest('.seg, .btn-group');
-    if (oldWrap){
-      oldWrap.parentElement.insertBefore(byClient, oldWrap);
-      oldWrap.parentElement.insertBefore(byType, oldWrap);
-      if (!oldWrap.querySelector('button')) oldWrap.remove();
-    }
-
-    let wrap = document.getElementById('sortWrap');
-    if (!wrap){
-      wrap = document.createElement('div');
-      wrap.id = 'sortWrap';
-      wrap.className = 'toolbar';
-      byClient.parentElement.insertBefore(wrap, byClient);
-    }
-
-    let label = document.getElementById('sortLabel');
-    if (!label){
-      label = document.createElement('span');
-      label.id = 'sortLabel';
-      label.className = 'pill tiny mono';
-      label.textContent = 'Sort:';
-    } else {
-      label.textContent = 'Sort:';
-    }
-
-    let group = document.getElementById('sortGroup');
-    if (!group){
-      group = document.createElement('div');
-      group.id = 'sortGroup';
-      group.className = 'seg';
-    }
-
-    wrap.appendChild(label);
-    wrap.appendChild(group);
-    group.appendChild(byClient);
-    group.appendChild(byType);
+  // Row wrapper (sibling to the segmented control)
+  let wrap = document.getElementById('sortWrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'sortWrap';
+    wrap.className = 'toolbar'; // same row style you use elsewhere
+    byClient.parentElement.insertBefore(wrap, byClient);
   }
 
-  // Show buttons (guarded)
-  function setShowButtons(){
-    const all = $('#showAll'), openBtn = $('#showOpen'), done = $('#showDone');
-    if (!all || !openBtn || !done) return;
-    all.classList.toggle('primary',  showMode === 'all');
-    openBtn.classList.toggle('primary', showMode === 'open');
-    done.classList.toggle('primary',  showMode === 'done');
-    all.setAttribute('aria-pressed',   String(showMode==='all'));
-    openBtn.setAttribute('aria-pressed', String(showMode==='open'));
-    done.setAttribute('aria-pressed',  String(showMode==='done'));
+  // Label chip (just like Show:)
+  let label = document.getElementById('sortLabel');
+  if (!label){
+    label = document.createElement('span');
+    label.id = 'sortLabel';
+    label.className = 'pill tiny mono';
+    label.textContent = 'Sort:';
+  } else {
+    label.textContent = 'Sort:';
   }
 
-  // Show listeners
-  const showAllEl  = $('#showAll');
-  const showOpenEl = $('#showOpen');
-  const showDoneEl = $('#showDone');
-
-  if (showAllEl && showOpenEl && showDoneEl){
-    showAllEl.addEventListener('click',  ()=>{ showMode='all';  localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
-    showOpenEl.addEventListener('click', ()=>{ showMode='open'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
-    showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+  // Segmented container (same look as Show)
+  let group = document.getElementById('sortGroup');
+  if (!group){
+    group = document.createElement('div');
+    group.id = 'sortGroup';
+    group.className = 'seg';    // ← NOT "btn-group"
   }
+
+  wrap.appendChild(label);
+  wrap.appendChild(group);
+  group.appendChild(byClient);
+  group.appendChild(byType);
+}
+
+
+
+
+
+
+// ✅ Guarded version—paste here (replace your old setShowButtons)
+function setShowButtons(){
+  const all = $('#showAll'), openBtn = $('#showOpen'), done = $('#showDone');
+  if (!all || !openBtn || !done) return;
+  all.classList.toggle('primary',  showMode === 'all');
+  openBtn.classList.toggle('primary', showMode === 'open');
+  done.classList.toggle('primary',  showMode === 'done');
+  all.setAttribute('aria-pressed',   String(showMode==='all'));
+  openBtn.setAttribute('aria-pressed', String(showMode==='open'));
+  done.setAttribute('aria-pressed',  String(showMode==='done'));
+}
+
+
+// Listeners
+const showAllEl  = $('#showAll');
+const showOpenEl = $('#showOpen');
+const showDoneEl = $('#showDone');
+
+if (showAllEl && showOpenEl && showDoneEl){
+  showAllEl.addEventListener('click',  ()=>{ showMode='all';  localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+  showOpenEl.addEventListener('click', ()=>{ showMode='open'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+  showDoneEl.addEventListener('click', ()=>{ showMode='done'; localStorage.setItem(SHOW_KEY, showMode); setShowButtons(); renderAgenda(); buildCalendar(); });
+}
+
+
+
+
 
   function setAgendaMode(mode){
     $('#viewToday').classList.toggle('primary', mode === 'today');
     $('#viewWeek').classList.toggle('primary', mode === 'week');
   }
+const sortClientEl = document.getElementById('sortClient');
+const sortTypeEl   = document.getElementById('sortType');
 
-  const sortClientEl = document.getElementById('sortClient');
-  const sortTypeEl   = document.getElementById('sortType');
+if (sortClientEl && sortTypeEl) {
+  sortClientEl.addEventListener('click', () => {
+    sortMode = 'client';
+    localStorage.setItem(SORT_KEY, sortMode);
+    setSortButtons();
+    renderAgenda();
+  });
+  sortTypeEl.addEventListener('click', () => {
+    sortMode = 'type';
+    localStorage.setItem(SORT_KEY, sortMode);
+    setSortButtons();
+    renderAgenda();
+  });
+}
 
-  if (sortClientEl && sortTypeEl) {
-    sortClientEl.addEventListener('click', () => {
-      sortMode = 'client';
-      localStorage.setItem(SORT_KEY, sortMode);
-      setSortButtons();
-      renderAgenda();
-    });
-    sortTypeEl.addEventListener('click', () => {
-      sortMode = 'type';
-      localStorage.setItem(SORT_KEY, sortMode);
-      setSortButtons();
-      renderAgenda();
-    });
-  }
 
-  const viewTodayEl = document.getElementById('viewToday');
-  const viewWeekEl  = document.getElementById('viewWeek');
-  const agendaDateEl = document.getElementById('agendaDate');
+const viewTodayEl = document.getElementById('viewToday');
+const viewWeekEl  = document.getElementById('viewWeek');
+const agendaDateEl = document.getElementById('agendaDate');
 
-  if (viewTodayEl) {
-    viewTodayEl.addEventListener('click', ()=>{
-      currentAgendaDate = today();
-      renderAgenda = ()=> buildAgenda(currentAgendaDate);
-      setAgendaMode('today');
-      if (agendaDateEl) agendaDateEl.value = '';
-      renderAgenda();
-    });
-  }
+if (viewTodayEl) {
+  viewTodayEl.addEventListener('click', ()=>{
+    currentAgendaDate = today();
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode('today');
+    if (agendaDateEl) agendaDateEl.value = '';
+    renderAgenda();
+  });
+}
 
-  if (viewWeekEl) {
-    viewWeekEl.addEventListener('click', ()=>{
-      const from = today();
-      const to   = addDays(today(), 7);
-      renderAgenda = ()=> buildAgendaRange(from, to);
-      setAgendaMode('week');
-      if (agendaDateEl) agendaDateEl.value = '';
-      renderAgenda();
-    });
-  }
+if (viewWeekEl) {
+  viewWeekEl.addEventListener('click', ()=>{
+    const from = today();
+    const to   = addDays(today(), 7);
+    renderAgenda = ()=> buildAgendaRange(from, to);
+    setAgendaMode('week');
+    if (agendaDateEl) agendaDateEl.value = '';
+    renderAgenda();
+  });
+}
 
-  if (agendaDateEl) {
-    agendaDateEl.addEventListener('change', ()=>{
-      const d = agendaDateEl.value ? parseLocalYMD(agendaDateEl.value) : today();
-      currentAgendaDate = d;
-      renderAgenda = ()=> buildAgenda(currentAgendaDate);
-      setAgendaMode(null);
-      renderAgenda();
-    });
-  }
+if (agendaDateEl) {
+  agendaDateEl.addEventListener('change', ()=>{
+    const d = agendaDateEl.value ? parseLocalYMD(agendaDateEl.value) : today();
+    currentAgendaDate = d;
+    renderAgenda = ()=> buildAgenda(currentAgendaDate);
+    setAgendaMode(null);
+    renderAgenda();
+  });
+}
 
-  const agendaFilterEl = document.getElementById('agendaFilter');
-  const agendaFilterClearEl = document.getElementById('agendaFilterClear');
+const agendaFilterEl = document.getElementById('agendaFilter');
+const agendaFilterClearEl = document.getElementById('agendaFilterClear');
 
-  if (agendaFilterEl) {
-    agendaFilterEl.addEventListener('input', ()=> setAgendaFilter(agendaFilterEl.value));
-  }
-  if (agendaFilterClearEl && agendaFilterEl) {
-    agendaFilterClearEl.addEventListener('click', ()=>{
-      agendaFilterEl.value = '';
-      setAgendaFilter('');
-    });
-  }
+if (agendaFilterEl) {
+  agendaFilterEl.addEventListener('input', ()=> setAgendaFilter(agendaFilterEl.value));
+}
+if (agendaFilterClearEl && agendaFilterEl) {
+  agendaFilterClearEl.addEventListener('click', ()=>{
+    agendaFilterEl.value = '';
+    setAgendaFilter('');
+  });
+}
+
+
 
   /* ========= Batch Emails for Unreached today ========= */
   function emailTemplateFor(t, client){
@@ -1151,7 +1171,7 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
       window.open(href, '_blank'); setTimeout(openNext, 600);
     })();
   }
-  $('#sendDueEmails')?.addEventListener('click', ()=>{
+  $('#sendDueEmails').addEventListener('click', ()=>{
     const due = collectDueUnreachedEmails();
     if (!due.length){ alert('No unreached emails due today.'); return; }
     if (!confirm(`Open ${due.length} email compose window(s) now?`)) return;
@@ -1266,7 +1286,9 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     for(let d=1; d<=daysInMonth; d++){
       const dt  = new Date(year, month, d);
       const ymd = fmt(dt);
-      const items = state.tasks.filter(t => t.date === ymd && matchesFilter(t) && matchesShow(t));
+const items = state.tasks.filter(
+  t => t.date === ymd && matchesFilter(t) && matchesShow(t)
+);
       const cell = document.createElement('div');
       cell.className='cal-cell'; if(!isWorkingDay(dt)) cell.classList.add('offday');
       cell.innerHTML = `<div class="d">${d}</div>` + (items.length ? `<div class="cal-badge">${items.length}</div>` : '');
@@ -1286,10 +1308,8 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
   }
   $('#calPrev')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); buildCalendar(); });
   $('#calNext')?.addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); buildCalendar(); });
-
   function renderOverrideList(){
-    const ul = $('#overrideList'); if(!ul) return;
-    ul.innerHTML='';
+    const ul = $('#overrideList'); ul.innerHTML='';
     const entries = Object.entries(state.settings.overrides).sort((a,b)=> a[0].localeCompare(b[0]));
     if (!entries.length){ const li=document.createElement('li'); li.textContent='No overrides yet.'; ul.appendChild(li); return; }
     entries.forEach(([date,type])=>{
@@ -1328,14 +1348,13 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
-  $('#calSettingsBtn')?.addEventListener('click', ()=>{
-    const el=$('#calSettings'); if(!el) return;
-    const open=el.style.display!=='none';
+  $('#calSettingsBtn').addEventListener('click', ()=>{
+    const el=$('#calSettings'); const open=el.style.display!=='none';
     el.style.display = open ? 'none' : 'block';
     if(!open) loadSettingsIntoUI();
   });
-  $('#saveCalSettings')?.addEventListener('click', saveSettingsFromUI);
-  $('#addOverride')?.addEventListener('click', ()=>{
+  $('#saveCalSettings').addEventListener('click', saveSettingsFromUI);
+  $('#addOverride').addEventListener('click', ()=>{
     const d=$('#ovrDate').value; const t=$('#ovrType').value;
     if(!d) return alert('Pick a date');
     state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
@@ -1359,13 +1378,20 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     set('#dates', parsed.dates);
     set('#pax',   parsed.pax);
     set('#leadId', parsed.leadId);
+    // ✨ start date from blob (second ISO date)
     set('#startDate', parsed.startDateFromBlob);
     if(parsed.notes){
       const cur = ($('#notes').value || '').trim();
       $('#notes').value = cur ? (cur + '\n' + parsed.notes) : parsed.notes;
     }
   }
-
+  function parseBlob({ onlyFillEmpty } = { onlyFillEmpty:false }){
+    const blob = ($('#leadBlob').value || '').trim();
+    if(!blob) return null;
+    const parsed = parseLeadBlob(blob);
+    applyParsedToForm(parsed, { onlyFillEmpty });
+    return parsed;
+  }
   function collectClientFromForm(){
     const id = $('#clientId').value || uid();
     const exists = state.clients.find(c=>c.id===id);
@@ -1387,10 +1413,8 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     };
     return { client, exists };
   }
-
-  $('#resetForm')?.addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
-
-  $('#saveCustomer')?.addEventListener('click', ()=>{
+  $('#resetForm').addEventListener('click', ()=>{ $('#clientForm').reset(); $('#clientId').value=''; });
+  $('#saveCustomer').addEventListener('click', ()=>{
     try{
       if (($('#leadBlob').value || '').trim()){ parseBlob({ onlyFillEmpty:true }); }
       const {client, exists} = collectClientFromForm();
@@ -1434,6 +1458,7 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
     const sel = $('#ctClient'); if(!sel) return;
     const keep = sel.value;
     sel.innerHTML = '';
+    // ✨ Default = None / no client
     sel.insertAdjacentHTML('beforeend', `<option value="" selected>None — no client</option>`);
     const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
     opts.forEach(c=>{
@@ -1453,7 +1478,8 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
       if (!$('#ctTitle').value) $('#ctTitle').value = titleDefaultFor($('#ctType').value);
       $('#ctNotify').disabled = !$('#ctTime').value;
 
-      pop.style.display = 'flex';
+      pop.style.display = 'flex';   // overlay
+      // ✨ Keyboard: Esc closes, Enter saves (except in Notes)
       pop._keydown = (e)=>{
         if(e.key==='Escape'){ e.preventDefault(); closeCustomTaskPopover(); }
         if(e.key==='Enter' && !e.shiftKey && e.target.id!=='ctNotes'){
@@ -1461,6 +1487,7 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
         }
       };
       document.addEventListener('keydown', pop._keydown);
+      // Click backdrop to close
       pop._backdrop = (e)=>{ if(e.target===pop) closeCustomTaskPopover(); };
       pop.addEventListener('click', pop._backdrop);
     } else {
@@ -1529,7 +1556,7 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
   $('#ctNotify')?.addEventListener('change', ()=>{ if ($('#ctNotify').checked) $('#ctImportant').checked = true; });
 
   /* ========= Wipe All ========= */
-  $('#wipeAll')?.addEventListener('click', () => {
+  $('#wipeAll').addEventListener('click', () => {
     if (!confirm('Delete ALL customers, tasks, and calendar overrides? This cannot be undone.')) return;
     const tPref = localStorage.getItem(THEME_KEY);
     localStorage.removeItem(storeKey);
@@ -1542,20 +1569,16 @@ document.getElementById('agenda')?.addEventListener('click', (e)=>{    const del
   initNotificationsUI();
   startNotificationTicker();
 
-  // Customers search + status filter (wire them to refresh the table)
-document.getElementById('search')?.addEventListener('input', refresh);
-document.getElementById('statusFilter')?.addEventListener('change', refresh);
-
-
   /* ========= Bootstrap ========= */
-  function bootstrap(){
-    initAddModal();
-    refresh();
-    buildCalendar();
-    mountSortGroupLabel();
-    setSortButtons();
-    setShowButtons();
-  }
-  bootstrap();
+ function bootstrap(){
+  initAddModal();
+  refresh();
+  buildCalendar();
+  // now that DOM is there, wire/adjust the sort+show UI
+  mountSortGroupLabel();
+  setSortButtons();
+  setShowButtons();
+}
+bootstrap();
 
 })();
