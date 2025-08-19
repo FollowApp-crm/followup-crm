@@ -222,6 +222,22 @@ body.light .pill{ background:#f1f4ff; color:#1e2758 }
     margin-right: calc(var(--agenda-bleed) * -1);
   }
 }
+/* --- Add-Task modal: Client dropdown polish --- */
+#customTaskPop .row { grid-template-columns: 2fr 1fr; }     /* make Client wider than Type */
+#ctClient { min-width: 320px; }                              /* avoid cramped dropdown */
+
+/* Consistent dropdown colors (Chrome/Edge/Firefox) */
+#ctClient option { background: var(--panel); color: var(--ink); }
+#ctClient option:hover,
+#ctClient option:checked { background: #2f3547; color: var(--ink); }
+
+body.light #ctClient option { background: #fff; color: var(--ink); }
+body.light #ctClient option:hover,
+body.light #ctClient option:checked { background: #e9ecff; color: #1e2758; }
+
+/* Neutral focus for the segmented buttons (keeps things tidy) */
+.seg > button:focus { outline: none; }
+.seg > button:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
 
 /* =================== KPI =================== */
 .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
