@@ -862,57 +862,57 @@ c.leadId ? leadChipHtml(c.leadId) : ''
     return chips.join(' ');
   }
 
-  function renderTask(t){
-    const div = document.createElement('div');
-    div.className = 'agenda-item'+(t.status==='done'?' done':'');
+function renderTask(t, opts = {}){
+  const { showClientPill = true, showDetailChips = true } = opts;
 
-    const icon = { call:'📞', callvm:'📞🗣️', voicemail:'🗣️', sms:'💬', email:'✉️', custom:'📝' }[t.type] || '•';
-    const client = clientDisplayName(t);
+  const div = document.createElement('div');
+  div.className = 'agenda-item' + (t.status==='done' ? ' done' : '');
 
-    // Contact pill per task type (SMS uses RC deep link) ✨
-    let contactHtml = '';
-    if(t.clientId){
-      const c = clientById(t.clientId) || {};
-      if((t.type==='call' || t.type==='callvm') && c.phone){
-        const href = phoneHref(c.phone);
-        contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
-      } else if(t.type==='sms' && c.phone){
-        // Use data attribute to open RC SMS
-        const e164 = c.phone;
-        contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(e164)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
-      } else if(t.type==='email' && c.email){
-        const href = emailHref(c.email,'Follow-up','Hi …');
-        contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
-      }
+  const icon = { call:'📞', callvm:'📞🗣️', voicemail:'🗣️', sms:'💬', email:'✉️', custom:'📝' }[t.type] || '•';
+  const client = clientDisplayName(t);
+
+  // Contact pill per task type (phone for call/sms, email for email)
+  let contactHtml = '';
+  if (t.clientId){
+    const c = clientById(t.clientId) || {};
+    if ((t.type==='call' || t.type==='callvm') && c.phone){
+      const href = phoneHref(c.phone);
+      contactHtml = `<span class="pill"><a class="mono" href="${href}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+    } else if (t.type==='sms' && c.phone){
+      const e164 = c.phone;
+      contactHtml = `<span class="pill"><a class="mono" href="#" data-rcsms="${escapeHtml(e164)}">${escapeHtml(c.phone)}</a><button class="copy-btn" data-copy="${escapeHtml(c.phone)}" data-what="phone" title="Copy phone" aria-label="Copy phone">⧉</button></span>`;
+    } else if (t.type==='email' && c.email){
+      const href = emailHref(c.email,'Follow-up','Hi …');
+      contactHtml = `<span class="pill"><a class="mono" href="${href}" target="_blank" rel="noopener">${escapeHtml(c.email)}</a><button class="copy-btn" data-copy="${escapeHtml(c.email)}" data-what="email" title="Copy email" aria-label="Copy email">⧉</button></span>`;
     }
-
-    const src = t.source==='custom'?' (custom)':(t.source==='manual'?' (manual)':'');
-    const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
-    const chips = detailsChipsFor(t);
-    const timeBadged = t.notifyTime ? ` &nbsp; ⏰ <span class="mono">${t.notifyTime}</span>` : '';
-
-    div.innerHTML = `
-      <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
-      <div>
-        <div><strong>${icon} ${escapeHtml(t.title)}</strong>
-          ${client?`<span class="pill">${escapeHtml(client)}</span>`:''}
-          ${contactHtml}
-          ${chips}
-        </div>
-        <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
-        ${notesHtml}
-      </div>
-      <div class="tiny mono">
-        ${t.date}${timeBadged}
-        <button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>
-        <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button>
-      </div>`;
-
-    // checkbox
-    div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
-
-    return div;
   }
+
+  const src = t.source==='custom' ? ' (custom)' : (t.source==='manual' ? ' (manual)' : '');
+  const notesHtml = t.notes ? `<div class="tiny">📝 ${escapeHtml(t.notes)}</div>` : '';
+  const chipsHtml = showDetailChips ? detailsChipsFor(t) : '';
+  const timeBadged = t.notifyTime ? ` &nbsp; ⏰ <span class="mono">${t.notifyTime}</span>` : '';
+
+  div.innerHTML = `
+    <input type="checkbox" ${t.status==='done'?'checked':''} data-taskid="${t.id}"/>
+    <div>
+      <div><strong>${icon} ${escapeHtml(t.title)}</strong>
+        ${showClientPill && client ? `<span class="pill">${escapeHtml(client)}</span>` : ''}
+        ${contactHtml}
+        ${chipsHtml}
+      </div>
+      <div class="tiny">${escapeHtml(t.label||'')}${src}</div>
+      ${notesHtml}
+    </div>
+    <div class="tiny mono">
+      ${t.date}${timeBadged}
+      <button class="btn-icon" data-bell="${t.id}" title="Notify at time">🔔</button>
+      <button class="btn-icon" data-del="${t.id}" title="Delete task">🗑️</button>
+    </div>`;
+
+  div.querySelector('input').addEventListener('change', ev=>{ markDone(t.id, ev.target.checked); });
+  return div;
+}
+
 
   // Inline notify editor (bell) ✨
   function openNotifyEditor(taskId, host){
@@ -947,20 +947,26 @@ c.leadId ? leadChipHtml(c.leadId) : ''
     delete t.notifyTime; delete t.notifyAt; t.important=false; save();
   }
 
-  function renderGroupedByClient(container, items){
-    let current = '\u0000';
-    for(const t of items){
-      const name = clientDisplayName(t) || 'Unknown';
-      if(name !== current){
-        current = name;
-        const gh = document.createElement('div');
-        gh.className = 'group-hd';
-        gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>`;
-        container.appendChild(gh);
-      }
-      container.appendChild(renderTask(t));
+function renderGroupedByClient(container, items){
+  let current = '\u0000';
+  for (const t of items){
+    const name = clientDisplayName(t) || 'Unknown';
+    if (name !== current){
+      current = name;
+
+      // Group header with client name + one set of details chips
+      const gh = document.createElement('div');
+      gh.className = 'group-hd';
+      const chipsOnce = detailsChipsFor(t); // uses the task's client
+      gh.innerHTML = `<span class="label">${escapeHtml(name)}</span>${chipsOnce ? `<div class="tiny">${chipsOnce}</div>` : ''}`;
+      container.appendChild(gh);
     }
+
+    // Tasks under the group: hide name & detail chips; keep only the relevant contact pill
+    container.appendChild(renderTask(t, { showClientPill:false, showDetailChips:false }));
   }
+}
+
 
   function buildAgenda(date){
     const f = fmt(date);
