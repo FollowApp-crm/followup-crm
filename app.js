@@ -721,24 +721,26 @@ function refresh(){
 
       const leadInline = c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : '';
 
-      tr.innerHTML = `
-        <td data-label="Name">
-          <strong>${escapeHtml(c.name)}</strong>
-          <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
-            ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
-          </div>
-          ${leadInline}
-        </td>
-        <td data-label="Contact" class="tiny">${contactHtml}</td>
-        <td data-label="Status"><span class="badge">${c.status}</span></td>
-        <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
-        <td data-label="Actions" class="actions">
-          <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
-          <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
-          <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
-          <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
-          <button type="button" class="btn-icon" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
-        </td>`;
+tr.innerHTML = `
+  <td data-label="Name">
+    <strong>${escapeHtml(c.name)}</strong>
+    <div class="tiny mono note-preview" data-act="note" data-id="${c.id}" title="Click to expand notes">
+      ${c.notes ? escapeHtml(truncate(c.notes)) : ''}
+    </div>
+    ${c.leadId ? `<div class="tiny">${leadChipHtml(c.leadId)}</div>` : ''}
+  </td>
+  <td data-label="Contact" class="tiny">${contactHtml}</td>
+  <td data-label="Status"><span class="badge">${c.status}</span></td>
+  <td data-label="Date Taken"><span class="mono">${c.startDate || '—'}</span></td>
+  <td data-label="Next Action">${nextActionDateForClient(c.id)}</td>
+  <td data-label="Actions" class="actions">
+    <button type="button" class="btn-icon" data-act="note"  data-id="${c.id}" title="Show notes" aria-label="Show notes">🗒️</button>
+    <button type="button" class="btn-icon" data-act="manual" data-id="${c.id}" title="Set next FU (manual)" aria-label="Manual next FU">📅</button>
+    <button type="button" class="btn-icon" data-act="edit"  data-id="${c.id}" title="Edit" aria-label="Edit">🖊️</button>
+    <button type="button" class="btn-icon" data-act="reach" data-id="${c.id}" title="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}" aria-label="${c.status==='unreached'?'Mark Reached':'Mark Unreached'}">${c.status==='unreached'?'✅':'↩️'}</button>
+    <button type="button" class="btn-icon" data-act="del"   data-id="${c.id}" title="Delete" aria-label="Delete">🗑️</button>
+  </td>`;
+
       body.appendChild(tr);
     });
 
@@ -755,7 +757,7 @@ function refresh(){
     if(!tr) return;
     const c = clientById(id) || {};
     const row = document.createElement('tr'); row.className='note-row'; row.setAttribute('data-for', id);
-    const td = document.createElement('td'); td.colSpan = 5;
+    const td = document.createElement('td'); td.colSpan = 6;
     const chips = [
       c.route ? `<span class="pill">Route: ${escapeHtml(c.route)}</span>` : '',
       c.dates ? `<span class="pill">Dates: ${escapeHtml(c.dates)}</span>` : '',
@@ -851,7 +853,7 @@ $('#clientsTbl')?.addEventListener('click', e=>{
     if(!tr) return;
     const row = document.createElement('tr');
     row.className = 'manual-row'; row.setAttribute('data-for', id);
-    const td = document.createElement('td'); td.colSpan = 5;
+    const td = document.createElement('td'); td.colSpan = 6;
     td.innerHTML = `
       <div class="tiny slab flex-row">
         <span>Manual next follow-up for <b>${escapeHtml(clientById(id)?.name||'Client')}</b>:</span>
@@ -1605,7 +1607,7 @@ $('#addOverride')?.addEventListener('click', ()=>{
     sel.innerHTML = '';
     // ✨ Default = None / no client
     sel.insertAdjacentHTML('beforeend', `<option value="" selected>None — no client</option>`);
-    const opts = [...state.clients].sort((a,b)=>a.name.localeCompare(b.name));
+    const opts = [...state.clients].sort((a,b)=>(b.startDate || '').localeCompare(a.startDate || ''));
     opts.forEach(c=>{
       const label = c.email ? `${c.name} — ${c.email}` : (c.phone ? `${c.name} — ${c.phone}` : c.name);
       sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(label)}</option>`);
