@@ -1464,14 +1464,29 @@ cell.addEventListener('click', ()=>{
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
-$('#calSettingsBtn')?.addEventListener('click', ()=>{
-  $('#saveCalSettings')?.addEventListener('click', saveSettingsFromUI);
-  $('#addOverride')?.addEventListener('click', ()=>{
-    const d=$('#ovrDate').value; const t=$('#ovrType').value;
-    if(!d) return alert('Pick a date');
-    state.settings.overrides[d] = (t==='work' ? 'work' : 'off');
-    regenerateAutoOpenTasksFromAnchors(); renderOverrideList();
-  });
+// Settings toggle (works for #calSettingsBtn or the gear in the calendar header)
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('#calSettingsBtn, #calendarCard .settings-btn');
+  if (!btn) return;
+
+  const panel = document.getElementById('calSettings');
+  if (!panel) { console.warn('Missing #calSettings'); return; }
+
+  const isVisible = getComputedStyle(panel).display !== 'none';
+  panel.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) loadSettingsIntoUI();
+});
+
+// Save + add-override buttons (not nested in a click handler)
+$('#saveCalSettings')?.addEventListener('click', saveSettingsFromUI);
+$('#addOverride')?.addEventListener('click', ()=>{
+  const d = $('#ovrDate').value;
+  const t = $('#ovrType').value;
+  if (!d) { alert('Pick a date'); return; }
+  state.settings.overrides[d] = (t === 'work' ? 'work' : 'off');
+  regenerateAutoOpenTasksFromAnchors();
+  renderOverrideList();
+});
 
   /* ========= Parse + Form wiring ========= */
   function applyParsedToForm(parsed, { onlyFillEmpty = false } = {}){
