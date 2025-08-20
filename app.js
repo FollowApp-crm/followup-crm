@@ -154,10 +154,6 @@ function initCalendarDrawer(){
   const cal = document.getElementById('calendarCard');
   if (cal) panel.appendChild(cal);
 
-  // ✅ Docked/open by default
-  drawer.classList.add('open','pinned');
-  document.body.classList.add('drawer-pinned');
-  document.getElementById('openCal')?.setAttribute('aria-expanded','true');
 
   // Header close (uses your existing #calDrawerClose in the HTML)
   document.getElementById('calDrawerClose')?.addEventListener('click', ()=>{
