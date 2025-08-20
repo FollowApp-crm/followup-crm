@@ -1462,7 +1462,7 @@ cell.addEventListener('click', ()=>{
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
     regenerateAutoOpenTasksFromAnchors();
-saveSettingsFromUI(  
+saveSettingsFromUI()  
 // Settings toggle (pushes calendar down)
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('#calSettingsBtn, #calendarCard .settings-btn');
