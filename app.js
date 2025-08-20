@@ -707,7 +707,7 @@ function refresh(){
   };
 
   [...state.clients]
-    .sort((a,b)=>a.name.localeCompare(b.name))
+.sort((a,b)=> (b.startDate || '').localeCompare(a.startDate || ''))
     .filter(c => (!sflt || c.status===sflt))   // status filter
     .filter(matchesQuery)                      // search filter (text or digits)
     .forEach(c => {
