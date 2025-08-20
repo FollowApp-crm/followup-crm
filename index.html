@@ -312,6 +312,45 @@
           <!-- … -->
         </div>
         <div id="calendarGrid"></div>
+        <section id="calSettings" class="slab" style="display:none; margin-top:10px">
+  <h4>Working days</h4>
+  <label><input type="checkbox" id="wd_mon"> Mon</label>
+  <label><input type="checkbox" id="wd_tue"> Tue</label>
+  <label><input type="checkbox" id="wd_wed"> Wed</label>
+  <label><input type="checkbox" id="wd_thu"> Thu</label>
+  <label><input type="checkbox" id="wd_fri"> Fri</label>
+  <label><input type="checkbox" id="wd_sat"> Sat</label>
+  <label><input type="checkbox" id="wd_sun"> Sun</label>
+
+  <div style="margin-top:10px">
+    <label><input type="checkbox" id="moveOffDays"> Move tasks off non-working days</label>
+  </div>
+
+  <hr>
+  <div class="row">
+    <div>
+      <label for="ovrDate">Override date</label>
+      <input type="date" id="ovrDate">
+    </div>
+    <div>
+      <label for="ovrType">Type</label>
+      <select id="ovrType">
+        <option value="off">Off</option>
+        <option value="work">Work</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-end">
+      <button id="addOverride">Add override</button>
+    </div>
+  </div>
+
+  <ul id="overrideList" class="tiny" style="margin-top:10px"></ul>
+
+  <div class="right" style="margin-top:10px">
+    <button id="saveCalSettings" class="primary">Save</button>
+  </div>
+</section>
+
       </div>
     </section>
   </aside>
