@@ -153,6 +153,12 @@ function initCalendarDrawer(){
   // Move the existing Calendar card into the drawer
   const cal = document.getElementById('calendarCard');
   if (cal) panel.appendChild(cal);
+  // Ensure settings panel moves with the calendar
+  const calSettings = document.getElementById('calSettings');
+  if (cal && calSettings && !cal.contains(calSettings)) {
+    (cal.querySelector('.bd') || cal).appendChild(calSettings);
+    calSettings.style.display = 'none'; // start hidden
+  }
 
 
   // Header close (uses your existing #calDrawerClose in the HTML)
@@ -1458,11 +1464,7 @@ cell.addEventListener('click', ()=>{
     regenerateAutoOpenTasksFromAnchors();
     $('#calSettings').style.display = 'none';
   }
-  $('#calSettingsBtn')?.addEventListener('click', ()=>{
-    const el=$('#calSettings'); const open=el.style.display!=='none';
-    el.style.display = open ? 'none' : 'block';
-    if(!open) loadSettingsIntoUI();
-  });
+$('#calSettingsBtn')?.addEventListener('click', ()=>{
   $('#saveCalSettings')?.addEventListener('click', saveSettingsFromUI);
   $('#addOverride')?.addEventListener('click', ()=>{
     const d=$('#ovrDate').value; const t=$('#ovrType').value;
