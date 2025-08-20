@@ -1455,6 +1455,7 @@ cell.addEventListener('click', ()=>{
   }
 function saveSettingsFromUI(){
   const s = state.settings;
+
   s.workingDays = {
     mon: !!$('#wd_mon').checked,
     tue: !!$('#wd_tue').checked,
@@ -1466,9 +1467,25 @@ function saveSettingsFromUI(){
   };
   s.moveOffDays = !!$('#moveOffDays').checked;
 
-  regenerateAutoOpenTasksFromAnchors();  // rebuild future tasks with new rules
-  save();                                 // persist + refresh + rebuild calendar
+  // Rebuild tasks + save (also refreshes UI and calendar)
+  regenerateAutoOpenTasksFromAnchors();
+  save();
+
+  // 👇 Close the settings panel after saving
+  const panel = document.getElementById('calSettings');
+  if (panel) panel.classList.remove('open');
+
+  // Keep the toggle button state in sync & return focus
+  const btn = document.getElementById('calSettingsBtn');
+  if (btn){
+    btn.setAttribute('aria-expanded', 'false');
+    try { btn.focus({ preventScroll: true }); } catch(_) {}
+  }
+
+  // Nice-to-have feedback
+  try { toast('Calendar settings saved'); } catch(_) {}
 }
+
 
 // Settings toggle (pushes calendar down)
 document.addEventListener('click', (e)=>{
