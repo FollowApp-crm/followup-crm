@@ -568,31 +568,35 @@ function leadChipHtml(id){
     if(d[0] !== '+') return '+'+d;
     return d;
   }
-  function openRingCentralSMS(rawPhone){
-    const e164 = toE164(rawPhone);
-    if(!e164) return;
+// ✨ RingCentral deep links for SMS
+const SMS_DEFAULT_TEXT = 'Hello from click to text'; // change this default anytime
 
-    const desktopPrimary = `rcapp://r/sms?type=new&number=${encodeURIComponent(e164)}`;
-    const desktopNoNum   = `rcapp://r/sms?type=new`;
-    const mobilePrimary  = `rcmobile://sms?number=${encodeURIComponent(e164)}`;
-    const web1           = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(e164)}`;
-    const web2           = `https://app.ringcentral.com/message/new?type=sms&to=${encodeURIComponent(e164)}`;
+function openRingCentralSMS(rawPhone, text = SMS_DEFAULT_TEXT){
+  const e164 = toE164(rawPhone);
+  if(!e164) return;
 
-    const primary   = isMobile() ? mobilePrimary : desktopPrimary;
-    const fallbacks = isMobile() ? [web1, web2] : [desktopNoNum, web1, web2];
+  // Use the requested URI with a prefilled message
+  const desktopPrimary = `rcapp://r/sms?type=new&number=${encodeURIComponent(e164)}&content=${encodeURIComponent(text)}`;
 
-    let jumped = false;
-    const tryOpen = (url, sameTab=true) => {
-      try {
-        if(sameTab){ window.location.href = url; } else { window.open(url, '_blank'); }
-        jumped = true;
-      } catch(_) {}
-    };
+  // Fallbacks
+  const desktopNoNum   = `rcapp://r/sms?type=new&content=${encodeURIComponent(text)}`;
+  const mobilePrimary  = `rcmobile://sms?number=${encodeURIComponent(e164)}`; // content may be ignored on mobile
+  const web1           = `https://app.ringcentral.com/r/sms?type=new&number=${encodeURIComponent(e164)}`;
+  const web2           = `https://app.ringcentral.com/message/new?type=sms&to=${encodeURIComponent(e164)}`;
 
-    tryOpen(primary, true);
-    setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), true); }, 200);
-    setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), false); }, 600);
-  }
+  const primary   = isMobile() ? mobilePrimary : desktopPrimary;
+  const fallbacks = isMobile() ? [web1, web2] : [desktopNoNum, web1, web2];
+
+  let jumped = false;
+  const tryOpen = (url, sameTab=true) => {
+    try { sameTab ? (window.location.href = url) : window.open(url, '_blank'); jumped = true; } catch(_){}
+  };
+
+  tryOpen(primary, true);
+  setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), true); }, 200);
+  setTimeout(()=>{ if(!jumped && fallbacks.length) tryOpen(fallbacks.shift(), false); }, 600);
+}
+
 
   /* ========= Scheduling ========= */
   const ACTIONS_UNREACHED = d => ({ calls:2, voicemail:1, sms:1, emails: d===1?2:1 });
