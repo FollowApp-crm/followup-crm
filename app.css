@@ -319,11 +319,33 @@ body.light .cal-cell.offday .d{ color:#a23b3b; }
 .settings-btn{
   height:32px; padding:6px 12px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; line-height:1;
 }
-#calSettings{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface) }
+
+/* Settings panel: closed by default, slides open when .open is added */
+#calSettings{
+  display:block;                 /* stays in flow to push grid when open */
+  overflow:hidden;
+  max-height:0;
+  opacity:0;
+  transform:translateY(-4px);
+  transition: max-height .28s ease, opacity .22s ease, transform .22s ease, margin .22s ease, padding .22s ease;
+  margin-top:10px;
+  margin-bottom:0;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:0;                     /* avoid jump while animating */
+  max-width:100%;
+}
+#calSettings.open{
+  max-height: 820px;             /* large enough for contents */
+  opacity:1;
+  transform:none;
+  margin-bottom:10px;
+  padding:16px;                  /* reveal inner padding when open */
+}
 body.light #calSettings{ background:#fff }
 
 /* Calendar settings layout */
-#calSettings{ max-width:100%; }
 .wdays{
   display:grid;
   grid-template-columns:repeat(7, minmax(0, 1fr));
