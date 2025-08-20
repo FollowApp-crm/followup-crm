@@ -1454,15 +1454,23 @@ cell.addEventListener('click', ()=>{
     $('#moveOffDays').checked = !!s.moveOffDays;
     renderOverrideList();
   }
-  function saveSettingsFromUI(){
-    const s = state.settings;
-    s.workingDays = {
-      mon: !!$('#wd_mon').checked, tue: !!$('#wd_tue').checked, wed: !!$('#wd_wed').checked,
-      thu: !!$('#wd_thu').checked, fri: !!$('#wd_fri').checked, sat: !!$('#wd_sat').checked, sun: !!$('#wd_sun').checked
-    };
-    s.moveOffDays = !!$('#moveOffDays').checked;
-    regenerateAutoOpenTasksFromAnchors();
-saveSettingsFromUI()  
+function saveSettingsFromUI(){
+  const s = state.settings;
+  s.workingDays = {
+    mon: !!$('#wd_mon').checked,
+    tue: !!$('#wd_tue').checked,
+    wed: !!$('#wd_wed').checked,
+    thu: !!$('#wd_thu').checked,
+    fri: !!$('#wd_fri').checked,
+    sat: !!$('#wd_sat').checked,
+    sun: !!$('#wd_sun').checked
+  };
+  s.moveOffDays = !!$('#moveOffDays').checked;
+
+  regenerateAutoOpenTasksFromAnchors();  // rebuild future tasks with new rules
+  save();                                 // persist + refresh + rebuild calendar
+}
+
 // Settings toggle (pushes calendar down)
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('#calSettingsBtn, #calendarCard .settings-btn');
