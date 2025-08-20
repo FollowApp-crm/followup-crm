@@ -1462,19 +1462,18 @@ cell.addEventListener('click', ()=>{
     };
     s.moveOffDays = !!$('#moveOffDays').checked;
     regenerateAutoOpenTasksFromAnchors();
-    $('#calSettings').style.display = 'none';
-  }
-// Settings toggle (works for #calSettingsBtn or the gear in the calendar header)
+saveSettingsFromUI(  }
+// Settings toggle (pushes calendar down)
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('#calSettingsBtn, #calendarCard .settings-btn');
   if (!btn) return;
 
   const panel = document.getElementById('calSettings');
-  if (!panel) { console.warn('Missing #calSettings'); return; }
+  if (!panel) return;
 
-  const isVisible = getComputedStyle(panel).display !== 'none';
-  panel.style.display = isVisible ? 'none' : 'block';
-  if (!isVisible) loadSettingsIntoUI();
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open', opening);
+  if (opening) loadSettingsIntoUI();
 });
 
 // Save + add-override buttons (not nested in a click handler)
