@@ -157,7 +157,6 @@ function initCalendarDrawer(){
   const calSettings = document.getElementById('calSettings');
   if (cal && calSettings && !cal.contains(calSettings)) {
     (cal.querySelector('.bd') || cal).appendChild(calSettings);
-    calSettings.style.display = 'none'; // start hidden
   }
 
 
