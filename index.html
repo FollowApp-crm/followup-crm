@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="app.css" />
 
   <!-- External JS -->
-<script src="./app.js" defer></script>
+  <script src="./app.js" defer></script>
 </head>
 <body>
   <header>
@@ -285,73 +285,80 @@
           <div id="agenda" class="mt12"></div>
         </div>
       </section>
-
-
     </div>
   </main>
-<!-- Slide-out Calendar Drawer -->
-<div id="calendarDrawer">
-  <div class="drawer-scrim"></div>
-  <aside class="drawer-panel">
-    <!-- Calendar card MOVED here -->
-    <section class="card" id="calendarCard">
-      <div class="hd cal-hd">
-        <strong>Calendar</strong>
-        <div class="cal-month tiny">
-          <button class="btn-icon" id="calPrev" title="Previous month">◀</button>
-          <span id="calTitle" class="mono"></span>
-          <button class="btn-icon" id="calNext" title="Next month">▶</button>
+
+  <!-- Slide-out Calendar Drawer -->
+  <div id="calendarDrawer">
+    <div class="drawer-scrim"></div>
+    <aside class="drawer-panel">
+      <!-- Calendar card MOVED here -->
+      <section class="card" id="calendarCard">
+        <div class="hd cal-hd">
+          <strong>Calendar</strong>
+          <div class="cal-month tiny">
+            <button class="btn-icon" id="calPrev" title="Previous month">◀</button>
+            <span id="calTitle" class="mono"></span>
+            <button class="btn-icon" id="calNext" title="Next month">▶</button>
+          </div>
+          <div class="space"></div>
+          <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
+          <button class="btn-icon" id="calDrawerClose" title="Close calendar">✖</button>
         </div>
-        <div class="space"></div>
-        <button class="settings-btn" id="calSettingsBtn" title="Calendar settings">⚙️ Settings</button>
-        <button class="btn-icon" id="calDrawerClose" title="Close calendar">✖</button>
-      </div>
-      <div class="bd">
 
-        <div id="calendarGrid"></div>
-        <section id="calSettings" class="slab" style="display:none; margin-top:10px">
-  <h4>Working days</h4>
-  <label><input type="checkbox" id="wd_mon"> Mon</label>
-  <label><input type="checkbox" id="wd_tue"> Tue</label>
-  <label><input type="checkbox" id="wd_wed"> Wed</label>
-  <label><input type="checkbox" id="wd_thu"> Thu</label>
-  <label><input type="checkbox" id="wd_fri"> Fri</label>
-  <label><input type="checkbox" id="wd_sat"> Sat</label>
-  <label><input type="checkbox" id="wd_sun"> Sun</label>
+        <div class="bd">
+          <!-- SETTINGS FIRST: shows above the calendar grid -->
+          <section id="calSettings" class="slab" style="display:none; margin-bottom:10px">
+            <h4>Working days</h4>
+            <div class="wdays">
+              <div class="cell"><input type="checkbox" id="wd_mon"><span>Mon</span></div>
+              <div class="cell"><input type="checkbox" id="wd_tue"><span>Tue</span></div>
+              <div class="cell"><input type="checkbox" id="wd_wed"><span>Wed</span></div>
+              <div class="cell"><input type="checkbox" id="wd_thu"><span>Thu</span></div>
+              <div class="cell"><input type="checkbox" id="wd_fri"><span>Fri</span></div>
+              <div class="cell"><input type="checkbox" id="wd_sat"><span>Sat</span></div>
+              <div class="cell"><input type="checkbox" id="wd_sun"><span>Sun</span></div>
+            </div>
 
-  <div style="margin-top:10px">
-    <label><input type="checkbox" id="moveOffDays"> Move tasks off non-working days</label>
+            <div style="margin-top:10px">
+              <label style="display:inline-flex;align-items:center;gap:8px">
+                <input type="checkbox" id="moveOffDays"> Move tasks off non-working days
+              </label>
+            </div>
+
+            <hr>
+
+            <!-- Date-specific overrides row -->
+            <div class="ovr">
+              <div>
+                <label for="ovrDate">Override date</label>
+                <input type="date" id="ovrDate">
+              </div>
+              <div>
+                <label for="ovrType">Type</label>
+                <select id="ovrType">
+                  <option value="off">Off</option>
+                  <option value="work">Work</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button id="addOverride">Add override</button>
+              </div>
+            </div>
+
+            <ul id="overrideList" class="ovr-list tiny" style="margin-top:10px"></ul>
+
+            <div class="right" style="margin-top:10px">
+              <button id="saveCalSettings" class="primary">Save</button>
+            </div>
+          </section>
+
+          <!-- CALENDAR GRID AFTER (gets pushed down when settings open) -->
+          <div id="calendarGrid"></div>
+        </div>
+      </section>
+    </aside>
   </div>
-
-  <hr>
-  <div class="row">
-    <div>
-      <label for="ovrDate">Override date</label>
-      <input type="date" id="ovrDate">
-    </div>
-    <div>
-      <label for="ovrType">Type</label>
-      <select id="ovrType">
-        <option value="off">Off</option>
-        <option value="work">Work</option>
-      </select>
-    </div>
-    <div style="display:flex;align-items:flex-end">
-      <button id="addOverride">Add override</button>
-    </div>
-  </div>
-
-  <ul id="overrideList" class="ovr-list tiny" style="margin-top:10px"></ul>
-
-  <div class="right" style="margin-top:10px">
-    <button id="saveCalSettings" class="primary">Save</button>
-  </div>
-</section>
-
-      </div>
-    </section>
-  </aside>
-</div>
 
   <!-- Toast container -->
   <div id="toaster" aria-live="polite"></div>
