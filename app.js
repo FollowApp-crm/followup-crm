@@ -1783,19 +1783,22 @@ function bootstrap(){
   setShowButtons();
   initCalendarDrawer();
 
-  // 🔎 Customers search + status filter
-  const searchEl = document.getElementById('search');
-  if (searchEl){
-    const onType = () => refresh(); // or debounce(refresh, 120)
-    searchEl.addEventListener('input', onType);
-    searchEl.addEventListener('change', onType);
-    searchEl.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape'){ searchEl.value=''; refresh(); } // Esc to clear
-    });
-  }
+// 🔎 Customers search + status filter
+const searchEl = document.getElementById('search');
+if (searchEl){
+  let raf = 0;
+  const apply = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(refresh); };
 
-  document.getElementById('statusFilter')
-    ?.addEventListener('change', () => refresh());
+  searchEl.addEventListener('input', apply);               // live as you type
+  // ❌ remove the 'change' listener that was here
+  searchEl.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape'){ searchEl.value=''; apply(); } // Esc to clear
+  });
+}
+
+document.getElementById('statusFilter')
+  ?.addEventListener('change', () => refresh());           // keep this one
+
     centerMainCards();
 }
 
